@@ -1,0 +1,71 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+node_modules/
+# ==========================
+# Node.js / Server
+# ==========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+.env
+.DS_Store
+*.local
+
+# ==========================
+# React / Client
+# ==========================
+client/node_modules/
+client/dist/
+client/build/
+client/.env
+client/.DS_Store
+client/.vite
+
+# ==========================
+# Logs & OS
+# ==========================
+*.log
+*.lock
+*.tmp
+*.swp
+*.swo
+*.bak
+.idea/
+.vscode/
+*.iml
+
+# ==========================
+# MongoDB / Database backups
+# ==========================
+*.dump
+*.archive
+
+# ==========================
+# Misc / Mac & Windows
+# ==========================
+Thumbs.db
+Desktop.ini
