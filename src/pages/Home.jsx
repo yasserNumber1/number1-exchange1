@@ -3,18 +3,35 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import useLang from "../context/useLang"
 import { SEND_METHODS, RECEIVE_METHODS, EXCHANGE_RATES, TRANSFER_INFO } from "../data/currencies"
 
+// ══ Currency Icon — صورة حقيقية مع fallback للدائرة الملونة ══
+function CurrencyIcon({ method, size = 26 }) {
+  const [imgErr, setImgErr] = useState(false)
+  const showImg = method.img && !imgErr
+  return (
+    <div style={{ width:size, height:size, borderRadius:"50%", background: showImg?"#fff":method.color, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'JetBrains Mono',monospace", fontSize:size*0.38+"px", fontWeight:700, color:"#fff", flexShrink:0, overflow:"hidden", border: showImg?"1.5px solid rgba(0,0,0,0.08)":"none" }}>
+      {showImg ? (
+        <img src={method.img} alt={method.name} onError={()=>setImgErr(true)} style={{ width:"78%", height:"78%", objectFit:"contain" }} />
+      ) : (
+        method.symbol
+      )}
+    </div>
+  )
+}
+
+// ══ Ripple ══
 function ripple(e) {
-  const btn = e.currentTarget; const rect = btn.getBoundingClientRect()
-  const size = Math.max(rect.width,rect.height)*1.5
-  const el = document.createElement("span"); el.className="ripple"
+  const btn=e.currentTarget; const rect=btn.getBoundingClientRect()
+  const size=Math.max(rect.width,rect.height)*1.5
+  const el=document.createElement("span"); el.className="ripple"
   el.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`
   if(getComputedStyle(btn).position==="static") btn.style.position="relative"
   btn.appendChild(el); setTimeout(()=>el.remove(),600)
 }
 
+// ══ قاعدة التعليقات ══
 const ALL_REVIEWS = [
   { nameAr:"زكريا عمر",     nameEn:"Zakaria Omar",     color:"linear-gradient(135deg,#00d2ff,#7c5cfc)", textAr:"أفضل خدمة تبادل! سريع وموثوق جداً",                   textEn:"Best exchange service! Very fast and reliable" },
-  { nameAr:"محتار عدن",     nameEn:"Mokhtar Aden",     color:"linear-gradient(135deg,#c8a84b,#f59e0b)", textAr:"خدمة ممتازة وسريعة، أنصح بها للجميع",                  textEn:"Excellent and fast service, recommend to everyone" },
+  { nameAr:"ايسر عدن",     nameEn:"Mokhtar Aden",     color:"linear-gradient(135deg,#c8a84b,#f59e0b)", textAr:"خدمة ممتازة وسريعة، أنصح بها للجميع",                  textEn:"Excellent and fast service, recommend to everyone" },
   { nameAr:"أحمد سالم",     nameEn:"Ahmed Salem",      color:"linear-gradient(135deg,#00e5a0,#00b3d9)", textAr:"تجربة رائعة أنصح بها بشدة، الدعم ممتاز",               textEn:"Wonderful experience, strongly recommend it" },
   { nameAr:"فاطمة الزهراء", nameEn:"Fatima Al-Zahra",  color:"linear-gradient(135deg,#e91e63,#ff6090)", textAr:"تحويل سريع جداً! وصل المبلغ في دقيقتين",               textEn:"Very fast transfer! Amount arrived in two minutes" },
   { nameAr:"محمد الخالدي",  nameEn:"Mohammed Khalidi", color:"linear-gradient(135deg,#f7931a,#ffd700)", textAr:"منصة موثوقة استخدمها منذ سنة ولم أواجه أي مشكلة",      textEn:"Trusted platform, using it for a year with no issues" },
@@ -29,11 +46,11 @@ const ALL_REVIEWS = [
   { nameAr:"هند الدوسري",   nameEn:"Hind Al-Dosari",   color:"linear-gradient(135deg,#f59e0b,#fcd34d)", textAr:"أنصح كل من يريد تحويل USDT باستخدام هذه المنصة",       textEn:"Recommend to everyone who wants to transfer USDT" },
   { nameAr:"طارق نجيب",     nameEn:"Tarek Najeeb",     color:"linear-gradient(135deg,#6366f1,#818cf8)", textAr:"واجهة سهلة وعملية التحويل لا تأخذ أكثر من 3 دقائق",   textEn:"Easy interface, transfer process takes no more than 3 minutes" },
 ]
-
 function getRandomReviews(count=3) {
   return [...ALL_REVIEWS].sort(()=>Math.random()-0.5).slice(0,count)
 }
 
+// ══ Live Activity ══
 const OPERATION_PAIRS = [
   { sendId:"vodafone",  sendName:"فودافون كاش", sendNameEn:"Vodafone Cash", recvId:"mgo-recv",  recvName:"MoneyGo USD", sendColor:"#e40000", recvColor:"#e91e63" },
   { sendId:"instapay",  sendName:"إنستا باي",   sendNameEn:"Instapay",      recvId:"mgo-recv",  recvName:"MoneyGo USD", sendColor:"#1a56db", recvColor:"#e91e63" },
@@ -43,49 +60,41 @@ const OPERATION_PAIRS = [
   { sendId:"mgo-send",  sendName:"MoneyGo USD", sendNameEn:"MoneyGo USD",   recvId:"usdt-recv", recvName:"USDT TRC20",  sendColor:"#e91e63", recvColor:"#26a17b" },
   { sendId:"instapay",  sendName:"إنستا باي",   sendNameEn:"Instapay",      recvId:"usdt-recv", recvName:"USDT TRC20",  sendColor:"#1a56db", recvColor:"#26a17b" },
 ]
-
-function timeAgo(ms, lang) {
-  const d = Math.floor((Date.now()-ms)/1000)
-  if(lang==="ar") {
-    if(d<60) return d+" ث"
-    if(d<3600) return Math.floor(d/60)+" د"
-    return Math.floor(d/3600)+" س"
-  }
-  if(d<60) return d+"s"
-  if(d<3600) return Math.floor(d/60)+"m"
-  return Math.floor(d/3600)+"h"
+function timeAgo(ms,lang) {
+  const d=Math.floor((Date.now()-ms)/1000)
+  if(lang==="ar"){if(d<60)return d+" ث";if(d<3600)return Math.floor(d/60)+" د";return Math.floor(d/3600)+" س"}
+  if(d<60)return d+"s";if(d<3600)return Math.floor(d/60)+"m";return Math.floor(d/3600)+"h"
 }
-
-function maskAmount(n) {
-  const s=String(Math.round(n))
-  return s.length>2 ? s.slice(0,s.length-2)+"**" : s[0]+"*"
-}
-
-function generateOp() {
+function maskAmount(n){const s=String(Math.round(n));return s.length>2?s.slice(0,s.length-2)+"**":s[0]+"*"}
+function generateOp(){
   const pair=OPERATION_PAIRS[Math.floor(Math.random()*OPERATION_PAIRS.length)]
   const amounts={vodafone:[500,5000],instapay:[300,3000],etisalat:[400,4000],"usdt-trc":[10,500],"mgo-send":[10,300]}
   const [min,max]=amounts[pair.sendId]||[100,1000]
   const amount=Math.floor(Math.random()*(max-min)+min)
-  const ago=Math.floor(Math.random()*7200+60)*1000
-  return {id:Math.random().toString(36).slice(2),pair,amount,ts:Date.now()-ago}
+  return {id:Math.random().toString(36).slice(2),pair,amount,ts:Date.now()-Math.floor(Math.random()*7200+60)*1000}
 }
+function seedOperations(){return Array.from({length:5},generateOp).sort((a,b)=>b.ts-a.ts)}
 
-function seedOperations() {
-  return Array.from({length:5},generateOp).sort((a,b)=>b.ts-a.ts)
-}
-
+// ══ OpRow — صف عملية واحدة مع صورة ══
 function OpRow({op,lang,isNew}) {
   const {pair,amount}=op
-  const icons={vodafone:"V",instapay:"I",etisalat:"E","usdt-trc":"₮","mgo-send":"M"}
+  const sendMethod = SEND_METHODS.find(m=>m.id===pair.sendId)
+  const recvMethod = RECEIVE_METHODS.find(m=>m.id===pair.recvId)
   return (
     <div style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",borderBottom:"1px solid rgba(255,255,255,0.04)",background:isNew?"rgba(0,210,255,0.06)":"transparent",transition:"background 1.5s ease"}}>
       <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
-        <div style={{width:22,height:22,borderRadius:6,background:pair.sendColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",fontWeight:800,color:"#fff"}}>{icons[pair.sendId]||"?"}</div>
+        {sendMethod
+          ? <CurrencyIcon method={sendMethod} size={22}/>
+          : <div style={{width:22,height:22,borderRadius:6,background:pair.sendColor,flexShrink:0}}/>
+        }
         <span style={{fontSize:"0.72rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",maxWidth:55,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{lang==="ar"?pair.sendName:pair.sendNameEn}</span>
       </div>
       <span style={{color:"rgba(0,210,255,0.3)",fontSize:"0.7rem",flexShrink:0}}>→</span>
       <div style={{display:"flex",alignItems:"center",gap:5,flex:1,minWidth:0}}>
-        <div style={{width:22,height:22,borderRadius:6,background:pair.recvColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",fontWeight:800,color:"#fff",flexShrink:0}}>{pair.recvId==="mgo-recv"?"M":"₮"}</div>
+        {recvMethod
+          ? <CurrencyIcon method={recvMethod} size={22}/>
+          : <div style={{width:22,height:22,borderRadius:6,background:pair.recvColor,flexShrink:0}}/>
+        }
         <span style={{fontSize:"0.72rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pair.recvName}</span>
       </div>
       <span style={{fontSize:"0.78rem",fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color:"rgba(255,255,255,0.5)",flexShrink:0}}>{maskAmount(amount)}</span>
@@ -103,11 +112,7 @@ function LiveActivitySidebar() {
   useEffect(()=>{
     const schedule=()=>{
       const delay=(Math.random()*5+3)*60*1000
-      return setTimeout(()=>{
-        const op=generateOp(); op.ts=Date.now()
-        setOps(prev=>[op,...prev.slice(0,4)]); setNewId(op.id)
-        setTimeout(()=>setNewId(null),2000); timer=schedule()
-      },delay)
+      return setTimeout(()=>{const op=generateOp();op.ts=Date.now();setOps(prev=>[op,...prev.slice(0,4)]);setNewId(op.id);setTimeout(()=>setNewId(null),2000);timer=schedule()},delay)
     }
     let timer=schedule(); return()=>clearTimeout(timer)
   },[])
@@ -122,7 +127,7 @@ function LiveActivitySidebar() {
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:5,fontSize:"0.65rem",color:"var(--green)",fontFamily:"'JetBrains Mono',monospace",fontWeight:700}}>
-          <span style={{width:6,height:6,borderRadius:"50%",background:"var(--green)",animation:"blink 1.2s ease-in-out infinite",display:"inline-block",boxShadow:"0 0 6px var(--green)"}}/> LIVE
+          <span style={{width:6,height:6,borderRadius:"50%",background:"var(--green)",animation:"blink 1.2s ease-in-out infinite",display:"inline-block",boxShadow:"0 0 6px var(--green)"}}/>LIVE
         </div>
       </div>
       <div>{ops.map(op=><OpRow key={op.id} op={op} lang={lang} isNew={op.id===newId}/>)}</div>
@@ -221,6 +226,7 @@ function PromoBanner() {
   )
 }
 
+// ══ Currency Dropdown — مع صور حقيقية ══
 function CurrencyDropdown({options,selected,onSelect}) {
   const {lang,t}=useLang()
   const [open,setOpen]=useState(false)
@@ -231,8 +237,8 @@ function CurrencyDropdown({options,selected,onSelect}) {
   },[])
   return (
     <div ref={ref} style={{position:"relative"}}>
-      <div onClick={()=>setOpen(!open)} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",background:open?"var(--cyan-dim)":"rgba(255,255,255,0.05)",border:`1px solid ${open?"var(--border-2)":"var(--border-1)"}`,borderRadius:9,cursor:"pointer",transition:"all 0.2s",flexShrink:0,userSelect:"none",minWidth:150}}>
-        <div style={{width:26,height:26,borderRadius:"50%",background:selected.color,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace",fontSize:"0.62rem",fontWeight:700,color:"#fff",flexShrink:0}}>{selected.symbol}</div>
+      <div onClick={()=>setOpen(!open)} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",background:open?"var(--cyan-dim)":"rgba(255,255,255,0.05)",border:`1px solid ${open?"var(--border-2)":"var(--border-1)"}`,borderRadius:9,cursor:"pointer",transition:"all 0.2s",flexShrink:0,userSelect:"none",minWidth:155}}>
+        <CurrencyIcon method={selected} size={26}/>
         <div style={{flex:1}}>
           <div style={{fontSize:"0.85rem",fontWeight:700}}>{selected.name}</div>
           {selected.flag&&<div style={{fontSize:"0.6rem",color:"var(--text-3)"}}>{selected.flag} {selected.type==="egp"?t("curr_egp"):t("curr_crypto")}</div>}
@@ -246,7 +252,7 @@ function CurrencyDropdown({options,selected,onSelect}) {
               style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",cursor:"pointer",background:selected.id===c.id?"var(--cyan-dim)":"transparent",transition:"background 0.15s"}}
               onMouseEnter={e=>{if(selected.id!==c.id)e.currentTarget.style.background="var(--cyan-dim)"}}
               onMouseLeave={e=>{if(selected.id!==c.id)e.currentTarget.style.background="transparent"}}>
-              <div style={{width:26,height:26,borderRadius:"50%",background:c.color,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace",fontSize:"0.62rem",fontWeight:700,color:"#fff"}}>{c.symbol}</div>
+              <CurrencyIcon method={c} size={28}/>
               <div>
                 <div style={{fontSize:"0.85rem",fontWeight:700}}>{c.name}</div>
                 {c.flag&&<div style={{fontSize:"0.6rem",color:"var(--text-3)"}}>{c.flag} {c.type==="egp"?t("curr_egp"):t("curr_crypto")}</div>}
@@ -260,6 +266,7 @@ function CurrencyDropdown({options,selected,onSelect}) {
   )
 }
 
+// ══ Confirm Modal — مع صور ══
 function ConfirmModal({isOpen,onClose,orderData}) {
   const {t,lang}=useLang()
   const [copied,setCopied]=useState(false)
@@ -296,10 +303,23 @@ function ConfirmModal({isOpen,onClose,orderData}) {
             </div>
           ):(
             <>
+              {/* ملخص مع صور العملات */}
               <div style={{background:"rgba(0,210,255,0.04)",border:"1px solid var(--border-1)",borderRadius:12,padding:"13px 16px"}}>
                 <div style={{fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",marginBottom:10,letterSpacing:1}}>{t("confirm_summary").toUpperCase()}</div>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,fontSize:"0.88rem"}}><span style={{color:"var(--text-2)"}}>{t("confirm_send")}</span><span style={{fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{orderData.sendAmount} {orderData.sendMethod.name}</span></div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.88rem"}}><span style={{color:"var(--text-2)"}}>{t("confirm_recv")}</span><span style={{fontWeight:700,color:"var(--green)",fontFamily:"'JetBrains Mono',monospace"}}>{orderData.receiveAmount} {orderData.receiveMethod.name}</span></div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,fontSize:"0.88rem"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <CurrencyIcon method={orderData.sendMethod} size={24}/>
+                    <span style={{color:"var(--text-2)"}}>{t("confirm_send")}</span>
+                  </div>
+                  <span style={{fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{orderData.sendAmount} {orderData.sendMethod.name}</span>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:"0.88rem"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <CurrencyIcon method={orderData.receiveMethod} size={24}/>
+                    <span style={{color:"var(--text-2)"}}>{t("confirm_recv")}</span>
+                  </div>
+                  <span style={{fontWeight:700,color:"var(--green)",fontFamily:"'JetBrains Mono',monospace"}}>{orderData.receiveAmount} {orderData.receiveMethod.name}</span>
+                </div>
               </div>
               <div>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
@@ -307,7 +327,10 @@ function ConfirmModal({isOpen,onClose,orderData}) {
                   <span style={{fontSize:"0.88rem",fontWeight:700}}>{isEgp?t("confirm_step1_num"):t("confirm_step1_addr")}</span>
                 </div>
                 <div style={{background:"rgba(0,0,0,0.25)",border:"1px solid var(--border-1)",borderRadius:12,padding:"14px 16px"}}>
-                  <div style={{fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",marginBottom:8}}>{lang==="ar"?info.labelAr:info.labelEn}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                    <CurrencyIcon method={orderData.sendMethod} size={20}/>
+                    <div style={{fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace"}}>{lang==="ar"?info.labelAr:info.labelEn}</div>
+                  </div>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <div style={{flex:1,fontFamily:"'JetBrains Mono',monospace",fontSize:isEgp?"1.4rem":"0.75rem",fontWeight:700,color:"var(--cyan)",wordBreak:"break-all",letterSpacing:isEgp?2:1}}>{info.value}</div>
                     <button onClick={handleCopy} style={{flexShrink:0,padding:"8px 14px",background:copied?"rgba(0,229,160,0.15)":"var(--cyan-dim)",border:`1px solid ${copied?"rgba(0,229,160,0.3)":"var(--border-2)"}`,borderRadius:9,color:copied?"var(--green)":"var(--cyan)",fontFamily:"'JetBrains Mono',monospace",fontSize:"0.75rem",fontWeight:700,cursor:"pointer",transition:"all 0.25s",whiteSpace:"nowrap"}}>{copied?t("confirm_copied"):t("confirm_copy")}</button>
@@ -342,6 +365,7 @@ function ConfirmModal({isOpen,onClose,orderData}) {
   )
 }
 
+// ══ Exchange Form — مع صور ══
 function ExchangeForm() {
   const {t,lang}=useLang()
   const [sendMethod,setSendMethod]=useState(SEND_METHODS[0])
