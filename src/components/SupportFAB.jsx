@@ -7,10 +7,10 @@ const BOT_REPLIES = {
     default: 'شكراً! للمساعدة التفصيلية تواصل معنا عبر تيليجرام أو واتساب 🙏',
     تبادل:   'اختر العملة، أدخل المبلغ والمحفظة، وافق على الشروط ثم اضغط إرسال ✅',
     ابدأ:    'اختر العملة، أدخل المبلغ والمحفظة، وافق على الشروط ثم اضغط إرسال ✅',
-    رسوم:    'رسومنا تبدأ من 0.1% فقط — من أقل الرسوم في السوق 💹',
-    أدنى:    'الحد الأدنى 10 وحدة من العملة المرسلة 📊',
-    آمن:     'نعم! نستخدم تشفير AES-256 وشهادة ISO 27001 🔐',
-    وقت:     '1-5 دقائق لمعظم العمليات ⏱',
+    رسوم:    'رسومنا تبدأ من 0.1% فقط — من أقل الرسوم في السوق',
+    أدنى:    'الحد الأدنى 10 وحدة من العملة المرسلة',
+    آمن:     'نعم! نستخدم تشفير AES-256 وشهادة ISO 27001',
+    وقت:     '1-5 دقائق لمعظم العمليات',
     شكر:     'العفو! يسعدني مساعدتك دائماً 😊',
     مرحب:    'أهلاً! كيف يمكنني مساعدتك؟ 👋',
   },
@@ -18,10 +18,10 @@ const BOT_REPLIES = {
     default:   'Thanks! For detailed help contact us via Telegram or WhatsApp 🙏',
     exchange:  'Choose currency, enter amount and wallet, agree to terms then click Submit ✅',
     start:     'Choose currency, enter amount and wallet, agree to terms then click Submit ✅',
-    fees:      'Our fees start from just 0.1% — among the lowest in the market 💹',
-    minimum:   'Minimum is 10 units of the sending currency 📊',
-    safe:      'Yes! We use AES-256 encryption and ISO 27001 certification 🔐',
-    time:      '1-5 minutes for most operations ⏱',
+    fees:      'Our fees start from just 0.1% — among the lowest in the market',
+    minimum:   'Minimum is 10 units of the sending currency',
+    safe:      'Yes! We use AES-256 encryption and ISO 27001 certification',
+    time:      '1-5 minutes for most operations',
     thanks:    'You\'re welcome! Happy to help 😊',
     hello:     'Hello! How can I help you? 👋',
   }
@@ -79,8 +79,8 @@ function ChatWindow({ onClose }) {
     initialized.current = true
     setTimeout(() => {
       addBotMsg(lang === 'ar'
-        ? 'مرحباً! أنا مساعد Number 1 الذكي 🤖\nكيف يمكنني مساعدتك اليوم؟'
-        : 'Hello! I\'m Number 1 AI Assistant 🤖\nHow can I help you today?'
+        ? 'مرحباً! أنا مساعد Number 1 الذكي\nكيف يمكنني مساعدتك اليوم؟'
+        : 'Hello! I\'m Number 1 AI Assistant\nHow can I help you today?'
       )
     }, 500)
   }, [])
@@ -125,7 +125,9 @@ function ChatWindow({ onClose }) {
     }}>
       {/* Header */}
       <div style={{ padding:'14px 16px', background:'linear-gradient(135deg,rgba(0,210,255,0.1),rgba(124,92,252,0.08))', borderBottom:'1px solid var(--border-1)', display:'flex', alignItems:'center', gap:10 }}>
-        <div style={{ width:36, height:36, borderRadius:'50%', background:'linear-gradient(135deg,var(--cyan),var(--purple))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem', flexShrink:0, boxShadow:'0 0 14px rgba(0,210,255,0.4)' }}>🤖</div>
+        <div style={{ width:36, height:36, borderRadius:'50%', background:'linear-gradient(135deg,var(--cyan),var(--purple))', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 0 14px rgba(0,210,255,0.4)' }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M9 11V9a3 3 0 016 0v2"/><circle cx="9" cy="15" r="1" fill="white"/><circle cx="15" cy="15" r="1" fill="white"/><line x1="12" y1="3" x2="12" y2="5"/></svg>
+    </div>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:'0.88rem', fontWeight:800, color:'var(--cyan)' }}>Number 1 Bot</div>
           <div style={{ fontSize:'0.65rem', color:'var(--green)', fontFamily:"'JetBrains Mono',monospace", display:'flex', alignItems:'center', gap:4 }}>
@@ -201,9 +203,9 @@ function SupportFAB() {
   const openChat = () => { setChatOpen(true); setMenuOpen(false) }
 
   const menuItems = [
-    { icon:'🤖', title: lang==='ar'?'المساعد الذكي':'AI Assistant',   sub: lang==='ar'?'دردشة فورية · 24/7':'Instant chat · 24/7',      bg:'linear-gradient(135deg,rgba(0,210,255,0.2),rgba(124,92,252,0.2))', border:'rgba(0,210,255,0.2)',  onClick: openChat },
+    { icon:<svg width='18' height='18' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'><defs><linearGradient id='bm' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stopColor='#00d2ff'/><stop offset='100%' stopColor='#7c5cfc'/></linearGradient></defs><rect x='3' y='10' width='18' height='11' rx='3' fill='url(#bm)' opacity='0.8'/><path d='M9 10V8a3 3 0 016 0v2' fill='none' stroke='var(--cyan)' strokeWidth='1.8' strokeLinecap='round'/><circle cx='9.5' cy='15.5' r='1.5' fill='var(--cyan)'/><circle cx='14.5' cy='15.5' r='1.5' fill='var(--cyan)'/><line x1='9.5' y1='19' x2='14.5' y2='19' stroke='rgba(0,210,255,0.5)' strokeWidth='1.5' strokeLinecap='round'/></svg>, title: lang==='ar'?'المساعد الذكي':'AI Assistant',   sub: lang==='ar'?'دردشة فورية · 24/7':'Instant chat · 24/7',      bg:'linear-gradient(135deg,rgba(0,210,255,0.2),rgba(124,92,252,0.2))', border:'rgba(0,210,255,0.2)',  onClick: openChat },
     { icon:'✈️', title: lang==='ar'?'تيليجرام':'Telegram',             sub:'@Number1Exchange',                                            bg:'linear-gradient(135deg,rgba(0,136,204,0.25),rgba(0,180,216,0.15))', border:'rgba(0,136,204,0.2)', onClick:()=>window.open('https://t.me/Number1Exchange','_blank') },
-    { icon:'📱', title: lang==='ar'?'واتساب':'WhatsApp',                sub: lang==='ar'?'دعم مباشر · 24/7':'Direct support · 24/7',      bg:'linear-gradient(135deg,rgba(37,211,102,0.15),rgba(18,140,126,0.15))', border:'rgba(37,211,102,0.2)', onClick:()=>window.open('https://wa.me/967700000001','_blank') },
+    { icon:<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='#25D366' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'><path d='M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z'/></svg>, title: lang==='ar'?'واتساب':'WhatsApp',                sub: lang==='ar'?'دعم مباشر · 24/7':'Direct support · 24/7',      bg:'linear-gradient(135deg,rgba(37,211,102,0.15),rgba(18,140,126,0.15))', border:'rgba(37,211,102,0.2)', onClick:()=>window.open('https://wa.me/967700000001','_blank') },
   ]
 
   return (

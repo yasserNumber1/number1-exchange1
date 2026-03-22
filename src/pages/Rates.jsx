@@ -34,7 +34,9 @@ export function Rates() {
         </div>
         <div style={{ background:'var(--card)',border:'1px solid var(--border-1)',borderRadius:20,overflow:'hidden',backdropFilter:'blur(16px)' }}>
           <div style={{ padding:'17px 22px',borderBottom:'1px solid var(--border-1)',display:'flex',alignItems:'center',gap:11 }}>
-            <div style={{ width:33,height:33,borderRadius:9,background:'var(--cyan-dim)',border:'1px solid rgba(0,210,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem' }}>📊</div>
+            <div style={{ width:33,height:33,borderRadius:9,background:'var(--cyan-dim)',border:'1px solid rgba(0,210,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem' }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    </div>
             <h3 style={{ fontSize:'0.92rem',fontWeight:700,flex:1 }}>{t('rates_table')}</h3>
             <div style={{ display:'flex',alignItems:'center',gap:5,fontFamily:"'JetBrains Mono',monospace",fontSize:'0.66rem',color:'var(--green)',background:'rgba(0,229,160,0.07)',border:'1px solid rgba(0,229,160,0.14)',padding:'2px 8px',borderRadius:20 }}>
               <span style={{ width:5,height:5,borderRadius:'50%',background:'var(--green)',animation:'blink 1.5s ease-in-out infinite',display:'inline-block' }} />LIVE
@@ -70,9 +72,9 @@ export function Rates() {
           </table>
         </div>
         <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:18,marginTop:28 }}>
-          {[{icon:'📈',label: t('rates_col3').replace('24h','').trim()+' ↑',value:'BTC +4.2%',color:'var(--green)'},{icon:'📉',label:t('rates_col3').replace('24h','').trim()+' ↓',value:'ETH -1.8%',color:'var(--red)'},{icon:'💹',label:'Vol 24h',value:'$2.4B',color:'var(--cyan)'}].map((s,i)=>(
+          {[{icon:'trend-up',label: t('rates_col3').replace('24h','').trim()+' ↑',value:'BTC +4.2%',color:'var(--green)'},{icon:'trend-down',label:t('rates_col3').replace('24h','').trim()+' ↓',value:'ETH -1.8%',color:'var(--red)'},{icon:'volume',label:'Vol 24h',value:'$2.4B',color:'var(--cyan)'}].map((s,i)=>(
             <div key={i} style={{ background:'var(--card)',border:'1px solid var(--border-1)',borderRadius:16,padding:'20px 22px',display:'flex',alignItems:'center',gap:14 }}>
-              <div style={{ fontSize:'1.8rem' }}>{s.icon}</div>
+              <div style={{ fontSize:'1.8rem' }}>{s.icon==='trend-up'?<svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round'><polyline points='23 6 13.5 15.5 8.5 10.5 1 18'/><polyline points='17 6 23 6 23 12'/></svg>:s.icon==='trend-down'?<svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round'><polyline points='23 18 13.5 8.5 8.5 13.5 1 6'/><polyline points='17 18 23 18 23 12'/></svg>:<svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'><rect x='1' y='3' width='15' height='13' rx='2'/><path d='M16 8h5'/><path d='M16 12h5'/><path d='M19 3v18'/></svg>}</div>
               <div><div style={{ fontSize:'0.75rem',color:'var(--text-3)',fontFamily:"'JetBrains Mono',monospace",marginBottom:4 }}>{s.label}</div><div style={{ fontSize:'1.1rem',fontWeight:800,color:s.color,fontFamily:"'JetBrains Mono',monospace" }}>{s.value}</div></div>
             </div>
           ))}

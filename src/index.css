@@ -237,3 +237,167 @@ html.light [style*="rgba(200,168,75,0.08)"] {
   transform:scale(0); animation:ripple 0.55s linear;
   pointer-events:none;
 }
+
+/* ══════════════════════════════════════════
+   EXCHANGE FORM — REDESIGN
+══════════════════════════════════════════ */
+.ex-card {
+  background: var(--card);
+  border: 1px solid var(--border-1);
+  border-radius: 16px;
+  padding: 22px;
+  transition: border-color .25s;
+}
+.ex-card:hover { border-color: var(--border-2); }
+
+.ex-currency-box {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid var(--border-1);
+  border-radius: 10px; padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s;
+  min-width: 0; flex: 1.2;
+}
+.ex-currency-box:hover {
+  border-color: rgba(0,210,255,0.35);
+  box-shadow: 0 0 0 3px rgba(0,210,255,0.08);
+}
+
+.ex-amount-input {
+  width: 100%; height: 100%; min-height: 56px;
+  padding: 12px 54px 12px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid var(--border-1);
+  border-radius: 10px;
+  font-size: 18px; font-weight: 700; color: var(--text-1);
+  outline: none; font-family: inherit;
+  transition: border-color .2s, box-shadow .2s;
+  direction: ltr;
+}
+.ex-amount-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,210,255,0.1);
+}
+.ex-amount-input.ex-readonly {
+  background: rgba(0,229,160,0.05);
+  border-color: rgba(0,229,160,0.2);
+  color: var(--green);
+}
+.ex-amount-input::placeholder { color: var(--text-3); font-size: 14px; }
+
+.ex-swap-btn {
+  width: 38px; height: 38px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid var(--border-1);
+  border-radius: 50%; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-3); transition: all .25s;
+}
+.ex-swap-btn:hover {
+  background: var(--cyan); border-color: var(--cyan);
+  color: #000; transform: rotate(180deg);
+  box-shadow: 0 0 16px rgba(0,210,255,0.3);
+}
+
+.ex-inp {
+  width: 100%; padding: 10px 14px 10px 38px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid var(--border-1);
+  border-radius: 10px; outline: none;
+  font-size: 13px; color: var(--text-1);
+  font-family: 'Tajawal', sans-serif;
+  transition: border-color .2s, box-shadow .2s;
+  text-align: right;
+}
+.ex-inp:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,210,255,0.07); }
+.ex-inp::placeholder { color: var(--text-3); }
+.ex-inp.ltr { direction: ltr; text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+
+.ex-chk input[type=checkbox] {
+  appearance: none; -webkit-appearance: none;
+  width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid var(--border-1);
+  border-radius: 4px; cursor: pointer;
+  transition: all .15s; position: relative;
+}
+.ex-chk input[type=checkbox]:checked { background: var(--cyan); border-color: var(--cyan); }
+.ex-chk input[type=checkbox]:checked::after {
+  content: ''; position: absolute;
+  left: 4px; top: 1.5px; width: 5px; height: 9px;
+  border: 2px solid #000; border-top: none; border-left: none;
+  transform: rotate(45deg);
+}
+
+.ex-submit-btn {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #009fc0 0%, #4f46e5 100%);
+  color: white; border: none; border-radius: 10px;
+  font-size: 14.5px; font-weight: 800; cursor: pointer;
+  font-family: 'Tajawal', sans-serif; letter-spacing: .2px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all .22s;
+  box-shadow: 0 4px 22px rgba(0,159,192,0.28);
+}
+.ex-submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,210,255,0.42); filter: brightness(1.07); }
+.ex-submit-btn:active { transform: translateY(0); }
+
+/* Picker Modal */
+.ex-picker-overlay {
+  position: fixed; inset: 0; z-index: 800;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+}
+.ex-picker-overlay.open { opacity: 1; pointer-events: all; }
+
+.ex-picker-modal {
+  background: var(--card);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 20px;
+  width: 360px; max-width: 94vw;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.75);
+  transform: translateY(18px) scale(.97);
+  transition: transform .25s cubic-bezier(.22,1,.36,1);
+  overflow: hidden;
+}
+.ex-picker-overlay.open .ex-picker-modal { transform: translateY(0) scale(1); }
+
+.ex-picker-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 12px; border-radius: 12px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background .15s, border-color .15s;
+}
+.ex-picker-item:hover { background: rgba(255,255,255,0.04); border-color: var(--border-1); }
+.ex-picker-item.selected { background: rgba(0,210,255,0.08); border-color: rgba(0,210,255,0.35); }
+
+.ex-picker-search {
+  width: 100%; padding: 10px 14px 10px 38px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid var(--border-1);
+  border-radius: 10px; outline: none;
+  font-size: 13px; color: var(--text-1); font-family: inherit;
+  transition: border-color .2s, box-shadow .2s;
+}
+.ex-picker-search:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,210,255,0.08); }
+.ex-picker-search::placeholder { color: var(--text-3); }
+
+.ex-picker-list {
+  padding: 6px 10px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 320px; overflow-y: auto;
+}
+.ex-picker-list::-webkit-scrollbar { width: 4px; }
+.ex-picker-list::-webkit-scrollbar-track { background: transparent; }
+.ex-picker-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+@media (max-width: 720px) {
+  .ex-inner-grid { grid-template-columns: 1fr !important; }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

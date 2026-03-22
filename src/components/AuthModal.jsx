@@ -104,7 +104,7 @@ function SubmitBtn({ children, onClick, disabled, loading }) {
       onMouseEnter={e => { if (!disabled&&!loading) { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 10px 34px rgba(0,210,255,0.38)' } }}
       onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow=disabled?'none':'0 4px 22px rgba(0,159,192,0.22)' }}
     >
-      {loading ? '⏳ ...' : children}
+      {loading ? <><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' style={{animation:'spin 1s linear infinite'}}><path d='M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83'/></svg> ...</> : children}
     </button>
   )
 }
@@ -205,7 +205,7 @@ function ModalHeader({ title, onClose }) {
   return (
     <div style={{ padding:'22px 24px 18px', borderBottom:'1px solid var(--border-1)', display:'flex', alignItems:'center', gap:12 }}>
       <div style={{ width:40, height:40, borderRadius:11, background:'var(--cyan-dim)', border:'1px solid rgba(0,210,255,0.18)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-        🔐
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
       </div>
       <div style={{ flex:1 }}>
         <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:'0.95rem', fontWeight:700, color:'var(--cyan)', letterSpacing:1 }}>{title}</div>
@@ -304,7 +304,7 @@ function LoginSection({ onClose, t }) {
         <span style={{ color:'var(--cyan)', fontFamily:"'JetBrains Mono',monospace", fontWeight:700 }}>{email}</span>
       </div>
       <OTPInput onComplete={handleStep2} />
-      {loading && <div style={{ textAlign:'center', color:'var(--text-3)', fontSize:'0.85rem' }}>⏳</div>}
+      {loading && <div style={{ textAlign:'center', color:'var(--text-3)', fontSize:'0.85rem' }}style={{display:'flex',justifyContent:'center'}}><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' style={{animation:'spin 1s linear infinite'}}><path d='M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83'/></svg></div>}
       <div style={{ textAlign:'center', fontSize:'0.76rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", marginTop:10 }}>
         {t('auth_otp_title')}?{' '}
         <button onClick={() => {}} style={{ color:'var(--cyan)', background:'none', border:'none', fontFamily:"'JetBrains Mono',monospace", fontSize:'0.76rem', cursor:'pointer', textDecoration:'underline' }}>
@@ -380,14 +380,14 @@ function RegisterSection({ onClose, t }) {
   // OTP الهاتف
   if (step === 3) return (
     <div>
-      <div style={{ width:60, height:60, borderRadius:18, background:'var(--cyan-dim)', border:'1px solid rgba(0,210,255,0.18)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', fontSize:'1.8rem' }}>📱</div>
+      <div style={{ width:60, height:60, borderRadius:18, background:'var(--cyan-dim)', border:'1px solid rgba(0,210,255,0.18)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>  <svg width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='var(--cyan)' strokeWidth='1.8' strokeLinecap='round' strokeLinejoin='round'><rect x='5' y='2' width='14' height='20' rx='2' ry='2'/><line x1='12' y1='18' x2='12.01' y2='18'/></svg></div>
       <div style={{ textAlign:'center', fontSize:'0.78rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", marginBottom:6 }}>STEP 2 / 2 · تأكيد الهاتف</div>
       <div style={{ textAlign:'center', fontSize:'0.86rem', color:'var(--text-2)', lineHeight:1.65, marginBottom:20 }}>
         {t('auth_otp_title')} SMS<br />
         <span style={{ color:'var(--cyan)', fontFamily:"'JetBrains Mono',monospace", fontWeight:700 }}>{form.phone}</span>
       </div>
       <OTPInput onComplete={handlePhoneOtp} />
-      {loading && <div style={{ textAlign:'center', color:'var(--text-3)', fontSize:'0.85rem' }}>⏳</div>}
+      {loading && <div style={{ textAlign:'center', color:'var(--text-3)', fontSize:'0.85rem' }}style={{display:'flex',justifyContent:'center'}}><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' style={{animation:'spin 1s linear infinite'}}><path d='M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83'/></svg></div>}
       <div style={{ textAlign:'center', fontSize:'0.76rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", marginTop:10 }}>
         <button onClick={()=>setStep(2)} style={{ color:'var(--cyan)', background:'none', border:'none', fontFamily:"'Tajawal',sans-serif", fontSize:'0.75rem', cursor:'pointer' }}>← {t('nav_home') === 'الرئيسية' ? 'العودة' : 'Back'}</button>
       </div>
@@ -404,7 +404,7 @@ function RegisterSection({ onClose, t }) {
         <span style={{ color:'var(--cyan)', fontFamily:"'JetBrains Mono',monospace", fontWeight:700 }}>{form.email}</span>
       </div>
       <OTPInput onComplete={handleEmailOtp} />
-      {loading && <div style={{ textAlign:'center', color:'var(--text-3)', fontSize:'0.85rem' }}>⏳</div>}
+      {loading && <div style={{ textAlign:'center', color:'var(--text-3)', fontSize:'0.85rem' }}style={{display:'flex',justifyContent:'center'}}><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' style={{animation:'spin 1s linear infinite'}}><path d='M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83'/></svg></div>}
       <div style={{ textAlign:'center', fontSize:'0.76rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", marginTop:10 }}>
         <button onClick={()=>setStep(1)} style={{ color:'var(--cyan)', background:'none', border:'none', fontFamily:"'Tajawal',sans-serif", fontSize:'0.75rem', cursor:'pointer' }}>← {t('nav_home') === 'الرئيسية' ? 'العودة' : 'Back'}</button>
       </div>
