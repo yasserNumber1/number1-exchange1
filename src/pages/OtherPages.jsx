@@ -173,75 +173,175 @@ const TEAM = [
   { nameAr:'خالد عبدالله', nameEn:'Khalid Abdullah',  roleAr:'مدير العمليات',         roleEn:'Operations Director', color:'linear-gradient(135deg,#00e5a0,#00b3d9)' },
 ]
 
-function StatCard({ stat }) {
-  const { lang } = useLang()
-  const [hov, setHov] = useState(false)
-  return (
-    <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{background:'var(--card)',border:`1px solid ${hov?'rgba(0,210,255,0.2)':'var(--border-1)'}`,borderRadius:20,padding:'26px 22px',textAlign:'center',transition:'all 0.3s',transform:hov?'translateY(-5px)':'translateY(0)',boxShadow:hov?'0 20px 50px rgba(0,0,0,0.3)':'0 2px 12px var(--shadow)'}}>
-      <div style={{width:48,height:48,borderRadius:14,background:'var(--cyan-dim)',border:'1px solid rgba(0,210,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}><RenderIcon icon={stat.icon} size={22}/></div>
-      <h3 style={{fontFamily:"'Orbitron',sans-serif",fontSize:'1.2rem',fontWeight:900,color:'var(--cyan)',marginBottom:8,textShadow:'0 0 18px rgba(0,210,255,0.4)'}}>{lang==='ar'?stat.titleAr:stat.titleEn}</h3>
-      <p style={{fontSize:'0.82rem',color:'var(--text-2)',lineHeight:1.6}}>{lang==='ar'?stat.descAr:stat.descEn}</p>
-    </div>
-  )
-}
-
-function TeamCard({ member }) {
-  const { lang } = useLang()
-  return (
-    <div style={{background:'var(--card)',border:'1px solid var(--border-1)',borderRadius:20,padding:'28px 22px',textAlign:'center',transition:'all 0.3s'}}
-      onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(0,210,255,0.2)';e.currentTarget.style.transform='translateY(-4px)'}}
-      onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border-1)';e.currentTarget.style.transform='translateY(0)'}}>
-      <div style={{width:72,height:72,borderRadius:'50%',background:member.color,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',fontSize:'1.8rem',fontWeight:900,color:'#fff'}}>
-        {(lang==='ar'?member.nameAr:member.nameEn)[0]}
-      </div>
-      <h3 style={{fontSize:'1rem',fontWeight:800,marginBottom:6}}>{lang==='ar'?member.nameAr:member.nameEn}</h3>
-      <p style={{fontSize:'0.82rem',color:'var(--text-2)'}}>{lang==='ar'?member.roleAr:member.roleEn}</p>
-    </div>
-  )
-}
+// ══ ABOUT — Magazine Split (3-C Full Immersive) ══
 
 export function About({ onNavigate }) {
   const { t, lang } = useLang()
+
+  const teamBadges = {
+    ar: ['خبير FinTech', 'Blockchain Dev', 'Operations Lead'],
+    en: ['FinTech Expert', 'Blockchain Dev', 'Operations Lead'],
+  }
+  const teamColors = [
+    {bg:'linear-gradient(135deg,#00d2ff,#7c5cfc)', badge:'rgba(0,210,255,0.06)', badgeBorder:'rgba(0,210,255,0.14)', badgeColor:'rgba(0,210,255,0.8)'},
+    {bg:'linear-gradient(135deg,#e91e63,#c084fc)',  badge:'rgba(192,132,252,0.06)', badgeBorder:'rgba(192,132,252,0.14)', badgeColor:'rgba(192,132,252,0.8)'},
+    {bg:'linear-gradient(135deg,#f59e0b,#f97316)',  badge:'rgba(245,158,11,0.06)', badgeBorder:'rgba(245,158,11,0.14)', badgeColor:'rgba(245,158,11,0.8)'},
+  ]
+
   return (
     <div style={{position:'relative',zIndex:2}}>
       <div style={{maxWidth:1200,margin:'0 auto',padding:'55px 22px'}}>
-        <div style={{textAlign:'center',marginBottom:48}}>
-          <div style={{display:'inline-block',fontFamily:"'JetBrains Mono',monospace",fontSize:'0.68rem',letterSpacing:3,textTransform:'uppercase',color:'var(--cyan)',marginBottom:11,padding:'3px 11px',border:'1px solid rgba(0,210,255,0.14)',borderRadius:20,background:'rgba(0,210,255,0.04)'}}>{t('about_badge')}</div>
-          <h2 style={{fontSize:'clamp(1.55rem,2.8vw,2.3rem)',fontWeight:900,marginBottom:9,direction:'ltr'}}>{t('about_title')}</h2>
-        </div>
-        {/* الرؤية */}
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:50,alignItems:'center',marginBottom:60}}>
-          <div>
-            <div style={{display:'inline-block',fontFamily:"'JetBrains Mono',monospace",fontSize:'0.68rem',letterSpacing:3,color:'var(--cyan)',marginBottom:14,padding:'3px 11px',border:'1px solid rgba(0,210,255,0.14)',borderRadius:20,background:'rgba(0,210,255,0.04)'}}>{t('about_vision')}</div>
-            <h3 style={{fontSize:'1.4rem',fontWeight:900,marginBottom:14,lineHeight:1.4}}>{t('about_h')}</h3>
-            <p style={{fontSize:'0.9rem',color:'var(--text-2)',lineHeight:1.8,marginBottom:14}}>{t('about_p1')}</p>
-            <p style={{fontSize:'0.9rem',color:'var(--text-2)',lineHeight:1.8,marginBottom:22}}>{t('about_p2')}</p>
-            <button onClick={()=>onNavigate('home')} style={{padding:'13px 30px',background:'linear-gradient(135deg,#00b8d9,#0086b3)',border:'none',borderRadius:12,color:'#fff',fontFamily:"'Tajawal',sans-serif",fontSize:'1rem',fontWeight:800,cursor:'pointer',transition:'all 0.3s',boxShadow:'0 4px 22px rgba(0,159,192,0.22)'}}
-              onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='0 8px 28px rgba(0,210,255,0.35)'}}
-              onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='0 4px 22px rgba(0,159,192,0.22)'}}>
-              {t('about_btn')}
-            </button>
+
+        {/* ══ MEGA HERO ══ */}
+        <div style={{
+          background:'var(--card)',
+          border:'1px solid var(--border-1)',
+          borderRadius:20,padding:'40px 44px',
+          marginBottom:16,position:'relative',overflow:'hidden',
+        }}>
+          <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,transparent,var(--cyan) 30%,var(--purple) 70%,transparent)'}}/>
+          <div style={{position:'absolute',right:-80,top:-80,width:340,height:340,borderRadius:'50%',background:'radial-gradient(circle,rgba(124,92,252,0.06) 0%,transparent 65%)',pointerEvents:'none'}}/>
+          <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:32,alignItems:'center'}}>
+            <div>
+              {/* eyebrow */}
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+                <span style={{width:6,height:6,borderRadius:'50%',background:'var(--cyan)',animation:'blink 1.4s ease-in-out infinite',display:'inline-block'}}/>
+                <span style={{fontSize:'0.68rem',fontFamily:"'JetBrains Mono',monospace",letterSpacing:3,color:'var(--cyan)',textTransform:'uppercase'}}>
+                  NUMBER 1 EXCHANGE · {lang==='ar'?'منذ 2021':'EST. 2021'}
+                </span>
+              </div>
+              <h1 style={{fontSize:'clamp(1.6rem,2.8vw,2.4rem)',fontWeight:900,lineHeight:1.2,marginBottom:14,
+                background:'linear-gradient(135deg,#eef2ff 0%,#a5b4fc 100%)',
+                WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                {lang==='ar'?<>المنصة الأولى<br/>للتبادل الآمن<br/>في المنطقة العربية</>:<>The #1 Secure<br/>Exchange Platform<br/>in the Arab Region</>}
+              </h1>
+              <p style={{fontSize:'0.9rem',color:'var(--text-2)',lineHeight:1.8,maxWidth:520,marginBottom:22}}>
+                {lang==='ar'
+                  ?'تأسست Number 1 عام 2021 بهدف توفير منصة تبادل عملات رقمية موثوقة وسريعة وآمنة لمستخدمي المنطقة العربية. يضم فريقنا أكثر من 50 خبيراً في التقنية المالية والأمن السيبراني.'
+                  :'Founded in 2021 to provide a trusted, fast and secure digital currency exchange platform for Arab region users. Our team includes 50+ experts in FinTech, cybersecurity and UX.'}
+              </p>
+              <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                <button onClick={()=>onNavigate('home')} style={{
+                  display:'inline-flex',alignItems:'center',gap:7,
+                  padding:'11px 24px',background:'linear-gradient(135deg,#009fc0,#006e9e)',
+                  border:'none',borderRadius:10,color:'#fff',fontWeight:800,fontSize:'0.9rem',
+                  fontFamily:"'Tajawal',sans-serif",cursor:'pointer',
+                  boxShadow:'0 4px 18px rgba(0,210,255,0.25)',transition:'transform .2s,box-shadow .2s',
+                }}
+                  onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='0 8px 28px rgba(0,210,255,0.38)'}}
+                  onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='0 4px 18px rgba(0,210,255,0.25)'}}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                  {t('about_btn')}
+                </button>
+              </div>
+            </div>
+            {/* stat blocks */}
+            <div style={{display:'flex',flexDirection:'column',gap:12,minWidth:160}}>
+              {[
+                {val:'52K+', lbl:lang==='ar'?'مستخدم نشط':'Active Users', c:'var(--cyan)', bg:'rgba(0,210,255,0.06)', b:'rgba(0,210,255,0.14)'},
+                {val:'ISO 27001', lbl:lang==='ar'?'شهادة الأمان':'Security Cert', c:'var(--green)', bg:'rgba(0,229,160,0.06)', b:'rgba(0,229,160,0.14)', sm:true},
+                {val:'50+', lbl:lang==='ar'?'دولة مغطّاة':'Countries', c:'#c084fc', bg:'rgba(192,132,252,0.06)', b:'rgba(192,132,252,0.14)'},
+              ].map((s,i)=>(
+                <div key={i} style={{textAlign:'center',padding:'14px 20px',background:s.bg,border:`1px solid ${s.b}`,borderRadius:12}}>
+                  <div style={{fontSize:s.sm?'15px':'28px',fontWeight:900,fontFamily:"'JetBrains Mono',monospace",color:s.c,lineHeight:1,marginBottom:3}}>{s.val}</div>
+                  <div style={{fontSize:'0.62rem',color:'var(--text-3)'}}>{s.lbl}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{background:'var(--card)',border:'1px solid var(--border-1)',borderRadius:20,height:280,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'5rem',position:'relative',overflow:'hidden'}}>
-            <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,var(--cyan),transparent)'}}/>
-            🏆
+        </div>
+
+        {/* ══ VISION ROW ══ */}
+        <div style={{
+          background:'linear-gradient(135deg,rgba(200,168,75,0.06),rgba(245,158,11,0.03))',
+          border:'1px solid rgba(200,168,75,0.14)',
+          borderRadius:16,padding:'26px 32px',marginBottom:14,
+        }}>
+          <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:18}}>
+            <span style={{width:6,height:6,borderRadius:'50%',background:'var(--gold)',animation:'blink 1.4s ease-in-out infinite',display:'inline-block'}}/>
+            <span style={{fontSize:'0.68rem',fontFamily:"'JetBrains Mono',monospace",letterSpacing:3,color:'var(--gold)',textTransform:'uppercase'}}>
+              {lang==='ar'?'رؤيتنا':'OUR VISION'}
+            </span>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:24}}>
+            {[
+              {
+                titleAr:'الأمان أولاً',titleEn:'Security First',
+                descAr:'نستخدم تشفير AES-256 وحماية متعددة الطبقات مع شهادة ISO 27001 لضمان سلامة أموال عملائنا.',
+                descEn:'We use AES-256 encryption and multi-layer protection with ISO 27001 to ensure our clients\' funds are safe.',
+                icon:<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="vis1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#00d2ff"/><stop offset="100%" stopColor="#0066aa"/></linearGradient></defs><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="url(#vis1)" opacity="0.85"/><polyline points="9,12 11,14 15,10" fill="none" stroke="rgba(255,255,255,0.95)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              },
+              {
+                titleAr:'السرعة والموثوقية',titleEn:'Speed & Reliability',
+                descAr:'تتم العمليات خلال ثوانٍ مع تأكيد فوري وإشعارات لحظية وفريق دعم متاح على مدار الساعة.',
+                descEn:'Operations complete in seconds with instant confirmation, real-time notifications and 24/7 support.',
+                icon:<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="vis2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#00d2ff"/><stop offset="100%" stopColor="#0086b3"/></linearGradient></defs><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="url(#vis2)"/></svg>
+              },
+              {
+                titleAr:'التغطية العالمية',titleEn:'Global Coverage',
+                descAr:'خدماتنا متاحة في أكثر من 50 دولة مع دعم كامل للعملات الرقمية والمحافظ الإلكترونية العربية.',
+                descEn:'Our services available in 50+ countries with full support for digital currencies and Arab e-wallets.',
+                icon:<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="vis3" cx="35%" cy="35%"><stop offset="0%" stopColor="rgba(0,210,255,0.5)"/><stop offset="100%" stopColor="rgba(0,100,180,0.25)"/></radialGradient></defs><circle cx="12" cy="12" r="10" fill="url(#vis3)"/><circle cx="12" cy="12" r="10" fill="none" stroke="var(--cyan)" strokeWidth="1.5"/><line x1="2" y1="12" x2="22" y2="12" stroke="rgba(0,210,255,0.6)" strokeWidth="1.2"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" fill="none" stroke="var(--cyan)" strokeWidth="1.5"/></svg>
+              },
+            ].map((v,i)=>(
+              <div key={i}>
+                <div style={{display:'flex',alignItems:'center',gap:9,marginBottom:8}}>
+                  <div style={{width:32,height:32,borderRadius:9,background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    {v.icon}
+                  </div>
+                  <div style={{fontSize:'0.88rem',fontWeight:800}}>{lang==='ar'?v.titleAr:v.titleEn}</div>
+                </div>
+                <p style={{fontSize:'0.8rem',color:'var(--text-2)',lineHeight:1.75}}>{lang==='ar'?v.descAr:v.descEn}</p>
+              </div>
+            ))}
           </div>
         </div>
-        {/* الإحصائيات */}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:18,marginBottom:60}}>
-          {STATS.map((s,i)=><StatCard key={i} stat={s}/>)}
-        </div>
-        {/* الفريق */}
-        <div>
-          <div style={{textAlign:'center',marginBottom:36}}>
-            <div style={{display:'inline-block',fontFamily:"'JetBrains Mono',monospace",fontSize:'0.68rem',letterSpacing:3,color:'var(--cyan)',marginBottom:11,padding:'3px 11px',border:'1px solid rgba(0,210,255,0.14)',borderRadius:20,background:'rgba(0,210,255,0.04)'}}>TEAM</div>
-            <h2 style={{fontSize:'1.6rem',fontWeight:900}}>{t('about_team')}</h2>
+
+        {/* ══ TEAM ══ */}
+        <div style={{background:'var(--card)',border:'1px solid var(--border-1)',borderRadius:16,padding:'24px 28px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:20}}>
+            <span style={{fontSize:'0.68rem',fontFamily:"'JetBrains Mono',monospace",letterSpacing:3,color:'var(--text-3)',textTransform:'uppercase'}}>
+              TEAM · {lang==='ar'?'فريق القيادة':'Leadership Team'}
+            </span>
+            <div style={{flex:1,height:1,background:'var(--border-1)'}}/>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:18}}>
-            {TEAM.map((m,i)=><TeamCard key={i} member={m}/>)}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}}>
+            {TEAM.map((m,i)=>(
+              <div key={i} style={{
+                display:'flex',alignItems:'center',gap:14,
+                padding:'16px 18px',borderRadius:14,
+                border:'1px solid var(--border-1)',
+                background:'rgba(255,255,255,0.02)',
+                transition:'all .2s',cursor:'default',
+              }}
+                onMouseEnter={e=>{e.currentTarget.style.background='rgba(0,210,255,0.04)';e.currentTarget.style.borderColor='rgba(0,210,255,0.14)';e.currentTarget.style.transform='translateY(-3px)'}}
+                onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.02)';e.currentTarget.style.borderColor='var(--border-1)';e.currentTarget.style.transform='translateY(0)'}}>
+                <div style={{
+                  width:52,height:52,borderRadius:14,
+                  background:teamColors[i].bg,
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  fontSize:'1.3rem',fontWeight:900,color:'#fff',flexShrink:0,
+                }}>
+                  {(lang==='ar'?m.nameAr:m.nameEn)[0]}
+                </div>
+                <div>
+                  <div style={{fontSize:'0.9rem',fontWeight:800,marginBottom:2}}>{lang==='ar'?m.nameAr:m.nameEn}</div>
+                  <div style={{fontSize:'0.72rem',color:'var(--text-3)',marginBottom:6}}>{lang==='ar'?m.roleAr:m.roleEn}</div>
+                  <span style={{
+                    fontSize:'0.62rem',fontWeight:700,fontFamily:"'JetBrains Mono',monospace",
+                    padding:'2px 8px',borderRadius:6,
+                    background:teamColors[i].badge,
+                    border:`1px solid ${teamColors[i].badgeBorder}`,
+                    color:teamColors[i].badgeColor,
+                  }}>
+                    {lang==='ar'?teamBadges.ar[i]:teamBadges.en[i]}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
+
       </div>
     </div>
   )
