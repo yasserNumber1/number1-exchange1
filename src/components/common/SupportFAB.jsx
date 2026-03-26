@@ -1,6 +1,6 @@
 // src/components/SupportFAB.jsx
 import { useState, useRef, useEffect } from 'react'
-import useLang from '../context/useLang'
+import useLang from '../../context/useLang'
 
 const BOT_REPLIES = {
   ar: {

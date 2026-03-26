@@ -1,6 +1,6 @@
 // src/components/Ticker.jsx
 import { useState, useEffect } from 'react'
-import { TICKER_DATA } from '../data/currencies'
+import { TICKER_DATA } from '../../data/currencies'
 
 function TickerItem({ item }) {
   return (

@@ -1233,29 +1233,40 @@ function Footer({onNavigate}) {
   )
 }
 
-function Home({onNavigate}) {
+// ✅ جديد — بدون Footer وبدون onNavigate
+function Home() {
   return (
-    <div style={{position:"relative",zIndex:2}}>
-      <section style={{padding:"45px 0 0"}}>
-        <div style={{maxWidth:1200,margin:"0 auto",padding:"0 22px"}}>
-          <HeroSection onAbout={()=>onNavigate("about")}/>
-          <PromoBanner/>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 360px",gap:20,alignItems:"start"}}>
-            <ExchangeForm/>
-            <div style={{display:"flex",flexDirection:"column",gap:16}}>
-              <ReviewsSidebar/>
-              <LiveActivitySidebar/>
+    <div style={{ position: 'relative', zIndex: 2 }}>
+      <section style={{ padding: '45px 0 0' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 22px' }}>
+          <HeroSection />
+          <PromoBanner />
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 360px',
+            gap: 20,
+            alignItems: 'start',
+          }}>
+            <ExchangeForm />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <ReviewsSidebar />
+              <LiveActivitySidebar />
             </div>
           </div>
-          {/* ── Wallet Banner — أسفل عمود التبادل مباشرة ── */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 360px",gap:20,marginTop:0}}>
-            <WalletBanner/>
-            <div/>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 360px',
+            gap: 20,
+            marginTop: 0,
+          }}>
+            <WalletBanner />
+            <div />
           </div>
-          <FeaturesSection/>
+
+          <FeaturesSection />
         </div>
       </section>
-      <Footer onNavigate={onNavigate}/>
     </div>
   )
 }

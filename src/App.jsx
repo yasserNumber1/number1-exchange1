@@ -1,31 +1,55 @@
 // src/App.jsx
 import { useState } from 'react'
-import Ticker     from './components/Ticker'
-import Navbar     from './components/Navbar'
-import AuthModal  from './components/AuthModal'
-import SupportFAB from './components/SupportFAB'
-import Home       from './pages/Home'
-import { Rates }  from './pages/Rates'
+import { Routes, Route } from 'react-router-dom'
+
+import Ticker     from './components/common/Ticker'
+import Navbar     from './components/common/Navbar'
+import AuthModal  from './components/common/AuthModal'
+import SupportFAB from './components/common/SupportFAB'
+
+// ✅ لا Footer هنا — كل صفحة تدير Footer خاص بها
+import Home    from './pages/Home'
+import Rates   from './pages/Rates'
 import { News, Support, About } from './pages/OtherPages'
 
-function App() {
-  const [currentPage, setCurrentPage] = useState('home')
-  const [authOpen, setAuthOpen]       = useState(false)
-  const [authTab, setAuthTab]         = useState('login')
+import Terms   from './pages/legal/Terms'
+import Privacy from './pages/legal/Privacy'
+import AML     from './pages/legal/AML'
+import Cookies from './pages/legal/Cookies'
 
-  const navigate = page => { setCurrentPage(page); window.scrollTo({top:0,behavior:'smooth'}) }
-  const openAuth = tab  => { setAuthTab(tab); setAuthOpen(true) }
+function App() {
+  const [authOpen, setAuthOpen] = useState(false)
+  const [authTab,  setAuthTab]  = useState('login')
+
+  const openAuth = (tab = 'login') => {
+    setAuthTab(tab)
+    setAuthOpen(true)
+  }
 
   return (
-    <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Ticker />
-      <Navbar currentPage={currentPage} onNavigate={navigate} onOpenAuth={openAuth} />
-      {currentPage==='home'    && <Home    onNavigate={navigate} onOpenAuth={openAuth} />}
-      {currentPage==='rates'   && <Rates   />}
-      {currentPage==='news'    && <News    />}
-      {currentPage==='support' && <Support />}
-      {currentPage==='about'   && <About   onNavigate={navigate} />}
-      <AuthModal  isOpen={authOpen} initialTab={authTab} onClose={()=>setAuthOpen(false)} />
+      <Navbar onOpenAuth={openAuth} />
+
+      <Routes>
+        <Route path="/"        element={<Home />} />
+        <Route path="/rates"   element={<Rates />} />
+        <Route path="/news"    element={<News />} />
+        <Route path="/support" element={<Support />} />
+        <Route path="/about"   element={<About />} />
+
+        <Route path="/terms"   element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/aml"     element={<AML />} />
+        <Route path="/cookies" element={<Cookies />} />
+      </Routes>
+
+      <AuthModal
+        isOpen={authOpen}
+        initialTab={authTab}
+        onClose={() => setAuthOpen(false)}
+      />
+
       <SupportFAB />
     </div>
   )

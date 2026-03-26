@@ -1,7 +1,7 @@
 // src/components/Navbar.jsx
 import { useState, useEffect } from 'react'
-import useTheme from '../context/useTheme'
-import useLang from '../context/useLang'
+import useTheme from '../../context/useTheme'
+import useLang from '../../context/useLang'
 
 const NAV_KEYS = [
   { id:'home',    key:'nav_home'    },

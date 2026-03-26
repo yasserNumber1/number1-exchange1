@@ -1,6 +1,6 @@
 // src/components/ChatBot.jsx
 import { useState, useRef, useEffect } from 'react'
-import { ROBOT_IMG } from './RobotImg'
+import { ROBOT_IMG } from '../RobotImg'
 
 const WHATSAPP_NUMBER = '9647XXXXXXXXX'
 const TELEGRAM_USER   = 'Number1Exchange'
