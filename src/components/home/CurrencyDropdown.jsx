@@ -6,15 +6,18 @@ function CurrencyDropdown({ options, selected, onSelect }) {
   const ref = useRef(null)
 
   useEffect(() => {
-    // ✅ نستمع على click على document لإغلاق القائمة
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) {
+    if (!open) return undefined
+
+    // اغلاق القائمة فقط عند الضغط خارج الصندوق
+    const handleOutsideClick = (event) => {
+      if (!ref.current?.contains(event.target)) {
         setOpen(false)
       }
     }
-    document.addEventListener('click', handler)
-    return () => document.removeEventListener('click', handler)
-  }, [])
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [open])
 
   const CoinIcon = ({ method, size = 28 }) => (
     <div style={{ width: size, height: size, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -24,25 +27,15 @@ function CurrencyDropdown({ options, selected, onSelect }) {
 
   return (
     <div ref={ref} style={{
-  position: "absolute",
-  top: "calc(100% + 6px)",
-  right: 0,
-  left: "unset",           // ← احذف left: 0
-  minWidth: 220,           // ← عرض ثابت بدلاً من left+right
-  background: "var(--drop-bg,#0d1520)",
-  border: "1px solid var(--border-2)",
-  borderRadius: 12,
-  boxShadow: "0 16px 48px rgba(0,0,0,0.75)",
-  zIndex: 9999,            // ← هذا مهم جداً
-  overflow: "hidden",
-}}>
-
-      {/* ✅ الزر يستخدم onMouseDown بدل onClick */}
-      {/* onMouseDown يشتغل قبل أي click event على document */}
+      position: 'relative',
+      minWidth: 155,
+      flexShrink: 0,
+    }}>
       <div
-        onMouseDown={(e) => {
-          e.preventDefault() // ✅ يمنع الـ click event من الانطلاق بعده
-          setOpen(prev => !prev)
+        onClick={(event) => {
+          // منع أي مستمعات خارجية من التدخل مع toggle
+          event.stopPropagation()
+          setOpen((prev) => !prev)
         }}
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
@@ -70,16 +63,16 @@ function CurrencyDropdown({ options, selected, onSelect }) {
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 6px)', right: 0,
-          minWidth: 170, background: 'var(--drop-bg, #0d1117)',
+          minWidth: 220, background: 'var(--drop-bg, #0d1117)',
           border: '1px solid var(--border-2)', borderRadius: 12,
           boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
-          zIndex: 500, overflow: 'hidden', padding: '4px',
+          zIndex: 9999, overflow: 'hidden', padding: '4px',
         }}>
           {options.map(c => (
             <div
               key={c.id}
-              onMouseDown={(e) => {
-                e.preventDefault() // ✅ نفس الحل على كل عنصر
+              onClick={(event) => {
+                event.stopPropagation()
                 onSelect(c)
                 setOpen(false)
               }}

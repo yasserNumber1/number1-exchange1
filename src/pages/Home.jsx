@@ -1,5 +1,6 @@
 // src/pages/Home.jsx
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo, useCallback } from "react"
+import { useNavigate } from "react-router-dom"
 import useLang from "../context/useLang"
 import { SEND_METHODS, RECEIVE_METHODS, EXCHANGE_RATES, TRANSFER_INFO } from "../data/currencies"
 
@@ -16,16 +17,6 @@ function CurrencyIcon({ method, size = 26 }) {
       )}
     </div>
   )
-}
-
-// ══ Ripple ══
-function ripple(e) {
-  const btn=e.currentTarget; const rect=btn.getBoundingClientRect()
-  const size=Math.max(rect.width,rect.height)*1.5
-  const el=document.createElement("span"); el.className="ripple"
-  el.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`
-  if(getComputedStyle(btn).position==="static") btn.style.position="relative"
-  btn.appendChild(el); setTimeout(()=>el.remove(),600)
 }
 
 // ══ قاعدة التعليقات ══
@@ -108,13 +99,27 @@ function LiveActivitySidebar() {
   const [ops,setOps]=useState(()=>seedOperations())
   const [newId,setNewId]=useState(null)
   const [,setTick]=useState(0)
+  const liveTimerRef=useRef(null)
+  const newIdTimerRef=useRef(null)
   useEffect(()=>{const t=setInterval(()=>setTick(p=>p+1),30000);return()=>clearInterval(t)},[])
   useEffect(()=>{
     const schedule=()=>{
       const delay=(Math.random()*5+3)*60*1000
-      return setTimeout(()=>{const op=generateOp();op.ts=Date.now();setOps(prev=>[op,...prev.slice(0,4)]);setNewId(op.id);setTimeout(()=>setNewId(null),2000);timer=schedule()},delay)
+      liveTimerRef.current=window.setTimeout(()=>{
+        const op=generateOp()
+        op.ts=Date.now()
+        setOps(prev=>[op,...prev.slice(0,4)])
+        setNewId(op.id)
+        if(newIdTimerRef.current) window.clearTimeout(newIdTimerRef.current)
+        newIdTimerRef.current=window.setTimeout(()=>setNewId(null),2000)
+        schedule()
+      },delay)
     }
-    let timer=schedule(); return()=>clearTimeout(timer)
+    schedule()
+    return()=>{
+      if(liveTimerRef.current) window.clearTimeout(liveTimerRef.current)
+      if(newIdTimerRef.current) window.clearTimeout(newIdTimerRef.current)
+    }
   },[])
   return (
     <div style={{background:"var(--card)",border:"1px solid var(--border-1)",borderRadius:20,overflow:"hidden"}}>
@@ -150,8 +155,8 @@ function ReviewsSidebar() {
         <h3 style={{fontSize:"0.92rem",fontWeight:700,flex:1}}>{t("reviews_title")}</h3>
         <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:"0.7rem",color:"var(--green)",fontWeight:700}}>4.98/5</span>
       </div>
-      {reviews.map((r,i)=>(
-        <div key={i} style={{padding:"13px 18px",borderBottom:i<reviews.length-1?"1px solid rgba(255,255,255,0.04)":"none"}}>
+      {reviews.map((r,ri)=>(
+        <div key={ri} style={{padding:"13px 18px",borderBottom:ri<reviews.length-1?"1px solid rgba(255,255,255,0.04)":"none"}}>
           <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:5}}>
             <div style={{width:31,height:31,borderRadius:9,background:r.color,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"0.8rem",flexShrink:0,color:"#fff"}}>{(lang==="ar"?r.nameAr:r.nameEn)[0]}</div>
             <span style={{fontSize:"0.83rem",fontWeight:700}}>{lang==="ar"?r.nameAr:r.nameEn}</span>
@@ -160,8 +165,8 @@ function ReviewsSidebar() {
           <div style={{fontSize:"0.78rem",color:"var(--text-2)",paddingRight:40}}>{lang==="ar"?r.textAr:r.textEn}</div>
           <div style={{fontSize:"0.7rem",paddingRight:40,marginTop:3}}>
           <div style={{display:"flex",gap:2,marginTop:3}}>
-            {[0,1,2,3,4].map(i=>(
-              <svg key={i} width="11" height="11" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id={`sr${i}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffd700"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill={`url(#sr${i})`}/></svg>
+            {[0,1,2,3,4].map(si=>(
+              <svg key={si} width="11" height="11" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id={`sr-${ri}-${si}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ffd700"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill={`url(#sr-${ri}-${si})`}/></svg>
             ))}
           </div>
           </div>
@@ -413,10 +418,14 @@ function CurrencyInlineDropdown({options, selected, onSelect, open, onClose}) {
   const {lang,t}=useLang()
   const ref=useRef(null)
   useEffect(()=>{
-    if(!open) return
-    const fn=e=>{ if(ref.current&&!ref.current.contains(e.target)) onClose() }
-    document.addEventListener("mousedown",fn)
-    return()=>document.removeEventListener("mousedown",fn)
+    if(!open) return undefined
+    const fn=e=>{
+      const node=ref.current
+      if(!node||node.contains(e.target)) return
+      onClose()
+    }
+    document.addEventListener("click",fn)
+    return()=>document.removeEventListener("click",fn)
   },[open,onClose])
   if(!open) return null
   return (
@@ -729,8 +738,15 @@ function WalletBannerV3() {
       onMouseEnter={()=>setHov(true)}
       onMouseLeave={()=>setHov(false)}
       style={{
-        display:"flex",alignItems:"center",gap:24,
-        padding:"16px 26px",
+        display:"flex",alignItems:"center",gap:32,
+        paddingTop:7,paddingBottom:7,paddingLeft:26,paddingRight:26,
+        width:"789px",
+        height:"181px",
+        maxWidth:"100%",
+        textAlign:"right",
+        justifyContent:"center",
+        verticalAlign:"middle",
+        boxSizing:"border-box",
         borderRadius:"0 0 14px 14px",
         background:"rgba(255,255,255,0.018)",
         border:"1px solid rgba(255,255,255,0.06)",
@@ -884,6 +900,7 @@ function ExchangeForm() {
   const [orderData,setOrderData]=useState(null)
   const [openPicker,setOpenPicker]=useState(null) // "send" | "receive"
   const [swapping,setSwapping]=useState(false)
+  const closePicker=useCallback(()=>setOpenPicker(null),[])
 
   const isEgp=sendMethod.type==="egp"
   const isUSDT=sendMethod.id==="usdt-trc"
@@ -1032,7 +1049,13 @@ function ExchangeForm() {
             <div style={{display:"flex",gap:10,alignItems:"stretch"}}>
               {/* Currency selector */}
               <div style={{position:"relative"}}>
-                <div className="ex-currency-box" onClick={()=>setOpenPicker(openPicker==="send"?null:"send")}>
+                <div
+                  className="ex-currency-box"
+                  onClick={(e)=>{
+                    e.stopPropagation()
+                    setOpenPicker(openPicker==="send"?null:"send")
+                  }}
+                >
                   <div style={{width:32,height:32,borderRadius:"50%",flexShrink:0,overflow:"hidden",transition:"transform .2s"}}>
                     <CurrencyIcon method={sendMethod} size={32}/>
                   </div>
@@ -1042,7 +1065,7 @@ function ExchangeForm() {
                   </div>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-3)" strokeWidth="1.8" strokeLinecap="round" style={{transition:"transform .2s",transform:openPicker==="send"?"rotate(180deg)":"none"}}><polyline points="2,4 7,9 12,4"/></svg>
                 </div>
-                <CurrencyInlineDropdown options={SEND_METHODS} selected={sendMethod} onSelect={handleSendMethodChange} open={openPicker==="send"} onClose={()=>setOpenPicker(null)}/>
+                <CurrencyInlineDropdown options={SEND_METHODS} selected={sendMethod} onSelect={handleSendMethodChange} open={openPicker==="send"} onClose={closePicker}/>
               </div>
               {/* Amount */}
               <div style={{flex:1,position:"relative"}}>
@@ -1112,7 +1135,13 @@ function ExchangeForm() {
 
             <div style={{display:"flex",gap:10,alignItems:"stretch"}}>
               <div className="ex-currency-box-wrapper">
-  <div className="ex-currency-box" onClick={()=>setOpenPicker(openPicker==="receive"?null:"receive")}>
+  <div
+    className="ex-currency-box"
+    onClick={(e)=>{
+      e.stopPropagation()
+      setOpenPicker(openPicker==="receive"?null:"receive")
+    }}
+  >
                   <div style={{width:32,height:32,borderRadius:"50%",flexShrink:0,overflow:"hidden"}}>
                     <CurrencyIcon method={receiveMethod} size={32}/>
                   </div>
@@ -1122,7 +1151,7 @@ function ExchangeForm() {
                   </div>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-3)" strokeWidth="1.8" strokeLinecap="round" style={{transition:"transform .2s",transform:openPicker==="receive"?"rotate(180deg)":"none"}}><polyline points="2,4 7,9 12,4"/></svg>
                 </div>
-                <CurrencyInlineDropdown options={RECEIVE_METHODS} selected={receiveMethod} onSelect={setReceiveMethod} open={openPicker==="receive"} onClose={()=>setOpenPicker(null)}/>
+                <CurrencyInlineDropdown options={RECEIVE_METHODS} selected={receiveMethod} onSelect={setReceiveMethod} open={openPicker==="receive"} onClose={closePicker}/>
               </div>
               <div style={{flex:1,position:"relative"}}>
                 <input className="ex-amount-input ex-readonly" type="number" readOnly value={receiveAmount} placeholder="0.00"/>
@@ -1158,7 +1187,7 @@ function FeatureCard({feature,lang}) {
   const [hov,setHov]=useState(false)
   return (
     <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{background:"var(--card)",border:`1px solid ${hov?"rgba(0,210,255,0.2)":"var(--border-1)"}`,borderRadius:20,padding:"26px 22px",textAlign:"center",transition:"all 0.3s",transform:hov?"translateY(-5px)":"translateY(0)",boxShadow:hov?"0 20px 50px rgba(0,0,0,0.3)":"0 2px 12px var(--shadow)",position:"relative",overflow:"hidden"}}>
+      style={{background:"var(--card)",border:`1px solid ${hov?"rgba(0,210,255,0.2)":"var(--border-1)"}`,borderRadius:20,padding:"26px 22px",textAlign:"center",transition:"all 0.3s",transform:hov?"translateY(-5px)":"translateY(0)",boxShadow:hov?"0 20px 50px rgba(0,0,0,0.3)":"0 2px 12px var(--shadow)",position:"relative",overflow:"hidden",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center"}}>
       <div style={{position:"absolute",top:0,left:"25%",width:"50%",height:1,background:"linear-gradient(90deg,transparent,var(--cyan),transparent)",opacity:hov?1:0,transition:"opacity 0.3s"}}/>
       <div style={{width:62,height:62,borderRadius:18,background:"var(--cyan-dim)",border:"1px solid rgba(0,210,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 17px",transition:"transform 0.3s",transform:hov?"scale(1.1) rotate(4deg)":"none"}}>{feature.icon}</div>
       <h3 style={{fontSize:"0.92rem",fontWeight:800,marginBottom:8}}>{lang==="ar"?feature.titleAr:feature.titleEn}</h3>
@@ -1178,12 +1207,31 @@ function FeaturesSection() {
     {icon:<svg width="26" height="26" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="fch" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#00d2ff"/><stop offset="100%" stopColor="#004466"/></linearGradient></defs><rect x="4" y="14" width="4" height="7" rx="1" fill="url(#fch)" opacity="0.7"/><rect x="10" y="8" width="4" height="13" rx="1" fill="url(#fch)" opacity="0.85"/><rect x="16" y="4" width="4" height="17" rx="1" fill="url(#fch)"/><line x1="2" y1="21" x2="22" y2="21" stroke="var(--cyan)" strokeWidth="1.5" strokeLinecap="round"/></svg>,titleAr:"أزواج متنوعة",titleEn:"Diverse Pairs",descAr:"أكثر من 50 زوج تبادل متاح بين العملات الرقمية والمحافظ الإلكترونية",descEn:"50+ trading pairs available between digital currencies and e-wallets"},
   ]
   return (
-    <div style={{marginTop:60}}>
-      <div style={{textAlign:"center",marginBottom:48}}>
+    <div style={{
+      marginTop: 60,
+      position: "relative",
+      top: -14, // رفع القسم قليلا للأعلى
+      display: "flex",
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "flex-end",
+      alignItems: "flex-start",
+      opacity: 1,
+      borderRadius: 0,
+      background: "unset",
+      backgroundImage: "none",
+      backgroundColor: "unset",
+      backgroundClip: "unset",
+      WebkitBackgroundClip: "unset",
+      color: "rgba(232, 244, 255, 1)",
+      textAlign: "right",
+      verticalAlign: "middle",
+    }}>
+      <div style={{textAlign:"center",marginBottom:48,width:"100%"}}>
         <div style={{display:"inline-block",fontFamily:"'JetBrains Mono',monospace",fontSize:"0.68rem",letterSpacing:3,textTransform:"uppercase",color:"var(--cyan)",marginBottom:11,padding:"3px 11px",border:"1px solid rgba(0,210,255,0.14)",borderRadius:20,background:"rgba(0,210,255,0.04)"}}>{t("features_badge")}</div>
         <h2 style={{fontSize:"clamp(1.55rem,2.8vw,2.3rem)",fontWeight:900,marginBottom:9,direction:lang==="ar"?"rtl":"ltr"}}>{t("features_title")}</h2>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:18}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:18,width:"100%",background:"unset",backgroundColor:"unset",backgroundImage:"none"}}>
         {FEATURES.map((f,i)=><FeatureCard key={i} feature={f} lang={lang}/>)}
       </div>
     </div>
@@ -1235,32 +1283,37 @@ function Footer({onNavigate}) {
 
 // ✅ جديد — بدون Footer وبدون onNavigate
 function Home() {
+  const navigate=useNavigate()
   return (
     <div style={{ position: 'relative', zIndex: 2 }}>
       <section style={{ padding: '45px 0 0' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 22px' }}>
-          <HeroSection />
+          <HeroSection onAbout={()=>navigate("/about")}/>
           <PromoBanner />
           <div style={{
-  display: 'grid',
-  gridTemplateColumns: '1fr 360px',
-  gap: 20,
-  alignItems: 'start',
-}}>
-  {/* العمود الأيسر — ExchangeForm + WalletBanner متلاصقين */}
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-    <ExchangeForm />
-    <WalletBanner />
-  </div>
+            display: 'grid',
+            gridTemplateColumns: '1fr 360px',
+            gap: 20,
+            alignItems: 'start',
+          }}>
+            {/* العمود الأيسر — ExchangeForm */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              <ExchangeForm />
+            </div>
 
-  {/* العمود الأيمن — Sidebar */}
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-    <ReviewsSidebar />
-    <LiveActivitySidebar />
-  </div>
-</div>
+            {/* العمود الأيمن — Sidebar */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <ReviewsSidebar />
+              <LiveActivitySidebar />
+            </div>
 
-<FeaturesSection />
+            {/* المحفظة: طفل ثالث داخل نفس شبكة الصف — أسفل ex-inner-grid والعمودين */}
+            <div style={{ gridColumn: '1 / -1', width: '100%', display: 'flex', justifyContent: 'center' }}>
+              <WalletBanner />
+            </div>
+          </div>
+
+          <FeaturesSection />
         </div>
       </section>
     </div>
