@@ -1,176 +1,166 @@
 // src/components/home/ExchangeForm.jsx
 // ═══════════════════════════════════════════════════════
-// نموذج التبادل الذكي
-// المنطق الصحيح للحقول:
-//
-// يرسل EGP (فودافون/إنستا/اتصالات):
-//   ← يطلب: رقم هاتفه الذي سيحول منه
-//   ← يطلب: معرف محفظة الاستلام
-//
-// يرسل USDT:
-//   ← لا يطلب عنوان المحفظة المرسلة (غير مطلوب)
-//   ← يطلب فقط: معرف الاستلام (MoneyGo أو USDT)
-//
-// يرسل MoneyGo:
-//   ← لا يطلب عنوان المحفظة المرسلة (غير مطلوب)
-//   ← يطلب فقط: عنوان USDT للاستلام
+// نموذج التبادل — متصل بالـ API
+// يعرض فقط الوسائل التي فعّلها الأدمن
 // ═══════════════════════════════════════════════════════
 import { useState, useEffect, useMemo } from 'react'
-import CurrencyDropdown from './CurrencyDropdown'
 import ConfirmModal from './ConfirmModal'
-import { SEND_METHODS, RECEIVE_METHODS, EXCHANGE_RATES } from './exchangeData'
+import { paymentAPI } from '../../services/api'
 
-function ExchangeForm() {
-  const [sendMethod, setSendMethod]       = useState(SEND_METHODS[0])
-  const [receiveMethod, setReceiveMethod] = useState(RECEIVE_METHODS[0])
-  const [sendAmount, setSendAmount]       = useState('100')
-  const [rateFactor, setRateFactor]       = useState(1)
-  const [rateDir, setRateDir]             = useState(null)
-
-  // ── بيانات المستخدم ──
-  const [userPhone, setUserPhone]         = useState('') // رقم هاتف المرسل (EGP فقط)
-  const [recipientId, setRecipientId]     = useState('') // معرف/عنوان الاستلام (دائماً)
-  const [email, setEmail]                 = useState('')
-  const [amlChecked, setAmlChecked]       = useState(false)
-  const [tosChecked, setTosChecked]       = useState(false)
-
-  // ── حالة النافذة ──
-  const [modalOpen, setModalOpen]         = useState(false)
-  const [orderData, setOrderData]         = useState(null)
-
-  // ── المنطق: هل وسيلة الإرسال مصرية؟ ──
-  const isEgp    = sendMethod.type === 'egp'
-  const isUSDT   = sendMethod.id === 'usdt-trc'
-  const isMoneyGo = sendMethod.id === 'mgo-send'
-
-  // ── السعر الأساسي من جدول الأسعار ──
-  const baseRate = useMemo(() => {
-    const key = `${sendMethod.id}_${receiveMethod.id}`
-    return EXCHANGE_RATES[key] || 1
-  }, [sendMethod, receiveMethod])
-
-  // ── السعر الكلي = الأساسي × عامل التذبذب ──
-  const currentRate = baseRate * rateFactor
-
-  // ── المبلغ المستلم يُحسب مباشرة بدون state ──
-  const receiveAmount = useMemo(() => {
-    const amt = parseFloat(sendAmount) || 0
-    return amt > 0 ? (amt * currentRate).toFixed(4) : ''
-  }, [sendAmount, currentRate])
-
-  // ── تذبذب السعر كل 3.5 ثانية ──
-useEffect(() => {
-  const timer = setInterval(() => {
-    const change = (Math.random() - 0.5) * 0.002
-    const dir = change >= 0 ? 'up' : 'dn'
-
-    // نحدث الاثنين في نفس الـ tick بدون تداخل
-    setRateFactor(prev =>
-      Math.max(0.998, Math.min(1.002, prev + change))
-    )
-    setRateDir(dir)
-    setTimeout(() => setRateDir(null), 800)
-  }, 3500)
-  return () => clearInterval(timer)
-}, [])
-// ── عند تغيير وسيلة الإرسال — نعيد تعيين الحقول مباشرة ──
-const handleSendMethodChange = (newMethod) => {
-  setSendMethod(newMethod)
-  setUserPhone('')
-  setRecipientId('')
+// ── Fallback إذا فشل الـ API ─────────────────────────
+const FALLBACK = {
+  cryptos: [],
+  wallets: [],
 }
 
-  const rateColor = rateDir === 'up' ? 'var(--green)' : rateDir === 'dn' ? 'var(--red)' : 'var(--gold)'
+function ExchangeForm() {
+  // ── بيانات من الـ API ──────────────────────────────
+  const [methods,   setMethods]   = useState(null)   // { cryptos, wallets }
+  const [apiLoading, setApiLoading] = useState(true)
+  const [apiError,   setApiError]   = useState(false)
 
-  // ── نص label و placeholder لحقل الاستلام ──
-  const recipientLabel = useMemo(() => {
-    if (receiveMethod.id === 'mgo-recv') return 'معرف محفظة MoneyGo للاستلام'
-    return 'عنوان محفظة USDT TRC20 للاستلام'
-  }, [receiveMethod])
+  // ── اختيار المستخدم ───────────────────────────────
+  const [sendType,   setSendType]   = useState('wallet') // 'wallet' | 'crypto'
+  const [sendItem,   setSendItem]   = useState(null)     // الوسيلة المختارة للإرسال
+  const [recvType,   setRecvType]   = useState('crypto') // 'crypto' | 'wallet'
+  const [recvItem,   setRecvItem]   = useState(null)     // الوسيلة المختارة للاستلام
 
-  const recipientPlaceholder = useMemo(() => {
-    if (receiveMethod.id === 'mgo-recv') return 'MGO-XXXXXXXXX'
-    return 'T... — عنوان TRC20'
-  }, [receiveMethod])
+  // ── المبالغ ────────────────────────────────────────
+  const [sendAmount, setSendAmount] = useState('100')
 
-  // ── التحقق من البيانات وفتح Modal ──
+  // ── بيانات المستخدم ────────────────────────────────
+  const [email,       setEmail]       = useState('')
+  const [userPhone,   setUserPhone]   = useState('')   // رقم المرسل (محافظ فقط)
+  const [recipientId, setRecipientId] = useState('')   // عنوان/معرف الاستلام
+  const [amlChecked,  setAmlChecked]  = useState(false)
+  const [tosChecked,  setTosChecked]  = useState(false)
+
+  // ── Modal ──────────────────────────────────────────
+  const [modalOpen, setModalOpen] = useState(false)
+  const [orderData, setOrderData] = useState(null)
+
+  // ── Rate Animation ─────────────────────────────────
+  const [rateFactor, setRateFactor] = useState(1)
+  const [rateDir,    setRateDir]    = useState(null)
+
+  // ══════════════════════════════════════════════════
+  // جلب وسائل الدفع من الـ API
+  // ══════════════════════════════════════════════════
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const { data } = await paymentAPI.getMethods()
+        setMethods(data)
+
+        // اختيار أول وسيلة تلقائياً
+        if (data.wallets?.length > 0) setSendItem(data.wallets[0])
+        else if (data.cryptos?.length > 0) { setSendType('crypto'); setSendItem(data.cryptos[0]) }
+
+        if (data.cryptos?.length > 0) setRecvItem(data.cryptos[0])
+        else if (data.wallets?.length > 0) { setRecvType('wallet'); setRecvItem(data.wallets[0]) }
+
+      } catch {
+        setApiError(true)
+        setMethods(FALLBACK)
+      } finally {
+        setApiLoading(false)
+      }
+    }
+    fetch()
+  }, [])
+
+  // ── Rate fluctuation ───────────────────────────────
+  useEffect(() => {
+    const t = setInterval(() => {
+      const change = (Math.random() - 0.5) * 0.002
+      setRateFactor(p => Math.max(0.998, Math.min(1.002, p + change)))
+      setRateDir(change >= 0 ? 'up' : 'dn')
+      setTimeout(() => setRateDir(null), 800)
+    }, 3500)
+    return () => clearInterval(t)
+  }, [])
+
+  // ── السعر الحالي ───────────────────────────────────
+  // بسيط: نستخدم سعر وهمي حتى تربطه بالـ rates API
+  const baseRate    = 50  // مثال: 1 USDT = 50 EGP
+  const currentRate = baseRate * rateFactor
+  const rateColor   = rateDir === 'up' ? 'var(--green)' : rateDir === 'dn' ? 'var(--red)' : 'var(--gold)'
+
+  const receiveAmount = useMemo(() => {
+    const amt = parseFloat(sendAmount) || 0
+    return amt > 0 ? (amt * currentRate).toFixed(2) : ''
+  }, [sendAmount, currentRate])
+
+  // ── هل وسيلة الإرسال محفظة إلكترونية ─────────────
+  const sendIsWallet = sendType === 'wallet'
+  const sendIsCrypto = sendType === 'crypto'
+
+  // ══════════════════════════════════════════════════
+  // Submit
+  // ══════════════════════════════════════════════════
   const handleSubmit = () => {
-    if (!email) {
-      alert('يرجى إدخال البريد الإلكتروني')
-      return
-    }
-    // رقم الهاتف مطلوب فقط للوسائل المصرية
-    if (isEgp && !userPhone) {
-      alert(`يرجى إدخال رقم هاتفك على ${sendMethod.name}`)
-      return
-    }
-    // معرف الاستلام مطلوب دائماً
-    if (!recipientId) {
-      alert(`يرجى إدخال ${recipientLabel}`)
-      return
-    }
-    if (!amlChecked || !tosChecked) {
-      alert('يرجى الموافقة على الشروط')
-      return
-    }
-    if (parseFloat(sendAmount) < 10) {
-      alert('الحد الأدنى 10 وحدة')
-      return
-    }
+    if (!email)                         return alert('يرجى إدخال البريد الإلكتروني')
+    if (sendIsWallet && !userPhone)     return alert(`يرجى إدخال رقم هاتفك على ${sendItem?.name}`)
+    if (!recipientId)                   return alert('يرجى إدخال بيانات الاستلام')
+    if (!amlChecked || !tosChecked)     return alert('يرجى الموافقة على الشروط')
+    if (parseFloat(sendAmount) < 10)   return alert('الحد الأدنى 10 وحدة')
 
-    setOrderData({ sendMethod, receiveMethod, sendAmount, receiveAmount })
+    setOrderData({
+      sendItem, recvItem, sendType, recvType,
+      sendAmount, receiveAmount,
+      email, userPhone, recipientId,
+    })
     setModalOpen(true)
   }
 
-  // ── أنماط CSS المشتركة ──
-  const inputStyle = {
-    width: '100%', padding: '10px 13px',
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid var(--border-1)',
-    borderRadius: 9, color: 'var(--text-1)',
-    fontFamily: "'Tajawal',sans-serif",
-    fontSize: '0.88rem', outline: 'none',
-    textAlign: 'right',
-    transition: 'border-color 0.22s, box-shadow 0.22s',
-  }
+  // ── Loading State ──────────────────────────────────
+  if (apiLoading) return (
+    <div style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 320 }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={spinner} />
+        <div style={{ color: 'var(--text-3)', fontSize: '0.8rem', marginTop: 12, fontFamily: "'JetBrains Mono',monospace" }}>
+          جاري تحميل وسائل الدفع...
+        </div>
+      </div>
+    </div>
+  )
 
-  const labelStyle = {
-    display: 'block', fontSize: '0.72rem',
-    color: 'var(--text-3)',
-    fontFamily: "'JetBrains Mono',monospace",
-    letterSpacing: 0.5, marginBottom: 5,
-  }
-
-  const onFocus = (e) => {
-    e.target.style.borderColor = 'var(--border-2)'
-    e.target.style.boxShadow = '0 0 0 3px rgba(0,210,255,0.05)'
-  }
-  const onBlur = (e) => {
-    e.target.style.borderColor = 'var(--border-1)'
-    e.target.style.boxShadow = 'none'
-  }
+  // ── No Methods ──────────────────────────────────────
+  const hasAnything = (methods?.wallets?.length || 0) + (methods?.cryptos?.length || 0) > 0
+  if (!hasAnything) return (
+    <div style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 260, flexDirection: 'column', gap: 12 }}>
+      <span style={{ fontSize: 32 }}>🔧</span>
+      <div style={{ color: 'var(--text-3)', fontSize: '0.85rem', textAlign: 'center' }}>
+        المنصة تحت الإعداد — يرجى المراجعة لاحقاً
+      </div>
+    </div>
+  )
 
   return (
     <>
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border-1)', borderRadius: 20, backdropFilter: 'blur(16px)' }}>
+      <div style={card}>
 
-        {/* ── رأس البطاقة ── */}
-        <div style={{ padding: '17px 22px', borderBottom: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', gap: 11 }}>
-          <div style={{ width: 33, height: 33, borderRadius: 9, background: 'var(--cyan-dim)', border: '1px solid rgba(0,210,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
-            
-          </div>
+        {/* ── رأس البطاقة ───────────────────────── */}
+        <div style={cardHeader}>
+          <div style={cardHeaderIcon}>💱</div>
           <h3 style={{ fontSize: '0.92rem', fontWeight: 700, flex: 1 }}>تبادل العملات</h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.66rem', color: 'var(--green)', background: 'rgba(0,229,160,0.07)', border: '1px solid rgba(0,229,160,0.14)', padding: '2px 8px', borderRadius: 20 }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--green)', animation: 'blink 1.5s ease-in-out infinite', display: 'inline-block' }} />
-            LIVE
-          </div>
+          <LiveBadge />
         </div>
 
         <div style={{ padding: 22 }}>
 
-          {/* ── حقل الإرسال ── */}
-          <div style={{ background: 'rgba(0,210,255,0.03)', border: '1px solid var(--border-1)', borderRadius: 14, padding: 15, marginBottom: 4 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 10 }}>
+          {/* ── خطأ الـ API ─────────────────────── */}
+          {apiError && (
+            <div style={errorBanner}>
+              ⚠ تعذّر الاتصال — يُعرض الوضع المؤقت
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════
+              قسم الإرسال
+          ══════════════════════════════════════ */}
+          <div style={amountBox}>
+            <div style={boxLabel}>
               <span>أنت ترسل · SEND</span>
               <span>MIN: 10</span>
             </div>
@@ -180,62 +170,38 @@ const handleSendMethodChange = (newMethod) => {
                 value={sendAmount}
                 onChange={e => setSendAmount(e.target.value)}
                 placeholder="0.00"
-                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontFamily: "'JetBrains Mono',monospace", fontSize: '1.55rem', fontWeight: 700, color: 'var(--text-1)', direction: 'ltr', minWidth: 0 }}
+                style={amountInput}
               />
-<CurrencyDropdown options={SEND_METHODS} selected={sendMethod} onSelect={handleSendMethodChange} />            </div>
-          </div>
-
-          {/* ── سهم التبادل (مزدوج - اضغط لعكس العملية) ── */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px 0' }}>
-            <div
-              onClick={() => {
-                // عكس وسيلتي الإرسال والاستلام
-                const newSend = SEND_METHODS.find(m => m.id === receiveMethod.id) || SEND_METHODS[0]
-                const newReceive = RECEIVE_METHODS.find(m => m.id === sendMethod.id) || RECEIVE_METHODS[0]
-                handleSendMethodChange(newSend)
-                setReceiveMethod(newReceive)
-              }}
-              title="عكس العملية"
-              style={{
-                width: 44, height: 44, borderRadius: 12,
-                background: 'rgba(0,210,255,0.07)',
-                border: '1px solid var(--border-1)',
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                gap: 0, cursor: 'pointer',
-                transition: 'all 0.22s',
-                color: 'var(--cyan)',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(0,210,255,0.15)'
-                e.currentTarget.style.borderColor = 'var(--border-2)'
-                e.currentTarget.style.transform = 'scale(1.1)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(0,210,255,0.07)'
-                e.currentTarget.style.borderColor = 'var(--border-1)'
-                e.currentTarget.style.transform = 'scale(1)'
-              }}
-            >
-              {/* سهم للأعلى */}
-              <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
-                <path d="M6.5 1L1 6M6.5 1L12 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M6.5 1V9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-              </svg>
-              {/* سهم للأسفل */}
-              <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
-                <path d="M6.5 9L1 4M6.5 9L12 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M6.5 9V1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-              </svg>
+              {/* اختيار وسيلة الإرسال */}
+              <MethodPicker
+                wallets={methods?.wallets || []}
+                cryptos={methods?.cryptos || []}
+                selectedType={sendType}
+                selectedItem={sendItem}
+                onSelect={(type, item) => {
+                  setSendType(type)
+                  setSendItem(item)
+                  setUserPhone('')
+                  setRecipientId('')
+                }}
+              />
             </div>
           </div>
 
-          {/* ── حقل الاستلام ── */}
-          <div style={{ background: 'rgba(0,210,255,0.03)', border: '1px solid var(--border-1)', borderRadius: 14, padding: 15, marginBottom: 13 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 10 }}>
+          {/* ── سهم التبادل ───────────────────── */}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0' }}>
+            <div style={swapArrow}>↕</div>
+          </div>
+
+          {/* ══════════════════════════════════════
+              قسم الاستلام
+          ══════════════════════════════════════ */}
+          <div style={{ ...amountBox, marginBottom: 13 }}>
+            <div style={boxLabel}>
               <span>أنت تستلم · RECEIVE</span>
               <span style={{ color: rateColor, transition: 'color 0.4s' }}>
-                1 {sendMethod.name} = {currentRate.toFixed(5)} {receiveMethod.name}
+                1 {sendItem?.coin || sendItem?.name || '—'} ={' '}
+                {currentRate.toFixed(4)} {recvItem?.coin || recvItem?.name || '—'}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
@@ -244,161 +210,108 @@ const handleSendMethodChange = (newMethod) => {
                 value={receiveAmount}
                 readOnly
                 placeholder="0.00"
-                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontFamily: "'JetBrains Mono',monospace", fontSize: '1.55rem', fontWeight: 700, color: 'var(--green)', direction: 'ltr', minWidth: 0 }}
+                style={{ ...amountInput, color: 'var(--green)' }}
               />
-              <CurrencyDropdown options={RECEIVE_METHODS} selected={receiveMethod} onSelect={setReceiveMethod} />
+              <MethodPicker
+                wallets={methods?.wallets || []}
+                cryptos={methods?.cryptos || []}
+                selectedType={recvType}
+                selectedItem={recvItem}
+                onSelect={(type, item) => { setRecvType(type); setRecvItem(item) }}
+              />
             </div>
           </div>
 
-          {/* ── شريط سعر الصرف ── */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(200,168,75,0.05)', border: '1px dashed rgba(200,168,75,0.2)', borderRadius: 9, padding: '9px 13px', marginBottom: 18 }}>
+          {/* ── شريط السعر ─────────────────────── */}
+          <div style={rateBar}>
             <span style={{ color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.68rem' }}>EXCHANGE RATE</span>
             <span style={{ color: rateColor, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, fontSize: '0.82rem', transition: 'color 0.4s' }}>
-              1 {sendMethod.name} = {currentRate.toFixed(5)} {receiveMethod.name}
+              1 {sendItem?.coin || sendItem?.name || '—'} = {currentRate.toFixed(4)} {recvItem?.coin || recvItem?.name || '—'}
             </span>
           </div>
 
-          {/* ── خط فاصل ── */}
-          <div style={{ borderTop: '1px solid var(--border-1)', margin: '0 0 18px' }} />
+          {/* ── فاصل ────────────────────────────── */}
+          <div style={{ borderTop: '1px solid var(--border-1)', margin: '18px 0' }} />
           <p style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1, marginBottom: 13 }}>
             RECIPIENT · بيانات الطلب
           </p>
 
-          {/* ── البريد الإلكتروني — يظهر دائماً ── */}
-          <div style={{ marginBottom: 12 }}>
-            <label style={labelStyle}>EMAIL · البريد الإلكتروني</label>
+          {/* ── البريد الإلكتروني ──────────────── */}
+          <Field label="EMAIL · البريد الإلكتروني">
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="example@email.com"
-              style={inputStyle}
-              onFocus={onFocus}
-              onBlur={onBlur}
+              style={inp}
+              onFocus={focusOn} onBlur={focusOff}
             />
-          </div>
+          </Field>
 
-          {/* ══════════════════════════════════════════════
-              الحقل الديناميكي — يتغير حسب وسيلة الإرسال
-              ══════════════════════════════════════════════
-
-              حالة 1: EGP (فودافون / إنستا / اتصالات)
-              ← يطلب رقم هاتف المرسل
-          */}
-          {isEgp && (
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>
-                رقم هاتفك الذي ستحول منه ({sendMethod.name})
-              </label>
+          {/* ── رقم هاتف المرسل (محافظ فقط) ───── */}
+          {sendIsWallet && sendItem && (
+            <Field label={`رقم هاتفك على ${sendItem.name}`}>
               <input
                 type="tel"
                 value={userPhone}
                 onChange={e => setUserPhone(e.target.value)}
                 placeholder="01XXXXXXXXX"
-                style={{ ...inputStyle, direction: 'ltr', textAlign: 'left' }}
-                onFocus={onFocus}
-                onBlur={onBlur}
+                style={{ ...inp, direction: 'ltr', textAlign: 'left' }}
+                onFocus={focusOn} onBlur={focusOff}
               />
-              <div style={{ marginTop: 6, fontSize: '0.7rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>
-                هذا الرقم للتحقق من هويتك فقط
-              </div>
+              <Hint text="ℹ️ هذا الرقم للتحقق من هويتك فقط" />
+            </Field>
+          )}
+
+          {/* ── معلومة USDT ─────────────────────── */}
+          {sendIsCrypto && sendItem && (
+            <div style={infoBanner}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", display: 'block', marginBottom: 4 }}>
+                {sendItem.coin} {sendItem.network} · معلومة
+              </span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-2)', lineHeight: 1.6 }}>
+                ستظهر لك عنوان محفظتنا لإرسال {sendItem.coin} بعد الضغط على إرسال الطلب
+              </span>
             </div>
           )}
 
-          {/*
-              حالة 2: USDT أو MoneyGo
-              ← لا نطلب عنوان المحفظة المرسلة
-              ← نعرض فقط معلومة توضيحية
-          */}
-          {(isUSDT || isMoneyGo) && (
-            <div style={{ marginBottom: 12, background: 'rgba(0,210,255,0.03)', border: '1px solid var(--border-1)', borderRadius: 9, padding: '10px 13px' }}>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 4 }}>
-                {isUSDT ? 'USDT TRC20 · معلومة' : 'MoneyGo USD · معلومة'}
-              </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-2)', lineHeight: 1.6 }}>
-                {isUSDT
-                  ? 'ستظهر لك عنوان محفظتنا لإرسال USDT بعد الضغط على إرسال الطلب'
-                  : 'ستظهر لك معرف حساب MoneyGo الخاص بنا بعد الضغط على إرسال الطلب'
-                }
-              </div>
-            </div>
-          )}
-
-          {/* ══════════════════════════════════════════════
-              حقل معرف/عنوان الاستلام — يظهر دائماً
-              لكن النص يتغير حسب وسيلة الاستلام
-          */}
-          <div style={{ marginBottom: 12 }}>
-            <label style={labelStyle}>{recipientLabel}</label>
+          {/* ── بيانات الاستلام ──────────────────── */}
+          <Field label={
+            recvType === 'crypto'
+              ? `عنوان محفظة ${recvItem?.coin || ''} ${recvItem?.network || ''} للاستلام`
+              : `معرّف ${recvItem?.name || ''} للاستلام`
+          }>
             <input
               type="text"
               value={recipientId}
               onChange={e => setRecipientId(e.target.value)}
-              placeholder={recipientPlaceholder}
-              style={{
-                ...inputStyle,
-                direction: 'ltr',
-                textAlign: 'left',
-                fontFamily: "'JetBrains Mono',monospace",
-                fontSize: '0.8rem',
-              }}
-              onFocus={onFocus}
-              onBlur={onBlur}
+              placeholder={
+                recvType === 'crypto'
+                  ? `T... أو 0x... — عنوان ${recvItem?.network || ''}`
+                  : recvItem?.placeholder || 'رقم أو معرّف الاستلام'
+              }
+              style={{ ...inp, direction: 'ltr', textAlign: 'left', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8rem' }}
+              onFocus={focusOn} onBlur={focusOff}
             />
-          </div>
+          </Field>
 
-          {/* ── الموافقات ── */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, marginBottom: 8 }}>
-            <input
-              type="checkbox"
-              id="aml"
-              checked={amlChecked}
-              onChange={e => setAmlChecked(e.target.checked)}
-              style={{ width: 15, height: 15, marginTop: 3, accentColor: 'var(--cyan)', cursor: 'pointer', flexShrink: 0 }}
-            />
-            <label htmlFor="aml" style={{ fontSize: '0.76rem', color: 'var(--text-2)', lineHeight: 1.55, cursor: 'pointer' }}>
-              أقر بأن الأموال مشروعة وأوافق على{' '}
-              <span style={{ color: 'var(--cyan)' }}>سياسة AML</span>
-            </label>
-          </div>
+          {/* ── الموافقات ────────────────────────── */}
+          <CheckRow id="aml" checked={amlChecked} onChange={setAmlChecked}>
+            أقر بأن الأموال مشروعة وأوافق على{' '}
+            <span style={{ color: 'var(--cyan)' }}>سياسة AML</span>
+          </CheckRow>
+          <CheckRow id="tos" checked={tosChecked} onChange={setTosChecked}>
+            أوافق على{' '}
+            <span style={{ color: 'var(--cyan)' }}>شروط الخدمة</span> و
+            <span style={{ color: 'var(--cyan)' }}>سياسة الخصوصية</span>
+          </CheckRow>
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, marginBottom: 8 }}>
-            <input
-              type="checkbox"
-              id="tos"
-              checked={tosChecked}
-              onChange={e => setTosChecked(e.target.checked)}
-              style={{ width: 15, height: 15, marginTop: 3, accentColor: 'var(--cyan)', cursor: 'pointer', flexShrink: 0 }}
-            />
-            <label htmlFor="tos" style={{ fontSize: '0.76rem', color: 'var(--text-2)', lineHeight: 1.55, cursor: 'pointer' }}>
-              أوافق على{' '}
-              <span style={{ color: 'var(--cyan)' }}>شروط الخدمة</span>
-              {' '}و
-              <span style={{ color: 'var(--cyan)' }}>سياسة الخصوصية</span>
-            </label>
-          </div>
-
-          {/* ── زر الإرسال ── */}
+          {/* ── زر الإرسال ──────────────────────── */}
           <button
             onClick={handleSubmit}
-            style={{
-              width: '100%', padding: 13, marginTop: 13,
-              background: 'linear-gradient(135deg,#009fc0,#006e9e)',
-              border: 'none', borderRadius: 12,
-              fontFamily: "'Tajawal',sans-serif",
-              fontSize: '1.02rem', fontWeight: 800,
-              color: '#fff', cursor: 'pointer',
-              transition: 'all 0.3s',
-              boxShadow: '0 4px 22px rgba(0,159,192,0.22)',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = 'translateY(-3px)'
-              e.currentTarget.style.boxShadow = '0 10px 34px rgba(0,210,255,0.38)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = '0 4px 22px rgba(0,159,192,0.22)'
-            }}
+            style={submitBtn}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 10px 34px rgba(0,210,255,0.38)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)';    e.currentTarget.style.boxShadow = '0 4px 22px rgba(0,159,192,0.22)' }}
           >
             إرسال طلب التبادل ←
           </button>
@@ -406,7 +319,6 @@ const handleSendMethodChange = (newMethod) => {
         </div>
       </div>
 
-      {/* ── نافذة التأكيد ── */}
       <ConfirmModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -415,5 +327,159 @@ const handleSendMethodChange = (newMethod) => {
     </>
   )
 }
+
+// ══════════════════════════════════════════════════════════
+// MethodPicker — اختيار وسيلة الإرسال/الاستلام
+// يعرض فقط ما فعّله الأدمن
+// ══════════════════════════════════════════════════════════
+function MethodPicker({ wallets, cryptos, selectedType, selectedItem, onSelect }) {
+  const [open, setOpen] = useState(false)
+
+  const label = selectedItem
+    ? selectedType === 'crypto'
+      ? `${selectedItem.icon || '₮'} ${selectedItem.coin} ${selectedItem.network}`
+      : `${selectedItem.icon || '📱'} ${selectedItem.name}`
+    : '— اختر —'
+
+  return (
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={pickerBtn}
+      >
+        <span style={{ fontSize: 13, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />
+          <div style={pickerDropdown}>
+
+            {/* المحافظ الإلكترونية */}
+            {wallets.length > 0 && (
+              <>
+                <div style={pickerGroupLabel}>📱 محافظ إلكترونية</div>
+                {wallets.map(w => (
+                  <button
+                    key={w.id}
+                    style={{
+                      ...pickerItem,
+                      background: selectedType === 'wallet' && selectedItem?.id === w.id
+                        ? 'var(--cyan-dim)' : 'transparent',
+                    }}
+                    onClick={() => { onSelect('wallet', w); setOpen(false) }}
+                  >
+                    <span style={{ fontSize: 16 }}>{w.icon}</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{w.name}</div>
+                      {w.note && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{w.note}</div>}
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
+
+            {/* العملات الرقمية */}
+            {cryptos.length > 0 && (
+              <>
+                <div style={{ ...pickerGroupLabel, marginTop: wallets.length ? 8 : 0 }}>🔗 عملات رقمية</div>
+                {cryptos.map(c => (
+                  <button
+                    key={c.id}
+                    style={{
+                      ...pickerItem,
+                      background: selectedType === 'crypto' && selectedItem?.id === c.id
+                        ? 'var(--cyan-dim)' : 'transparent',
+                    }}
+                    onClick={() => { onSelect('crypto', c); setOpen(false) }}
+                  >
+                    <span style={{ fontSize: 16, color: c.color, fontWeight: 800 }}>{c.icon}</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{c.label}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.network}</div>
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
+
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Sub-components ─────────────────────────────────────────
+
+function Field({ label, children }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 0.5, marginBottom: 5 }}>
+        {label}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+function Hint({ text }) {
+  return <div style={{ marginTop: 5, fontSize: '0.7rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>{text}</div>
+}
+
+function CheckRow({ id, checked, onChange, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, marginBottom: 8 }}>
+      <input type="checkbox" id={id} checked={checked} onChange={e => onChange(e.target.checked)}
+        style={{ width: 15, height: 15, marginTop: 3, accentColor: 'var(--cyan)', cursor: 'pointer', flexShrink: 0 }} />
+      <label htmlFor={id} style={{ fontSize: '0.76rem', color: 'var(--text-2)', lineHeight: 1.55, cursor: 'pointer' }}>
+        {children}
+      </label>
+    </div>
+  )
+}
+
+function LiveBadge() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.66rem', color: 'var(--green)', background: 'rgba(0,229,160,0.07)', border: '1px solid rgba(0,229,160,0.14)', padding: '2px 8px', borderRadius: 20 }}>
+      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--green)', animation: 'blink 1.5s ease-in-out infinite', display: 'inline-block' }} />
+      LIVE
+    </div>
+  )
+}
+
+// ── Styles ─────────────────────────────────────────────────
+const focusOn  = e => { e.target.style.borderColor = 'var(--border-2)'; e.target.style.boxShadow = '0 0 0 3px rgba(0,210,255,0.05)' }
+const focusOff = e => { e.target.style.borderColor = 'var(--border-1)'; e.target.style.boxShadow = 'none' }
+
+const card = { background: 'var(--card)', border: '1px solid var(--border-1)', borderRadius: 20, backdropFilter: 'blur(16px)' }
+
+const cardHeader = { padding: '17px 22px', borderBottom: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', gap: 11 }
+const cardHeaderIcon = { width: 33, height: 33, borderRadius: 9, background: 'var(--cyan-dim)', border: '1px solid rgba(0,210,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }
+
+const amountBox = { background: 'rgba(0,210,255,0.03)', border: '1px solid var(--border-1)', borderRadius: 14, padding: 15, marginBottom: 4 }
+const boxLabel  = { display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 10 }
+const amountInput = { flex: 1, background: 'transparent', border: 'none', outline: 'none', fontFamily: "'JetBrains Mono',monospace", fontSize: '1.55rem', fontWeight: 700, color: 'var(--text-1)', direction: 'ltr', minWidth: 0 }
+
+const rateBar = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(200,168,75,0.05)', border: '1px dashed rgba(200,168,75,0.2)', borderRadius: 9, padding: '9px 13px', marginBottom: 18 }
+
+const inp = { width: '100%', padding: '10px 13px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-1)', borderRadius: 9, color: 'var(--text-1)', fontFamily: "'Tajawal',sans-serif", fontSize: '0.88rem', outline: 'none', textAlign: 'right', transition: 'border-color 0.22s, box-shadow 0.22s', boxSizing: 'border-box' }
+
+const infoBanner = { marginBottom: 12, background: 'rgba(0,210,255,0.03)', border: '1px solid var(--border-1)', borderRadius: 9, padding: '10px 13px' }
+const errorBanner = { marginBottom: 12, padding: '10px 14px', borderRadius: 9, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontSize: '0.8rem', fontFamily: "'JetBrains Mono',monospace" }
+
+const submitBtn = { width: '100%', padding: 13, marginTop: 13, background: 'linear-gradient(135deg,#009fc0,#006e9e)', border: 'none', borderRadius: 12, fontFamily: "'Tajawal',sans-serif", fontSize: '1.02rem', fontWeight: 800, color: '#fff', cursor: 'pointer', transition: 'all 0.3s', boxShadow: '0 4px 22px rgba(0,159,192,0.22)' }
+
+const swapArrow = { width: 44, height: 44, borderRadius: 12, background: 'rgba(0,210,255,0.07)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--cyan)', fontSize: 18 }
+
+const pickerBtn = { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, border: '1px solid var(--border-1)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-1)', cursor: 'pointer', fontFamily: "'Tajawal',sans-serif", fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap', transition: 'all 0.2s', minWidth: 130 }
+const pickerDropdown = { position: 'absolute', left: 0, top: 'calc(100% + 6px)', minWidth: 220, zIndex: 50, background: 'var(--card)', border: '1px solid var(--border-2)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 16px 48px rgba(0,0,0,0.45)', padding: '8px 0' }
+const pickerGroupLabel = { padding: '6px 14px', fontSize: '0.65rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1, fontWeight: 700 }
+const pickerItem = { width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', border: 'none', cursor: 'pointer', textAlign: 'right', fontFamily: "'Tajawal',sans-serif", transition: 'background 0.15s' }
+
+const spinner = { width: 28, height: 28, borderRadius: '50%', border: '3px solid var(--border-1)', borderTop: '3px solid var(--cyan)', animation: 'spin 0.8s linear infinite', margin: '0 auto' }
 
 export default ExchangeForm
