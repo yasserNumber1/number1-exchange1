@@ -1,577 +1,747 @@
 // src/pages/admin/AdminPaymentMethods.jsx
 // =============================================
-// وسائل الدفع — الأدمن يتحكم في:
-//   1. عنوان USDT (TRC20)
-//   2. أرقام استلام المحافظ المصرية
-//   3. تفعيل/إيقاف كل وسيلة
+// وسائل الدفع — نظام ديناميكي كامل
+// الأدمن يضيف / يحذف / يعدّل:
+//   1. شبكات Crypto (USDT TRC20, BNB, etc.)
+//   2. محافظ إلكترونية (Vodafone, InstaPay, etc.)
 // =============================================
 
 import { useEffect, useState } from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { adminAPI } from '../../services/api'
 
-// ── Config الوسائل ────────────────────────────────────────
-// key  = اسم الحقل في قاعدة البيانات
-// هذا الترتيب هو نفسه الذي يظهر للمستخدم
-const METHODS = [
-  {
-    key:         'vodafone',
-    label:       'Vodafone Cash',
-    icon: <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.8' strokeLinecap='round'><rect x='5' y='2' width='14' height='20' rx='2'/><line x1='12' y1='18' x2='12.01' y2='18'/></svg>,
-    color:       '#ef4444',
-    bg:          'rgba(239,68,68,0.08)',
-    border:      'rgba(239,68,68,0.2)',
-    placeholder: '01XXXXXXXXX',
-    fieldLabel:  'رقم Vodafone Cash للاستلام',
-    desc:        'المستخدم يحوّل على هذا الرقم',
-  },
-  {
-    key:         'orange',
-    label:       'Orange Cash',
-    icon: <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='#f97316' strokeWidth='1.8' strokeLinecap='round'><circle cx='12' cy='12' r='10'/><path d='M12 6v12M8 10h8'/></svg>,
-    color:       '#f97316',
-    bg:          'rgba(249,115,22,0.08)',
-    border:      'rgba(249,115,22,0.2)',
-    placeholder: '01XXXXXXXXX',
-    fieldLabel:  'رقم Orange Cash للاستلام',
-    desc:        'المستخدم يحوّل على هذا الرقم',
-  },
-  {
-    key:         'instapay',
-    label:       'InstaPay',
-    icon: <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.8' strokeLinecap='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>,
-    color:       '#8b5cf6',
-    bg:          'rgba(139,92,246,0.08)',
-    border:      'rgba(139,92,246,0.2)',
-    placeholder: 'اسم المستخدم أو رقم الهاتف',
-    fieldLabel:  'معرّف InstaPay',
-    desc:        'اسم المستخدم أو رقم الهاتف المرتبط بـ InstaPay',
-  },
-  {
-    key:         'fawry',
-    label:       'Fawry',
-    icon: <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.8' strokeLinecap='round'><path d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/><polyline points='9 22 9 12 15 12 15 22'/></svg>,
-    color:       '#f59e0b',
-    bg:          'rgba(245,158,11,0.08)',
-    border:      'rgba(245,158,11,0.2)',
-    placeholder: 'رقم Fawry',
-    fieldLabel:  'رقم Fawry للاستلام',
-    desc:        'رقم المستخدم على منصة Fawry',
-  },
-  {
-    key:         'wepay',
-    label:       'WE Pay',
-    icon: <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.8' strokeLinecap='round'><path d='M1 6l11 6 11-6'/><path d='M1 12l11 6 11-6'/></svg>,
-    color:       '#06b6d4',
-    bg:          'rgba(6,182,212,0.08)',
-    border:      'rgba(6,182,212,0.2)',
-    placeholder: '01XXXXXXXXX',
-    fieldLabel:  'رقم WE Pay للاستلام',
-    desc:        'المستخدم يحوّل على هذا الرقم',
-  },
-  {
-    key:         'meeza',
-    label:       'Meeza',
-    icon: <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.8' strokeLinecap='round'><rect x='1' y='4' width='22' height='16' rx='2'/><line x1='1' y1='10' x2='23' y2='10'/></svg>,
-    color:       '#10b981',
-    bg:          'rgba(16,185,129,0.08)',
-    border:      'rgba(16,185,129,0.2)',
-    placeholder: 'رقم بطاقة Meeza',
-    fieldLabel:  'رقم بطاقة Meeza',
-    desc:        'رقم بطاقة Meeza الخاصة بالاستلام',
-  },
+// ── اقتراحات جاهزة للأدمن ────────────────────────────────
+const CRYPTO_SUGGESTIONS = [
+  { coin: 'USDT', network: 'TRC20',  label: 'USDT TRC20',  icon: '₮', color: '#26a17b' },
+  { coin: 'USDT', network: 'BEP20',  label: 'USDT BEP20',  icon: '₮', color: '#f0b90b' },
+  { coin: 'USDT', network: 'ERC20',  label: 'USDT ERC20',  icon: '₮', color: '#627eea' },
+  { coin: 'BNB',  network: 'BEP20',  label: 'BNB BEP20',   icon: '◆', color: '#f0b90b' },
+  { coin: 'ETH',  network: 'ERC20',  label: 'ETH ERC20',   icon: 'Ξ', color: '#627eea' },
+  { coin: 'TRX',  network: 'TRC20',  label: 'TRX TRC20',   icon: '◈', color: '#ff060a' },
+  { coin: 'BTC',  network: 'Bitcoin',label: 'Bitcoin',      icon: '₿', color: '#f7931a' },
+  { coin: 'USDC', network: 'ERC20',  label: 'USDC ERC20',  icon: '$', color: '#2775ca' },
 ]
 
-// ── Default state ──────────────────────────────────────────
-const defaultData = () => ({
-  // USDT
-  usdtAddress:  '',
-  usdtNetwork:  'TRC20',
-  usdtEnabled:  true,
-  // كل وسيلة لها: enabled + number
-  ...Object.fromEntries(
-    METHODS.flatMap(m => [
-      [`${m.key}Enabled`, false],
-      [`${m.key}Number`,  ''],
-    ])
-  ),
+const WALLET_SUGGESTIONS = [
+  { name: 'Vodafone Cash', icon: '📱', color: '#ef4444', placeholder: '01XXXXXXXXX' },
+  { name: 'Orange Cash',   icon: '🟠', color: '#f97316', placeholder: '01XXXXXXXXX' },
+  { name: 'InstaPay',      icon: '⚡', color: '#8b5cf6', placeholder: 'اسم المستخدم أو رقم الهاتف' },
+  { name: 'Fawry',         icon: '🏪', color: '#f59e0b', placeholder: 'رقم Fawry' },
+  { name: 'WE Pay',        icon: '📡', color: '#06b6d4', placeholder: '01XXXXXXXXX' },
+  { name: 'Meeza',         icon: '💳', color: '#10b981', placeholder: 'رقم البطاقة' },
+  { name: 'Etisalat Cash', icon: '📶', color: '#6366f1', placeholder: '01XXXXXXXXX' },
+  { name: 'Aman',          icon: '🏦', color: '#84cc16', placeholder: 'رقم Aman' },
+  { name: 'MoneyGo',       icon: '💵', color: '#22d3ee', placeholder: 'رقم المستخدم' },
+]
+
+// ── ID generator ──────────────────────────────────────────
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2)
+
+// ── Default empty items ───────────────────────────────────
+const newCrypto = (sug = {}) => ({
+  id:      uid(),
+  coin:    sug.coin    || '',
+  network: sug.network || '',
+  label:   sug.label   || '',
+  icon:    sug.icon    || '₮',
+  color:   sug.color   || '#26a17b',
+  address: '',
+  enabled: true,
 })
 
+const newWallet = (sug = {}) => ({
+  id:          uid(),
+  name:        sug.name        || '',
+  icon:        sug.icon        || '📱',
+  color:       sug.color       || '#3b82f6',
+  placeholder: sug.placeholder || 'رقم الاستلام',
+  number:      '',
+  enabled:     true,
+})
+
+// ═══════════════════════════════════════════════════════════
 export default function AdminPaymentMethods() {
-  const [data,    setData]    = useState(defaultData())
-  const [loading, setLoading] = useState(true)
-  const [saving,  setSaving]  = useState(false)
-  const [saved,   setSaved]   = useState(false)
-  const [error,   setError]   = useState('')
+  const [cryptos,  setCryptos]  = useState([])
+  const [wallets,  setWallets]  = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [saving,   setSaving]   = useState(false)
+  const [saved,    setSaved]    = useState(false)
+  const [error,    setError]    = useState('')
+  const [showCryptoMenu, setShowCryptoMenu] = useState(false)
+  const [showWalletMenu, setShowWalletMenu] = useState(false)
 
   useEffect(() => { fetchData() }, [])
 
+  // ── Fetch ─────────────────────────────────────────────
   const fetchData = async () => {
     setLoading(true)
     try {
-      const { data: res } = await adminAPI.getPaymentMethods()
-      if (res) setData(prev => ({ ...prev, ...res }))
-    } catch (e) {
-      console.error(e)
-      setError('فشل تحميل البيانات')
+      const { data } = await adminAPI.getPaymentMethods()
+      setCryptos(data.cryptos  || [])
+      setWallets(data.wallets  || [])
+    } catch {
+      // أول مرة — ابدأ فارغ
+      setCryptos([])
+      setWallets([])
     } finally {
       setLoading(false)
     }
   }
 
-  const set = (key, value) => {
-    setData(prev => ({ ...prev, [key]: value }))
-    setSaved(false)
-  }
-
+  // ── Save ──────────────────────────────────────────────
   const handleSave = async () => {
     setSaving(true)
     setError('')
     try {
-      await adminAPI.savePaymentMethods(data)
+      await adminAPI.savePaymentMethods({ cryptos, wallets })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (e) {
-      setError(e.response?.data?.message || 'فشل الحفظ')
+      setError(e.response?.data?.message || 'فشل الحفظ، تحقق من الاتصال بالسيرفر')
     } finally {
       setSaving(false)
     }
   }
 
+  // ── Crypto CRUD ───────────────────────────────────────
+  const addCrypto  = (sug)  => { setCryptos(p => [...p, newCrypto(sug)]); setShowCryptoMenu(false); setSaved(false) }
+  const editCrypto = (id, field, val) => setCryptos(p => p.map(c => c.id === id ? { ...c, [field]: val } : c))
+  const removeCrypto = (id) => setCryptos(p => p.filter(c => c.id !== id))
+  const toggleCrypto = (id) => editCrypto(id, 'enabled', !cryptos.find(c => c.id === id)?.enabled)
+
+  // ── Wallet CRUD ───────────────────────────────────────
+  const addWallet  = (sug)  => { setWallets(p => [...p, newWallet(sug)]); setShowWalletMenu(false); setSaved(false) }
+  const editWallet = (id, field, val) => setWallets(p => p.map(w => w.id === id ? { ...w, [field]: val } : w))
+  const removeWallet = (id) => setWallets(p => p.filter(w => w.id !== id))
+  const toggleWallet = (id) => editWallet(id, 'enabled', !wallets.find(w => w.id === id)?.enabled)
+
+  // ── Stats ─────────────────────────────────────────────
+  const activeCryptos = cryptos.filter(c => c.enabled && c.address).length
+  const activeWallets = wallets.filter(w => w.enabled && w.number).length
+
   if (loading) return (
     <AdminLayout title="وسائل الدفع">
-      <div style={s.loading}>
-        <div style={s.spinner} />
-        <span>جاري التحميل...</span>
-      </div>
+      <div style={s.center}><div style={s.spinner} /><span style={{ color: '#64748b' }}>جاري التحميل...</span></div>
     </AdminLayout>
   )
-
-  const enabledCount = METHODS.filter(m => data[`${m.key}Enabled`]).length
 
   return (
     <AdminLayout title="وسائل الدفع">
 
-      {/* ── Page Header ──────────────────────────── */}
+      {/* ── Page Header ─────────────────────────── */}
       <div style={s.pageHeader}>
         <div>
-          <p style={s.pageDesc}>
-            تحكم في وسائل الدفع التي تظهر للمستخدمين وأرقام الاستلام الخاصة بك
-          </p>
+          <p style={s.pageDesc}>تحكم كامل في وسائل الدفع المقبولة وأرقام الاستلام</p>
           <div style={s.statsRow}>
-            <span style={s.statChip}>
-              <span style={{ color: '#22c55e' }}>●</span>
-              {enabledCount} وسيلة مفعّلة
-            </span>
-            <span style={s.statChip}>
-              <span style={{ color: data.usdtEnabled ? '#22c55e' : '#64748b' }}>●</span>
-              USDT {data.usdtEnabled ? 'مفعّل' : 'معطّل'}
-            </span>
+            <Chip icon="₮" label={`${activeCryptos} شبكة crypto نشطة`} color="#26a17b" />
+            <Chip icon="📱" label={`${activeWallets} محفظة نشطة`}      color="#3b82f6" />
           </div>
         </div>
-        <button
-          style={{ ...s.saveBtn, opacity: saving ? 0.7 : 1 }}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <><div style={s.btnSpinner} /> جاري الحفظ...</>
-          ) : saved ? (
-            <><svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='3' strokeLinecap='round'><polyline points='20 6 9 17 4 12'/></svg> تم الحفظ</>
-          ) : (
-            <>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-                <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
-              </svg>
-              حفظ التغييرات
-            </>
-          )}
-        </button>
+        <SaveBtn saving={saving} saved={saved} onClick={handleSave} />
       </div>
 
-      {/* Feedback */}
-      {error && <div style={s.errorBanner}><svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' style={{flexShrink:0}}><path d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/><line x1='12' y1='9' x2='12' y2='13'/><line x1='12' y1='17' x2='12.01' y2='17'/></svg> {error}</div>}
-      {saved && <div style={s.successBanner}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='3' strokeLinecap='round'><polyline points='20 6 9 17 4 12'/></svg> تم حفظ جميع التغييرات بنجاح</div>}
+      {error  && <Banner type="error"   text={error} />}
+      {saved  && <Banner type="success" text="✓ تم حفظ جميع التغييرات بنجاح" />}
 
       {/* ═══════════════════════════════════════ */}
-      {/* SECTION 1 — USDT Wallet               */}
+      {/* SECTION 1 — Crypto Networks           */}
       {/* ═══════════════════════════════════════ */}
-      <Section
-        title="عنوان محفظة USDT"
-        subtitle="عنوان الاستلام الخاص بك على شبكة TRC20"
-        icon="₮"
-        iconBg="linear-gradient(135deg,#22c55e,#16a34a)"
-        enabled={data.usdtEnabled}
-        onToggle={() => set('usdtEnabled', !data.usdtEnabled)}
-        toggleLabel="قبول USDT"
-      >
-        <div style={s.usdtGrid}>
-          {/* Address field */}
-          <div style={{ flex: 1 }}>
-            <label style={s.fieldLabel}>عنوان المحفظة (TRC20)</label>
-            <div style={s.inputWithCopy}>
-              <input
-                style={{ ...s.input, fontFamily: 'monospace', fontSize: 13, direction: 'ltr', textAlign: 'left' }}
-                placeholder="TXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                value={data.usdtAddress}
-                onChange={e => set('usdtAddress', e.target.value)}
-                disabled={!data.usdtEnabled}
+      <SectionHeader
+        icon="🔗"
+        title="شبكات العملات الرقمية"
+        desc="أضف أي عملة / شبكة تريد قبول التحويل عليها"
+        action={
+          <div style={{ position: 'relative' }}>
+            <AddBtn label="+ إضافة شبكة" onClick={() => { setShowCryptoMenu(v => !v); setShowWalletMenu(false) }} />
+            {showCryptoMenu && (
+              <SuggestMenu
+                items={CRYPTO_SUGGESTIONS}
+                onSelect={addCrypto}
+                onClose={() => setShowCryptoMenu(false)}
+                onCustom={() => { addCrypto({}); setShowCryptoMenu(false) }}
+                renderItem={s => (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 18, color: s.color, fontWeight: 800 }}>{s.icon}</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0' }}>{s.label}</div>
+                      <div style={{ fontSize: 11, color: '#64748b' }}>{s.network}</div>
+                    </div>
+                  </div>
+                )}
               />
-              {data.usdtAddress && (
-                <button
-                  style={s.copyBtn}
-                  onClick={() => navigator.clipboard.writeText(data.usdtAddress)}
-                  title="نسخ العنوان"
-                >
-                  نسخ
-                </button>
-              )}
-            </div>
-            <p style={s.fieldHint}>
-               تأكد من أن العنوان صحيح — هذا هو العنوان الذي سيحوّل إليه المستخدمون
-            </p>
+            )}
           </div>
+        }
+      />
 
-          {/* Network */}
-          <div style={{ minWidth: 160 }}>
-            <label style={s.fieldLabel}>الشبكة</label>
-            <select
-              style={{ ...s.input, cursor: 'pointer' }}
-              value={data.usdtNetwork}
-              onChange={e => set('usdtNetwork', e.target.value)}
-              disabled={!data.usdtEnabled}
-            >
-              <option value="TRC20">TRC20 (Tron)</option>
-              <option value="ERC20">ERC20 (Ethereum)</option>
-              <option value="BEP20">BEP20 (BSC)</option>
-            </select>
-          </div>
+      {cryptos.length === 0 ? (
+        <EmptyState icon="🔗" text="لا يوجد شبكات — أضف شبكة للبدء" />
+      ) : (
+        <div style={s.cardsGrid}>
+          {cryptos.map(c => (
+            <CryptoCard
+              key={c.id}
+              item={c}
+              onToggle={() => toggleCrypto(c.id)}
+              onEdit={(f, v) => editCrypto(c.id, f, v)}
+              onRemove={() => removeCrypto(c.id)}
+            />
+          ))}
         </div>
-
-        {/* Preview */}
-        {data.usdtAddress && data.usdtEnabled && (
-          <div style={s.previewBox}>
-            <div style={s.previewLabel}>معاينة — ما يراه المستخدم:</div>
-            <div style={s.previewContent}>
-              <span style={{ color: '#22c55e', fontSize: 13 }}>عنوان الاستلام ({data.usdtNetwork}):</span>
-              <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#94a3b8', direction: 'ltr' }}>
-                {data.usdtAddress.slice(0, 8)}...{data.usdtAddress.slice(-8)}
-              </span>
-            </div>
-          </div>
-        )}
-      </Section>
+      )}
 
       {/* ═══════════════════════════════════════ */}
-      {/* SECTION 2 — Egyptian Wallets          */}
+      {/* SECTION 2 — Electronic Wallets        */}
       {/* ═══════════════════════════════════════ */}
-      <div style={s.sectionTitle}>
-        <div style={s.sectionTitleIcon}>🇪🇬</div>
-        <div>
-          <h2 style={s.sectionTitleText}>المحافظ الإلكترونية المصرية</h2>
-          <p style={s.sectionTitleDesc}>فعّل الوسائل التي تريد إظهارها وأضف رقم الاستلام لكل وسيلة</p>
+      <SectionHeader
+        icon="📱"
+        title="المحافظ الإلكترونية"
+        desc="أضف محافظ الدفع المحلية وأرقام الاستلام الخاصة بك"
+        action={
+          <div style={{ position: 'relative' }}>
+            <AddBtn label="+ إضافة محفظة" onClick={() => { setShowWalletMenu(v => !v); setShowCryptoMenu(false) }} />
+            {showWalletMenu && (
+              <SuggestMenu
+                items={WALLET_SUGGESTIONS}
+                onSelect={addWallet}
+                onClose={() => setShowWalletMenu(false)}
+                onCustom={() => { addWallet({}); setShowWalletMenu(false) }}
+                renderItem={s => (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 18 }}>{s.icon}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0' }}>{s.name}</span>
+                  </div>
+                )}
+              />
+            )}
+          </div>
+        }
+      />
+
+      {wallets.length === 0 ? (
+        <EmptyState icon="📱" text="لا يوجد محافظ — أضف محفظة للبدء" />
+      ) : (
+        <div style={s.cardsGrid}>
+          {wallets.map(w => (
+            <WalletCard
+              key={w.id}
+              item={w}
+              onToggle={() => toggleWallet(w.id)}
+              onEdit={(f, v) => editWallet(w.id, f, v)}
+              onRemove={() => removeWallet(w.id)}
+            />
+          ))}
         </div>
-      </div>
+      )}
 
-      <div style={s.methodsGrid}>
-        {METHODS.map((method) => (
-          <MethodCard
-            key={method.key}
-            method={method}
-            enabled={data[`${method.key}Enabled`]}
-            number={data[`${method.key}Number`]}
-            onToggle={() => set(`${method.key}Enabled`, !data[`${method.key}Enabled`])}
-            onChange={val => set(`${method.key}Number`, val)}
-          />
-        ))}
-      </div>
-
-      {/* ── Bottom Save ──────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-        <button
-          style={{ ...s.saveBtn, padding: '12px 36px', fontSize: 15 }}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? 'جاري الحفظ...' : '← حفظ كل التغييرات'}
-        </button>
+      {/* ── Bottom Save ─────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
+        <SaveBtn saving={saving} saved={saved} onClick={handleSave} large />
       </div>
 
     </AdminLayout>
   )
 }
 
-// ── Section Component ──────────────────────────────────────
-function Section({ title, subtitle, icon, iconBg, enabled, onToggle, toggleLabel, children }) {
-  return (
-    <div style={s.card}>
-      <div style={s.cardHeader}>
-        <div style={s.cardHeaderLeft}>
-          <div style={{ ...s.sectionIcon, background: iconBg }}>
-            {icon}
-          </div>
-          <div>
-            <h3 style={s.cardTitle}>{title}</h3>
-            <p style={s.cardSubtitle}>{subtitle}</p>
-          </div>
-        </div>
-        {/* Toggle */}
-        <div style={s.toggleWrap}>
-          <span style={{ fontSize: 13, color: enabled ? '#22c55e' : '#64748b', fontWeight: 600 }}>
-            {toggleLabel}
-          </span>
-          <Toggle value={enabled} onChange={onToggle} color="#22c55e" />
-        </div>
-      </div>
-      <div style={{ opacity: enabled ? 1 : 0.4, transition: 'opacity 0.2s', pointerEvents: enabled ? 'auto' : 'none' }}>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-// ── MethodCard ─────────────────────────────────────────────
-function MethodCard({ method, enabled, number, onToggle, onChange }) {
+// ═══════════════════════════════════════════════════════════
+// CryptoCard
+// ═══════════════════════════════════════════════════════════
+function CryptoCard({ item, onToggle, onEdit, onRemove }) {
   const [focused, setFocused] = useState(false)
+  const [confirm, setConfirm] = useState(false)
+
+  const isReady = item.enabled && item.address
 
   return (
     <div style={{
-      ...s.methodCard,
-      borderColor: enabled ? method.border : '#1e293b',
-      background: enabled ? method.bg : '#1e293b',
+      ...s.card,
+      borderColor: item.enabled ? `${item.color}44` : '#334155',
+      background:  item.enabled ? `${item.color}08` : '#1e293b',
     }}>
       {/* Header */}
-      <div style={s.methodHeader}>
-        <div style={s.methodInfo}>
-          <span style={s.methodIcon}>{method.icon}</span>
-          <span style={{ ...s.methodLabel, color: enabled ? method.color : '#64748b' }}>
-            {method.label}
-          </span>
+      <div style={s.cardTop}>
+        <div style={s.cardTopLeft}>
+          <div style={{ ...s.coinIcon, background: `${item.color}22`, color: item.color }}>
+            {item.icon}
+          </div>
+          {/* Editable label */}
+          <input
+            style={{ ...s.inlineInput, color: item.enabled ? item.color : '#64748b', fontWeight: 800 }}
+            value={item.label}
+            onChange={e => onEdit('label', e.target.value)}
+            placeholder="اسم الشبكة"
+          />
         </div>
-        <Toggle value={enabled} onChange={onToggle} color={method.color} />
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <Toggle value={item.enabled} onChange={onToggle} color={item.color} />
+          <DeleteBtn confirm={confirm} onConfirm={onRemove} onRequest={() => setConfirm(true)} onCancel={() => setConfirm(false)} />
+        </div>
       </div>
 
-      {/* Number field */}
-      <div style={{ marginTop: 14 }}>
-        <label style={{ ...s.fieldLabel, color: enabled ? '#94a3b8' : '#475569' }}>
-          {method.fieldLabel}
-        </label>
-        <input
-          style={{
-            ...s.input,
-            borderColor: focused && enabled ? method.color : '#334155',
-            boxShadow: focused && enabled ? `0 0 0 3px ${method.color}22` : 'none',
-            opacity: enabled ? 1 : 0.4,
-            direction: 'ltr',
-            textAlign: 'left',
-          }}
-          placeholder={enabled ? method.placeholder : 'معطّل'}
-          value={number}
-          onChange={e => onChange(e.target.value)}
-          disabled={!enabled}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-        />
-        {enabled && number && (
-          <p style={{ ...s.fieldHint, color: method.color }}>
-             {method.desc}
-          </p>
-        )}
-        {enabled && !number && (
-          <p style={{ ...s.fieldHint, color: '#f59e0b' }}>
-             أدخل الرقم عشان يظهر للمستخدمين
-          </p>
-        )}
+      {/* Fields */}
+      <div style={s.fields}>
+        {/* Coin + Network row */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ flex: 1 }}>
+            <Label>العملة</Label>
+            <input
+              style={s.input}
+              placeholder="USDT"
+              value={item.coin}
+              onChange={e => onEdit('coin', e.target.value)}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <Label>الشبكة</Label>
+            <input
+              style={s.input}
+              placeholder="TRC20"
+              value={item.network}
+              onChange={e => onEdit('network', e.target.value)}
+            />
+          </div>
+          <div style={{ width: 60 }}>
+            <Label>أيقونة</Label>
+            <input
+              style={{ ...s.input, textAlign: 'center', fontSize: 18 }}
+              value={item.icon}
+              onChange={e => onEdit('icon', e.target.value)}
+              maxLength={2}
+            />
+          </div>
+        </div>
+
+        {/* Address */}
+        <div>
+          <Label>عنوان المحفظة</Label>
+          <div style={{ position: 'relative' }}>
+            <input
+              style={{
+                ...s.input,
+                direction: 'ltr', textAlign: 'left',
+                fontFamily: 'monospace', fontSize: 12,
+                borderColor: focused && item.enabled ? item.color : '#334155',
+                boxShadow:   focused && item.enabled ? `0 0 0 3px ${item.color}22` : 'none',
+                paddingLeft: item.address ? 56 : 12,
+              }}
+              placeholder="0x... أو T..."
+              value={item.address}
+              onChange={e => onEdit('address', e.target.value)}
+              disabled={!item.enabled}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+            />
+            {item.address && (
+              <button
+                style={s.copyBtn}
+                onClick={() => navigator.clipboard.writeText(item.address)}
+              >نسخ</button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Status indicator */}
-      <div style={s.methodStatus}>
-        <div style={{
-          ...s.statusDot,
-          background: enabled && number ? '#22c55e' : enabled ? '#f59e0b' : '#475569',
-          boxShadow: enabled && number ? '0 0 6px rgba(34,197,94,0.5)' : 'none',
-        }} />
-        <span style={{ fontSize: 11, color: '#64748b' }}>
-          {!enabled           ? 'معطّل — لا يظهر للمستخدمين'
-           : !number          ? 'مفعّل — ينقص رقم الاستلام'
-           :                    'جاهز — يظهر للمستخدمين'}
-        </span>
-      </div>
+      {/* Status */}
+      <StatusRow
+        ready={isReady}
+        enabled={item.enabled}
+        missingText="أدخل عنوان المحفظة"
+        readyText={`${item.coin} ${item.network} — جاهز للاستلام`}
+      />
     </div>
   )
 }
 
-// ── Toggle Component ───────────────────────────────────────
-function Toggle({ value, onChange, color = '#3b82f6' }) {
+// ═══════════════════════════════════════════════════════════
+// WalletCard
+// ═══════════════════════════════════════════════════════════
+function WalletCard({ item, onToggle, onEdit, onRemove }) {
+  const [focused, setFocused] = useState(false)
+  const [confirm, setConfirm] = useState(false)
+
+  const isReady = item.enabled && item.number
+
+  return (
+    <div style={{
+      ...s.card,
+      borderColor: item.enabled ? `${item.color}44` : '#334155',
+      background:  item.enabled ? `${item.color}08` : '#1e293b',
+    }}>
+      {/* Header */}
+      <div style={s.cardTop}>
+        <div style={s.cardTopLeft}>
+          {/* Editable emoji */}
+          <input
+            style={{ ...s.emojiInput }}
+            value={item.icon}
+            onChange={e => onEdit('icon', e.target.value)}
+            maxLength={2}
+            title="تغيير الأيقونة"
+          />
+          {/* Editable name */}
+          <input
+            style={{ ...s.inlineInput, color: item.enabled ? item.color : '#64748b', fontWeight: 800 }}
+            value={item.name}
+            onChange={e => onEdit('name', e.target.value)}
+            placeholder="اسم المحفظة"
+          />
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <Toggle value={item.enabled} onChange={onToggle} color={item.color} />
+          <DeleteBtn confirm={confirm} onConfirm={onRemove} onRequest={() => setConfirm(true)} onCancel={() => setConfirm(false)} />
+        </div>
+      </div>
+
+      {/* Fields */}
+      <div style={s.fields}>
+        {/* Number */}
+        <div>
+          <Label>رقم الاستلام</Label>
+          <input
+            style={{
+              ...s.input,
+              direction: 'ltr', textAlign: 'left',
+              borderColor: focused && item.enabled ? item.color : '#334155',
+              boxShadow:   focused && item.enabled ? `0 0 0 3px ${item.color}22` : 'none',
+            }}
+            placeholder={item.placeholder || 'رقم الاستلام'}
+            value={item.number}
+            onChange={e => onEdit('number', e.target.value)}
+            disabled={!item.enabled}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+          />
+        </div>
+
+        {/* Notes (optional) */}
+        <div>
+          <Label>ملاحظة للمستخدم (اختياري)</Label>
+          <input
+            style={s.input}
+            placeholder="مثال: حوّل المبلغ خلال 30 دقيقة"
+            value={item.note || ''}
+            onChange={e => onEdit('note', e.target.value)}
+            disabled={!item.enabled}
+          />
+        </div>
+      </div>
+
+      {/* Status */}
+      <StatusRow
+        ready={isReady}
+        enabled={item.enabled}
+        missingText="أدخل رقم الاستلام"
+        readyText={`${item.name} — ${item.number}`}
+      />
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════
+// Shared Sub-components
+// ═══════════════════════════════════════════════════════════
+
+function SectionHeader({ icon, title, desc, action }) {
+  return (
+    <div style={s.sectionHeader}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={s.sectionHeaderIcon}>{icon}</div>
+        <div>
+          <h2 style={s.sectionHeaderTitle}>{title}</h2>
+          <p style={s.sectionHeaderDesc}>{desc}</p>
+        </div>
+      </div>
+      {action}
+    </div>
+  )
+}
+
+function SuggestMenu({ items, onSelect, onClose, onCustom, renderItem }) {
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />
+      <div style={s.suggestMenu}>
+        <div style={s.suggestHeader}>اختر من القائمة</div>
+        {items.map((item, i) => (
+          <button key={i} style={s.suggestItem} onClick={() => onSelect(item)}>
+            {renderItem(item)}
+          </button>
+        ))}
+        <div style={s.suggestDivider} />
+        <button style={{ ...s.suggestItem, color: '#3b82f6' }} onClick={onCustom}>
+          ✏ إضافة مخصصة (يدوي)
+        </button>
+      </div>
+    </>
+  )
+}
+
+function AddBtn({ label, onClick }) {
+  const [hov, setHov] = useState(false)
   return (
     <button
-      onClick={onChange}
-      style={{
-        width: 44, height: 24,
-        borderRadius: 12,
-        border: 'none',
-        cursor: 'pointer',
-        background: value ? color : '#334155',
-        position: 'relative',
-        transition: 'background 0.25s',
-        flexShrink: 0,
-        boxShadow: value ? `0 0 8px ${color}44` : 'none',
-      }}
+      style={{ ...s.addBtn, background: hov ? '#1d4ed8' : '#2563eb' }}
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
     >
+      {label}
+    </button>
+  )
+}
+
+function DeleteBtn({ confirm, onConfirm, onRequest, onCancel }) {
+  if (confirm) return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <button style={{ ...s.smallBtn, background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }} onClick={onConfirm}>حذف</button>
+      <button style={{ ...s.smallBtn, background: '#1e293b', color: '#64748b', border: '1px solid #334155' }} onClick={onCancel}>إلغاء</button>
+    </div>
+  )
+  return (
+    <button style={{ ...s.smallBtn, background: 'transparent', color: '#475569', border: '1px solid #334155' }} onClick={onRequest} title="حذف">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+      </svg>
+    </button>
+  )
+}
+
+function StatusRow({ ready, enabled, missingText, readyText }) {
+  return (
+    <div style={s.statusRow}>
+      <div style={{
+        ...s.statusDot,
+        background: ready ? '#22c55e' : enabled ? '#f59e0b' : '#475569',
+        boxShadow:  ready ? '0 0 6px rgba(34,197,94,0.5)' : 'none',
+      }} />
+      <span style={{ fontSize: 11, color: ready ? '#4ade80' : enabled ? '#fbbf24' : '#475569' }}>
+        {!enabled ? 'معطّل — لا يظهر للمستخدمين'
+         : !ready  ? `⚠ ${missingText}`
+         :           `✓ ${readyText}`}
+      </span>
+    </div>
+  )
+}
+
+function Toggle({ value, onChange, color = '#3b82f6' }) {
+  return (
+    <button onClick={onChange} style={{
+      width: 40, height: 22, borderRadius: 11,
+      border: 'none', cursor: 'pointer',
+      background: value ? color : '#334155',
+      position: 'relative',
+      transition: 'background 0.25s',
+      flexShrink: 0,
+      boxShadow: value ? `0 0 8px ${color}44` : 'none',
+    }}>
       <span style={{
-        position: 'absolute',
-        top: 3,
+        position: 'absolute', top: 3,
         right: value ? 3 : 'auto',
-        left: value ? 'auto' : 3,
-        width: 18, height: 18,
-        borderRadius: '50%',
-        background: '#fff',
-        transition: 'all 0.2s',
-        display: 'block',
+        left:  value ? 'auto' : 3,
+        width: 16, height: 16,
+        borderRadius: '50%', background: '#fff',
+        transition: 'all 0.2s', display: 'block',
         boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
       }} />
     </button>
   )
 }
 
+function Label({ children }) {
+  return <label style={s.fieldLabel}>{children}</label>
+}
+
+function Chip({ icon, label, color }) {
+  return (
+    <span style={{ ...s.chip, borderColor: `${color}33`, color }}>
+      <span>{icon}</span> {label}
+    </span>
+  )
+}
+
+function Banner({ type, text }) {
+  const isErr = type === 'error'
+  return (
+    <div style={{
+      padding: '12px 16px', borderRadius: 10, marginBottom: 16,
+      fontSize: 14, fontWeight: 600,
+      background: isErr ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)',
+      border: `1px solid ${isErr ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.25)'}`,
+      color: isErr ? '#f87171' : '#4ade80',
+    }}>{text}</div>
+  )
+}
+
+function EmptyState({ icon, text }) {
+  return (
+    <div style={s.emptyState}>
+      <span style={{ fontSize: 32 }}>{icon}</span>
+      <span style={{ color: '#475569', fontSize: 14 }}>{text}</span>
+    </div>
+  )
+}
+
+function SaveBtn({ saving, saved, onClick, large }) {
+  return (
+    <button
+      style={{
+        ...s.saveBtn,
+        padding: large ? '12px 36px' : '10px 22px',
+        fontSize: large ? 15 : 14,
+        opacity: saving ? 0.7 : 1,
+        background: saved
+          ? 'linear-gradient(135deg,#22c55e,#16a34a)'
+          : 'linear-gradient(135deg,#3b82f6,#1d4ed8)',
+      }}
+      onClick={onClick}
+      disabled={saving}
+    >
+      {saving ? '⏳ جاري الحفظ...' : saved ? '✓ تم الحفظ' : '💾 حفظ التغييرات'}
+    </button>
+  )
+}
+
 // ── Styles ────────────────────────────────────────────────
 const s = {
-  loading: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    justifyContent: 'center', gap: 16, padding: 80, color: '#64748b',
-  },
-  spinner: {
-    width: 32, height: 32, borderRadius: '50%',
-    border: '3px solid #1e293b',
-    borderTop: '3px solid #3b82f6',
-    animation: 'spin 0.8s linear infinite',
-  },
-  btnSpinner: {
-    width: 14, height: 14, borderRadius: '50%',
-    border: '2px solid rgba(255,255,255,0.3)',
-    borderTop: '2px solid #fff',
-    animation: 'spin 0.8s linear infinite',
-  },
+  center:  { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 80 },
+  spinner: { width: 32, height: 32, borderRadius: '50%', border: '3px solid #1e293b', borderTop: '3px solid #3b82f6', animation: 'spin 0.8s linear infinite' },
 
-  pageHeader: {
-    display: 'flex', justifyContent: 'space-between',
-    alignItems: 'flex-start', marginBottom: 24,
-  },
-  pageDesc: { fontSize: 14, color: '#64748b', margin: '4px 0 10px' },
-  statsRow: { display: 'flex', gap: 10 },
-  statChip: {
-    display: 'flex', alignItems: 'center', gap: 6,
-    fontSize: 12, fontWeight: 600, color: '#94a3b8',
-    background: '#1e293b', border: '1px solid #334155',
+  pageHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+  pageDesc:   { fontSize: 14, color: '#64748b', margin: '4px 0 10px' },
+  statsRow:   { display: 'flex', gap: 10, flexWrap: 'wrap' },
+
+  chip: {
+    display: 'inline-flex', alignItems: 'center', gap: 6,
+    fontSize: 12, fontWeight: 600,
+    background: '#1e293b', border: '1px solid',
     borderRadius: 8, padding: '4px 12px',
   },
 
   saveBtn: {
     display: 'flex', alignItems: 'center', gap: 8,
-    padding: '10px 22px', borderRadius: 10,
-    border: 'none', background: 'linear-gradient(135deg,#3b82f6,#1d4ed8)',
-    color: '#fff', cursor: 'pointer',
-    fontSize: 14, fontWeight: 700,
-    boxShadow: '0 4px 14px rgba(59,130,246,0.35)',
+    borderRadius: 10, border: 'none',
+    color: '#fff', cursor: 'pointer', fontWeight: 700,
+    boxShadow: '0 4px 14px rgba(59,130,246,0.3)',
     transition: 'all 0.2s',
+    fontFamily: "'Cairo','Tajawal',sans-serif",
   },
 
-  errorBanner:   { display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', marginBottom: 16, fontSize: 14, fontWeight: 600 },
-  successBanner: { display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderRadius: 10, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: '#4ade80', marginBottom: 16, fontSize: 14, fontWeight: 600 },
-
-  card: {
-    background: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: 14,
-    padding: 22,
-    marginBottom: 16,
-  },
-  cardHeader: {
+  sectionHeader: {
     display: 'flex', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 20,
+    alignItems: 'center',
+    margin: '28px 0 14px',
+    padding: '0 0 14px',
+    borderBottom: '1px solid #1e293b',
   },
-  cardHeaderLeft: { display: 'flex', alignItems: 'center', gap: 14 },
-  sectionIcon: {
-    width: 42, height: 42, borderRadius: 12,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 18, fontWeight: 800, color: '#fff', flexShrink: 0,
-  },
-  cardTitle:    { fontSize: 15, fontWeight: 800, color: '#f1f5f9', margin: 0 },
-  cardSubtitle: { fontSize: 12, color: '#64748b', margin: '3px 0 0' },
-  toggleWrap:   { display: 'flex', alignItems: 'center', gap: 10 },
+  sectionHeaderIcon:  { width: 38, height: 38, borderRadius: 10, background: '#1e293b', border: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 },
+  sectionHeaderTitle: { fontSize: 16, fontWeight: 800, color: '#f1f5f9', margin: 0 },
+  sectionHeaderDesc:  { fontSize: 12, color: '#64748b', margin: '3px 0 0' },
 
-  usdtGrid: { display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' },
-
-  sectionTitle: {
-    display: 'flex', alignItems: 'center', gap: 14,
-    margin: '28px 0 16px',
-  },
-  sectionTitleIcon: {
-    width: 40, height: 40, borderRadius: 10,
-    background: '#1e293b', border: '1px solid #334155',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 20, flexShrink: 0,
-  },
-  sectionTitleText: { fontSize: 16, fontWeight: 800, color: '#f1f5f9', margin: 0 },
-  sectionTitleDesc: { fontSize: 12, color: '#64748b', margin: '3px 0 0' },
-
-  methodsGrid: {
+  cardsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
     gap: 14,
   },
-  methodCard: {
-    background: '#1e293b',
+
+  card: {
     border: '1px solid',
     borderRadius: 14,
     padding: 18,
     transition: 'all 0.2s',
   },
-  methodHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  methodInfo:   { display: 'flex', alignItems: 'center', gap: 10 },
-  methodIcon:   { fontSize: 22 },
-  methodLabel:  { fontSize: 14, fontWeight: 800, transition: 'color 0.2s' },
-  methodStatus: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 12 },
-  statusDot:    { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
+
+  cardTop:    { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  cardTopLeft:{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
+
+  coinIcon: {
+    width: 36, height: 36, borderRadius: 10,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 16, fontWeight: 900, flexShrink: 0,
+  },
+
+  inlineInput: {
+    background: 'transparent', border: 'none', outline: 'none',
+    fontSize: 14, fontFamily: "'Cairo','Tajawal',sans-serif",
+    width: '100%', minWidth: 0,
+    transition: 'color 0.2s',
+  },
+
+  emojiInput: {
+    width: 36, height: 36, borderRadius: 8,
+    background: '#0f172a', border: '1px solid #334155',
+    textAlign: 'center', fontSize: 20,
+    cursor: 'pointer', outline: 'none',
+    flexShrink: 0,
+    fontFamily: 'inherit',
+    color: '#e2e8f0',
+  },
+
+  fields: { display: 'flex', flexDirection: 'column', gap: 10 },
 
   fieldLabel: {
-    display: 'block',
-    fontSize: 12, fontWeight: 600,
-    color: '#64748b', marginBottom: 6,
-    letterSpacing: 0.3,
+    display: 'block', fontSize: 11, fontWeight: 600,
+    color: '#64748b', marginBottom: 5, letterSpacing: 0.3,
   },
+
   input: {
-    width: '100%',
-    padding: '10px 12px',
+    width: '100%', padding: '9px 12px',
     background: '#0f172a',
-    border: '1px solid #334155',
-    borderRadius: 9,
-    color: '#e2e8f0',
-    fontSize: 14,
-    outline: 'none',
+    border: '1px solid #334155', borderRadius: 8,
+    color: '#e2e8f0', fontSize: 13, outline: 'none',
     transition: 'border-color 0.2s, box-shadow 0.2s',
     boxSizing: 'border-box',
-    fontFamily: "'Cairo', 'Tajawal', sans-serif",
+    fontFamily: "'Cairo','Tajawal',sans-serif",
   },
-  inputWithCopy: { position: 'relative' },
-  copyBtn: {
-    position: 'absolute',
-    left: 8, top: '50%', transform: 'translateY(-50%)',
-    padding: '4px 10px', borderRadius: 6,
-    border: '1px solid #334155',
-    background: '#1e293b', color: '#3b82f6',
-    fontSize: 11, fontWeight: 700, cursor: 'pointer',
-  },
-  fieldHint: { fontSize: 11, color: '#64748b', margin: '5px 0 0' },
 
-  previewBox: {
-    marginTop: 16,
-    background: '#0f172a',
-    border: '1px dashed #334155',
-    borderRadius: 10,
-    padding: '12px 16px',
+  copyBtn: {
+    position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)',
+    padding: '3px 8px', borderRadius: 5,
+    border: '1px solid #334155', background: '#1e293b',
+    color: '#3b82f6', fontSize: 10, fontWeight: 700, cursor: 'pointer',
   },
-  previewLabel:   { fontSize: 11, color: '#475569', marginBottom: 6, fontWeight: 600 },
-  previewContent: { display: 'flex', alignItems: 'center', gap: 10 },
+
+  statusRow: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 10, borderTop: '1px solid #1e293b' },
+  statusDot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0, transition: 'all 0.3s' },
+
+  addBtn: {
+    padding: '8px 16px', borderRadius: 8, border: 'none',
+    color: '#fff', fontWeight: 700, fontSize: 13,
+    cursor: 'pointer', transition: 'background 0.15s',
+    fontFamily: "'Cairo','Tajawal',sans-serif",
+    whiteSpace: 'nowrap',
+  },
+
+  suggestMenu: {
+    position: 'absolute', left: 0, top: 'calc(100% + 6px)',
+    minWidth: 220, zIndex: 50,
+    background: '#1e293b', border: '1px solid #334155',
+    borderRadius: 12, overflow: 'hidden',
+    boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+    maxHeight: 360, overflowY: 'auto',
+  },
+  suggestHeader: { padding: '10px 14px', fontSize: 11, fontWeight: 700, color: '#64748b', borderBottom: '1px solid #334155', letterSpacing: 1 },
+  suggestItem: {
+    width: '100%', padding: '10px 14px',
+    background: 'transparent', border: 'none',
+    textAlign: 'right', cursor: 'pointer',
+    transition: 'background 0.15s',
+    fontFamily: "'Cairo','Tajawal',sans-serif",
+  },
+  suggestDivider: { height: 1, background: '#334155', margin: '4px 0' },
+
+  smallBtn: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+    padding: '5px 10px', borderRadius: 6,
+    cursor: 'pointer', fontSize: 12, fontWeight: 600,
+    fontFamily: "'Cairo','Tajawal',sans-serif",
+    whiteSpace: 'nowrap',
+  },
+
+  emptyState: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    justifyContent: 'center', gap: 10,
+    padding: '40px 20px',
+    background: '#1e293b', border: '1px dashed #334155',
+    borderRadius: 14, marginBottom: 4,
+  },
 }
