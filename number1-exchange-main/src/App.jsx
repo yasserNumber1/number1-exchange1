@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 
 import Navbar     from './components/common/Navbar'
@@ -7,7 +7,6 @@ import Footer     from './components/common/Footer'
 import AuthModal  from './components/common/AuthModal'
 import SupportFAB from './components/common/SupportFAB'
 
-// Public Pages
 import Home       from './pages/Home'
 import Rates      from './pages/Rates'
 import HowItWorks from './pages/HowItWorks'
@@ -18,7 +17,6 @@ import About      from './pages/About'
 import OrderTrack from './pages/OrderTrack'
 import NotFound   from './pages/NotFound'
 
-// Admin Pages
 import AdminDashboard      from './pages/admin/AdminDashboard'
 import AdminOrders         from './pages/admin/AdminOrders'
 import AdminRates          from './pages/admin/AdminRates'
@@ -28,11 +26,47 @@ import AdminSettings       from './pages/admin/AdminSettings'
 
 import useAuth from './context/useAuth'
 
-// Legal
 import Terms   from './pages/legal/Terms'
 import Privacy from './pages/legal/Privacy'
 import AML     from './pages/legal/AML'
 import Cookies from './pages/legal/Cookies'
+
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+// ── Maintenance Page ───────────────────────────────────────
+function MaintenancePage() {
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: 'var(--bg)', direction: 'rtl', padding: 24,
+      textAlign: 'center', gap: 20,
+    }}>
+      <div style={{ fontSize: 64 }}>🔧</div>
+      <h1 style={{
+        fontFamily: "'Orbitron',sans-serif", fontSize: 'clamp(1.4rem,4vw,2rem)',
+        fontWeight: 900, color: 'var(--cyan)', margin: 0,
+      }}>
+        المنصة تحت الصيانة
+      </h1>
+      <p style={{
+        fontSize: '1rem', color: 'var(--text-3)', maxWidth: 400,
+        fontFamily: "'Tajawal',sans-serif", lineHeight: 1.8, margin: 0,
+      }}>
+        نعمل على تحسين المنصة لخدمتك بشكل أفضل.
+        يرجى المراجعة لاحقاً.
+      </p>
+      <div style={{
+        background: 'var(--card)', border: '1px solid var(--border-1)',
+        borderRadius: 12, padding: '12px 24px',
+        fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8rem',
+        color: 'var(--text-3)',
+      }}>
+        NUMBER1 EXCHANGE — MAINTENANCE MODE
+      </div>
+    </div>
+  )
+}
 
 // ── Admin Route Guard ──────────────────────────────────────
 function AdminRoute({ children }) {
@@ -46,17 +80,41 @@ function AdminRoute({ children }) {
 function App() {
   const location    = useLocation()
   const isAdminPage = location.pathname.startsWith('/admin')
+  const { user }    = useAuth()
 
-  const [authOpen, setAuthOpen] = useState(false)
-  const [authTab,  setAuthTab]  = useState('login')
+  const [authOpen,     setAuthOpen]     = useState(false)
+  const [authTab,      setAuthTab]      = useState('login')
+  const [maintenance,  setMaintenance]  = useState(false)
+  const [siteSettings, setSiteSettings] = useState(null)
 
   const openAuth = (tab = 'login') => {
     setAuthTab(tab)
     setAuthOpen(true)
   }
 
+  // ── جلب إعدادات المنصة ──────────────────────
+  useEffect(() => {
+    fetch(`${API}/api/public/settings`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setSiteSettings(data)
+          setMaintenance(data.maintenanceMode || false)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  // ── وضع الصيانة — يظهر لكل شيء ماعدا الأدمن ──
+  if (maintenance && !isAdminPage) {
+    // الأدمن يقدر يدخل حتى في وضع الصيانة
+    if (!user || user.role !== 'admin') {
+      return <MaintenancePage />
+    }
+  }
+
   // ══════════════════════════════════════════
-  // ADMIN — معزول تماماً بدون Navbar/Footer
+  // ADMIN
   // ══════════════════════════════════════════
   if (isAdminPage) {
     return (
@@ -72,7 +130,7 @@ function App() {
   }
 
   // ══════════════════════════════════════════
-  // PUBLIC — Navbar + Footer كالمعتاد
+  // PUBLIC
   // ══════════════════════════════════════════
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
