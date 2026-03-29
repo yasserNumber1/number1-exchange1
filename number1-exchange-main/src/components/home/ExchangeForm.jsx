@@ -5,8 +5,8 @@
 // ═══════════════════════════════════════════════════════
 import { useState, useEffect, useMemo } from 'react'
 import ConfirmModal from './ConfirmModal'
-import { paymentAPI } from '../../services/api'
 
+// ✅ FIX: نجلب مباشرة من public API بدل paymentAPI (admin)
 const API = import.meta.env.VITE_API_URL
 
 const FALLBACK = { cryptos: [], wallets: [] }
@@ -49,7 +49,7 @@ function resolveRate(rates, sendType, recvType, sendItem, recvItem) {
 function ExchangeForm() {
   // ── بيانات من الـ API ──────────────────────────────
   const [methods,    setMethods]    = useState(null)
-  const [rates,      setRates]      = useState(null)   // ← الأسعار الحقيقية
+  const [rates,      setRates]      = useState(null)
   const [apiLoading, setApiLoading] = useState(true)
   const [apiError,   setApiError]   = useState(false)
 
@@ -78,39 +78,49 @@ function ExchangeForm() {
   const [rateDir,    setRateDir]    = useState(null)
 
   // ══════════════════════════════════════════════════
-  // جلب وسائل الدفع + الأسعار معاً
+  // ✅ FIX: جلب وسائل الدفع + الأسعار من public API مباشرة
+  // بدون cache — كل مرة يفتح الصفحة يجلب أحدث بيانات
   // ══════════════════════════════════════════════════
   useEffect(() => {
     const loadAll = async () => {
       try {
-        // نجلب الاثنين بالتوازي
+        // ✅ نجلب الاثنين بالتوازي من public routes
         const [methodsRes, ratesRes] = await Promise.all([
-          paymentAPI.getMethods(),
-          fetch(`${API}/api/public/rates`).then(r => r.json()),
+          fetch(`${API}/api/public/payment-methods`, {
+            // ✅ no-cache: يمنع المتصفح من استخدام البيانات القديمة
+            headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+          }).then(r => r.json()),
+          fetch(`${API}/api/public/rates`, {
+            headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+          }).then(r => r.json()),
         ])
 
-        const data = methodsRes.data
-        setMethods(data)
+        // ✅ وسائل الدفع — من public API مباشرة
+        if (methodsRes.success) {
+          setMethods(methodsRes)
+
+          // اختيار أول وسيلة تلقائياً
+          if (methodsRes.wallets?.length > 0) {
+            setSendItem(methodsRes.wallets[0])
+            setSendType('wallet')
+          } else if (methodsRes.cryptos?.length > 0) {
+            setSendItem(methodsRes.cryptos[0])
+            setSendType('crypto')
+          }
+
+          if (methodsRes.cryptos?.length > 0) {
+            setRecvItem(methodsRes.cryptos[0])
+            setRecvType('crypto')
+          } else if (methodsRes.wallets?.length > 0) {
+            setRecvItem(methodsRes.wallets[0])
+            setRecvType('wallet')
+          }
+        } else {
+          setMethods(FALLBACK)
+        }
 
         // الأسعار
         if (ratesRes.success) setRates(ratesRes)
-
-        // اختيار أول وسيلة تلقائياً
-        if (data.wallets?.length > 0) {
-          setSendItem(data.wallets[0])
-          setSendType('wallet')
-        } else if (data.cryptos?.length > 0) {
-          setSendItem(data.cryptos[0])
-          setSendType('crypto')
-        }
-
-        if (data.cryptos?.length > 0) {
-          setRecvItem(data.cryptos[0])
-          setRecvType('crypto')
-        } else if (data.wallets?.length > 0) {
-          setRecvItem(data.wallets[0])
-          setRecvType('wallet')
-        }
 
       } catch {
         setApiError(true)
@@ -163,9 +173,15 @@ function ExchangeForm() {
     if (amt > maxOrder)             return alert(`الحد الأقصى ${maxOrder} وحدة`)
 
     setOrderData({
-      sendItem, recvItem, sendType, recvType,
-      sendAmount, receiveAmount,
-      email, userPhone, recipientId,
+      sendItem,       // ✅ يحتوي على address (crypto) أو number (wallet) من public API
+      recvItem,
+      sendType,
+      recvType,
+      sendAmount,
+      receiveAmount,
+      email,
+      userPhone,
+      recipientId,
       rate: currentRate,
     })
     setModalOpen(true)
