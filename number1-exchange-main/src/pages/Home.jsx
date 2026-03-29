@@ -503,9 +503,9 @@ const handleSubmit = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        customerName:  email.split('@')[0] || 'مستخدم',
-        customerEmail: email,
-        customerPhone: orderData.userPhone || '',
+  customerName:  orderData.email?.split('@')[0] || 'مستخدم',
+customerEmail: orderData.email || '',
+customerPhone: orderData.userPhone || '',
         orderType:     orderData.sendMethod.type === 'egp' ? 'EGP_WALLET_TO_MONEYGO' : 'USDT_TO_MONEYGO',
         payment: {
           method:        orderData.sendMethod.type === 'egp' ? 'VODAFONE_CASH' : 'USDT_TRC20',
@@ -985,7 +985,15 @@ function ExchangeForm() {
     if(!recipientId){alert(lang==="ar"?`يرجى إدخال ${recipientLabel}`:`Please enter ${recipientLabel}`);return}
     if(!aml||!tos){alert(lang==="ar"?"يرجى الموافقة على الشروط":"Please agree to the terms");return}
     if(parseFloat(sendAmount)<10){alert(lang==="ar"?"الحد الأدنى 10 وحدة":"Minimum is 10 units");return}
-    setOrderData({sendMethod,receiveMethod,sendAmount,receiveAmount}); setModalOpen(true)
+    setOrderData({
+  sendMethod,
+  receiveMethod, 
+  sendAmount,
+  receiveAmount,
+  email,       
+  userPhone,    
+  recipientId,
+})
   }
 
   // ── sec-label helper ──
