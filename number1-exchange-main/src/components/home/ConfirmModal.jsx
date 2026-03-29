@@ -98,13 +98,18 @@ function ConfirmModal({ isOpen, onClose, orderData }) {
     setError('')
 
     try {
+      console.log('🚀 1 — بدأ الإرسال')
+
       // 1 — رفع صورة الإيصال
       let receiptImageUrl = ''
       try {
         receiptImageUrl = await uploadReceipt(receipt)
-      } catch {
-        console.warn('Receipt upload failed, continuing without image')
+        console.log('✅ 2 — رُفعت الصورة:', receiptImageUrl)
+      } catch(e) {
+        console.warn('⚠️ 2 — فشل رفع الصورة:', e.message)
       }
+
+      console.log('📦 3 — جاري تحضير الطلب...')
 
       // 2 — تحضير بيانات الطلب بالشكل الصح للباك إند
       const payload = {
@@ -140,7 +145,9 @@ function ConfirmModal({ isOpen, onClose, orderData }) {
       }
 
       // 3 — إرسال الطلب
+      console.log('📤 4 — جاري الإرسال للـ API...')
       const { data } = await ordersAPI.create(payload)
+      console.log('🎉 5 — وصل الرد:', data)
 
       // 4 — حفظ رقم الطلب وعرض شاشة النجاح
       setOrderNumber(data.order?.orderNumber || '')
