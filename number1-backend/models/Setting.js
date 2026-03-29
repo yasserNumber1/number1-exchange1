@@ -35,6 +35,20 @@ const settingSchema = new mongoose.Schema({
   moneygoApiUrl:  { type: String, default: '' },
   cryptoApiKey:   { type: String, default: '' },
 
+  // ── بيانات التواصل ────────────────────────────
+contactTelegram:  { type: String, default: '@Number1Exchange' },
+contactWhatsapp:  { type: String, default: '' },
+contactEmail:     { type: String, default: 'support@number1exchange.com' },
+contactWebsite:   { type: String, default: '' },
+
+// ── معلومات إضافية ────────────────────────────
+platformNameAr:      { type: String, default: 'نمبر ون' },
+platformNameEn:      { type: String, default: 'Number1' },
+platformUrl:         { type: String, default: '' },
+supportEmail:        { type: String, default: '' },
+supportTelegram:     { type: String, default: '' },
+platformEnabled:     { type: Boolean, default: true },
+registrationEnabled: { type: Boolean, default: true },
 }, { timestamps: true })
 
 // ── جلب السجل الوحيد أو إنشاؤه ──────────────────

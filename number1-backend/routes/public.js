@@ -51,4 +51,24 @@ router.get('/payment-methods', async (req, res) => {
   }
 })
 
+// ─── GET /api/public/settings ─────────────────
+// إعدادات عامة للمستخدمين
+router.get('/settings', async (req, res) => {
+  try {
+    const Setting = require('../models/Setting')
+    const s = await Setting.getSingleton()
+    res.json({
+      success:          true,
+      platformName:     s.platformName,
+      platformActive:   s.platformActive,
+      maintenanceMode:  s.maintenanceMode,
+      contactTelegram:  s.contactTelegram,
+      contactWhatsapp:  s.contactWhatsapp,
+      contactEmail:     s.contactEmail,
+      contactWebsite:   s.contactWebsite,
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.' })
+  }
+})
 module.exports = router;

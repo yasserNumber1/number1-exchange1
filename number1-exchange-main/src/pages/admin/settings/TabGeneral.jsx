@@ -36,20 +36,80 @@ export default function TabGeneral({ settings, set, togglePlatform }) {
       <SectionCard title="معلومات المنصة" icon="ℹ️">
         <div style={S.fieldsGrid}>
           <Field label="اسم المنصة (عربي)">
-            <input style={S.input} value={settings.platformNameAr} onChange={e => set('platformNameAr', e.target.value)} placeholder="نمبر ون" />
+            <input
+              style={S.input}
+              value={settings.platformNameAr || ''}
+              onChange={e => set('platformNameAr', e.target.value)}
+              placeholder="نمبر ون"
+            />
           </Field>
           <Field label="اسم المنصة (إنجليزي)">
-            <input style={S.input} value={settings.platformNameEn} onChange={e => set('platformNameEn', e.target.value)} placeholder="Number1" />
+            <input
+              style={S.input}
+              value={settings.platformNameEn || ''}
+              onChange={e => set('platformNameEn', e.target.value)}
+              placeholder="Number1"
+            />
           </Field>
           <Field label="رابط الموقع">
-            <input style={{ ...S.input, direction: 'ltr', textAlign: 'left' }} value={settings.platformUrl} onChange={e => set('platformUrl', e.target.value)} placeholder="https://number1exchange.com" />
+            <input
+              style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
+              value={settings.platformUrl || ''}
+              onChange={e => set('platformUrl', e.target.value)}
+              placeholder="https://number1exchange.com"
+            />
           </Field>
           <Field label="إيميل الدعم">
-            <input style={{ ...S.input, direction: 'ltr', textAlign: 'left' }} type="email" value={settings.supportEmail} onChange={e => set('supportEmail', e.target.value)} placeholder="support@number1.com" />
+            <input
+              style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
+              type="email"
+              value={settings.supportEmail || ''}
+              onChange={e => set('supportEmail', e.target.value)}
+              placeholder="support@number1.com"
+            />
           </Field>
           <Field label="Telegram الدعم">
-            <input style={{ ...S.input, direction: 'ltr', textAlign: 'left' }} value={settings.supportTelegram} onChange={e => set('supportTelegram', e.target.value)} placeholder="@number1support" />
+            <input
+              style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
+              value={settings.supportTelegram || ''}
+              onChange={e => set('supportTelegram', e.target.value)}
+              placeholder="@number1support"
+            />
           </Field>
+        </div>
+      </SectionCard>
+
+      {/* ── بيانات التواصل ───────────────────── */}
+      <SectionCard title="بيانات التواصل" icon="📞">
+        <div style={S.fieldsGrid}>
+          <Field label="Telegram">
+            <input
+              style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
+              value={settings.contactTelegram || ''}
+              onChange={e => set('contactTelegram', e.target.value)}
+              placeholder="@Number1Exchange"
+            />
+          </Field>
+          <Field label="WhatsApp">
+            <input
+              style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
+              value={settings.contactWhatsapp || ''}
+              onChange={e => set('contactWhatsapp', e.target.value)}
+              placeholder="+20XXXXXXXXXX"
+            />
+          </Field>
+          <Field label="البريد الإلكتروني">
+            <input
+              style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
+              type="email"
+              value={settings.contactEmail || ''}
+              onChange={e => set('contactEmail', e.target.value)}
+              placeholder="support@number1exchange.com"
+            />
+          </Field>
+        </div>
+        <div style={S.hint}>
+          💡 هذي البيانات تظهر في صفحة "تواصل معنا" للمستخدمين
         </div>
       </SectionCard>
 
