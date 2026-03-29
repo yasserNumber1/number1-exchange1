@@ -18,11 +18,10 @@ function ConfirmModal({ isOpen, onClose, orderData }) {
 
   if (!isOpen || !orderData) return null
 
-  // ── استخراج بيانات وسيلة الاستلام من الـ API ──
-  // orderData.recvItem = { address, number, name, coin, network }
+  // ── استخراج بيانات وسيلة الإرسال من الـ API ──
   const transferValue = orderData.sendType === 'crypto'
-    ? orderData.sendItem?.address  || ''   // عنوان محفظة USDT
-    : orderData.sendItem?.number   || ''   // رقم المحفظة الإلكترونية
+    ? orderData.sendItem?.address  || ''
+    : orderData.sendItem?.number   || ''
 
   const transferLabel = orderData.sendType === 'crypto'
     ? `عنوان محفظة ${orderData.sendItem?.coin || 'USDT'} (${orderData.sendItem?.network || 'TRC20'})`
@@ -58,7 +57,7 @@ function ConfirmModal({ isOpen, onClose, orderData }) {
 
     const token = localStorage.getItem('n1_token')
     const res   = await fetch(
-      `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/orders/upload-receipt`,
+      `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/upload-receipt`,
       {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -67,7 +66,28 @@ function ConfirmModal({ isOpen, onClose, orderData }) {
     )
     const data = await res.json()
     if (!res.ok) throw new Error(data.message || 'فشل رفع الصورة')
-    return data.url   // رابط الصورة على السيرفر
+    return data.url
+  }
+
+  // ✅ دالة مساعدة: تحويل اسم الوسيلة إلى enum صحيح للباك إند
+  const resolvePaymentMethod = (sendType, sendItem) => {
+    if (sendType === 'crypto') return 'USDT_TRC20'
+
+    // wallet — نطابق اسم الوسيلة مع الـ enum
+    const name = (sendItem?.name || sendItem?.key || '').toLowerCase()
+    if (name.includes('vodafone'))  return 'VODAFONE_CASH'
+    if (name.includes('instapay') || name.includes('insta')) return 'INSTAPAY'
+    if (name.includes('orange'))    return 'ORANGE_CASH'
+    if (name.includes('fawry'))     return 'FAWRY'
+    if (name.includes('we') || name.includes('wepay')) return 'WE_PAY'
+    if (name.includes('meeza'))     return 'MEEZA'
+    return 'VODAFONE_CASH' // fallback
+  }
+
+  // ✅ دالة مساعدة: تحويل نوع الطلب إلى enum صحيح للباك إند
+  const resolveOrderType = (sendType) => {
+    if (sendType === 'crypto') return 'USDT_TO_MONEYGO'
+    return 'EGP_WALLET_TO_MONEYGO'
   }
 
   // ── إرسال الطلب النهائي للـ API ───────────
@@ -83,51 +103,39 @@ function ConfirmModal({ isOpen, onClose, orderData }) {
       try {
         receiptImageUrl = await uploadReceipt(receipt)
       } catch {
-        // إذا فشل رفع الصورة نكمل بدونها
         console.warn('Receipt upload failed, continuing without image')
       }
 
-      // 2 — تحضير بيانات الطلب بالشكل الذي يتوقعه الباك إند
+      // 2 — تحضير بيانات الطلب بالشكل الصح للباك إند
       const payload = {
-        customerName:  orderData.userName  || 'مستخدم',
+        customerName:  orderData.userName  || orderData.email?.split('@')[0] || 'مستخدم',
         customerEmail: orderData.email     || '',
         customerPhone: orderData.userPhone || '',
 
-        // نوع الطلب
-        orderType: orderData.sendType === 'crypto'
-          ? 'usdt_to_egp'
-          : 'egp_to_usdt',
+        // ✅ orderType يطابق الـ enum في Model
+        orderType: resolveOrderType(orderData.sendType),
 
         // بيانات الدفع
         payment: {
-          method:        orderData.sendType === 'crypto'
-            ? `${orderData.sendItem?.coin}_${orderData.sendItem?.network}`
-            : orderData.sendItem?.name,
+          // ✅ method يطابق الـ enum في Model
+          method:        resolvePaymentMethod(orderData.sendType, orderData.sendItem),
           amountSent:    parseFloat(orderData.sendAmount),
-          currencySent:  orderData.sendType === 'crypto'
-            ? orderData.sendItem?.coin
-            : 'EGP',
+          currencySent:  orderData.sendType === 'crypto' ? 'USDT' : 'EGP',
           receiptImageUrl,
-          senderNumber:  orderData.userPhone || '',
+          senderPhoneNumber: orderData.userPhone || '',
         },
 
         // بيانات الاستلام
         moneygo: {
-          recipientName:  orderData.userName  || '',
-          recipientPhone: orderData.recipientId || '',
+          recipientName:  orderData.userName || orderData.email?.split('@')[0] || 'مستخدم',
+          recipientPhone: orderData.recipientId || orderData.userPhone || '',
           amountUSD:      parseFloat(orderData.receiveAmount),
-          recipientAddress: orderData.recipientId || '',
         },
 
         // سعر الصرف
         exchangeRate: {
+          appliedRate:    parseFloat(orderData.rate) || 1,
           finalAmountUSD: parseFloat(orderData.receiveAmount),
-          sendCurrency:   orderData.sendType === 'crypto'
-            ? orderData.sendItem?.coin
-            : 'EGP',
-          recvCurrency:   orderData.recvType === 'crypto'
-            ? orderData.recvItem?.coin
-            : orderData.recvItem?.name,
         },
       }
 
