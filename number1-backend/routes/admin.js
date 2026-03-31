@@ -10,6 +10,7 @@ const { protect, adminOnly } = require('../middleware/auth');
 const telegramService = require('../services/telegram');
 const Rate = require('../models/Rate');
 const mongoose = require('mongoose')
+const telegramService = require('../services/telegram');
 
 // ─── Middleware: حماية كل routes الأدمن ───────
 router.use(protect, adminOnly);
