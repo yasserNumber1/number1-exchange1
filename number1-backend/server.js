@@ -1,20 +1,17 @@
 // ============================================
-// server.js — نقطة الدخول الرئيسية
+// server.js
 // ============================================
 
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+const express    = require('express');
+const mongoose   = require('mongoose');
+const cors       = require('cors');
+const helmet     = require('helmet');
+const rateLimit  = require('express-rate-limit');
 require('dotenv').config();
 
-const walletRoutes = require('./routes/wallet')
-app.use('/api/wallet', walletRoutes)
+// ─── App ──────────────────────────────────────
+const app = express();  // ✅ لازم يكون أول شيء
 
-const app = express();
-
-// ✅ FIX: Railway يستخدم proxy — لازم نخبر Express يثق فيه
 app.set('trust proxy', 1);
 
 // ─── Middleware ───────────────────────────────
@@ -34,7 +31,7 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// ─── Database Connection ──────────────────────
+// ─── Database ─────────────────────────────────
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB Connected — Number1DB'))
   .catch(err => {
@@ -46,8 +43,9 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/auth',   require('./routes/auth'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/public', require('./routes/public'));
+app.use('/api/wallet', require('./routes/wallet'));  // ✅ هنا المكان الصحيح
 
-// ⚠️ Telegram Webhook — قبل /api/admin عشان مش محتاج auth
+// ─── Telegram Webhook ─────────────────────────
 app.post('/api/telegram/webhook', async (req, res) => {
   try {
     const { callback_query } = req.body;
@@ -82,33 +80,26 @@ app.post('/api/telegram/webhook', async (req, res) => {
     await telegramService.notifyOrderUpdate(order, action_data.status);
 
     res.json({ ok: true });
-
   } catch (error) {
     console.error('Telegram webhook error:', error);
-    res.json({ ok: true }); // دائماً 200 للتليغرام
+    res.json({ ok: true });
   }
 });
 
-// 🧪 اختبار تليغرام مؤقت — احذفه بعد الاختبار
-app.get('/api/test-telegram', async (req, res) => {
-  const telegramService = require('./services/telegram')
-  const result = await telegramService.sendMessage('🧪 اختبار مباشر من السيرفر')
-  res.json(result)
-})
-
-app.use('/api/admin',  require('./routes/admin'));
+// ─── Admin Routes ─────────────────────────────
+app.use('/api/admin', require('./routes/admin'));
 
 // ─── Health Check ─────────────────────────────
 app.get('/', (req, res) => {
   res.json({
-    success: true,
-    message: 'Number1 Backend is running 🚀',
-    version: '1.0.0',
+    success:   true,
+    message:   'Number1 Backend is running 🚀',
+    version:   '1.0.0',
     timestamp: new Date().toISOString()
   });
 });
 
-// ─── 404 Handler ──────────────────────────────
+// ─── 404 ──────────────────────────────────────
 app.use('*', (req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
@@ -119,9 +110,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: 'Internal server error' });
 });
 
-// ─── Start Server ─────────────────────────────
+// ─── Start ────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Number1 Server running on port ${PORT}`);
 });
-
