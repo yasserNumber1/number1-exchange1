@@ -52,7 +52,11 @@ app.post('/api/telegram/webhook', async (req, res) => {
     if (!callback_query) return res.json({ ok: true });
 
     const { data, id: callbackQueryId } = callback_query;
-    const [action, orderId] = data.split('_');
+
+    // ✅ إصلاح: split بأول _ فقط عشان orderId ما يتكسر
+    const underscoreIndex = data.indexOf('_');
+    const action  = data.substring(0, underscoreIndex);
+    const orderId = data.substring(underscoreIndex + 1);
 
     const Order           = require('./models/Order');
     const telegramService = require('./services/telegram');
@@ -74,12 +78,18 @@ app.post('/api/telegram/webhook', async (req, res) => {
 
     order.status = action_data.status;
     order.addTimeline(action_data.status, `${action_data.msg} via Telegram`, 'admin:telegram');
+
+    // تحديث MoneyGo status
+    if (action_data.status === 'completed') order.moneygo.transferStatus = 'sent';
+    if (action_data.status === 'rejected')  order.moneygo.transferStatus = 'failed';
+
     await order.save();
 
     await telegramService.answerCallbackQuery(callbackQueryId, action_data.msg);
     await telegramService.notifyOrderUpdate(order, action_data.status);
 
     res.json({ ok: true });
+
   } catch (error) {
     console.error('Telegram webhook error:', error);
     res.json({ ok: true });
