@@ -53,7 +53,6 @@ app.post('/api/telegram/webhook', async (req, res) => {
 
     const { data, id: callbackQueryId } = callback_query;
 
-    // ✅ إصلاح: split بأول _ فقط عشان orderId ما يتكسر
     const underscoreIndex = data.indexOf('_');
     const action  = data.substring(0, underscoreIndex);
     const orderId = data.substring(underscoreIndex + 1);
@@ -64,6 +63,16 @@ app.post('/api/telegram/webhook', async (req, res) => {
     const order = await Order.findById(orderId);
     if (!order) {
       await telegramService.answerCallbackQuery(callbackQueryId, '❌ الطلب غير موجود');
+      return res.json({ ok: true });
+    }
+
+    // ✅ منع تغيير الطلبات المكتملة أو المرفوضة
+    const finalStatuses = ['completed', 'rejected', 'cancelled'];
+    if (finalStatuses.includes(order.status)) {
+      await telegramService.answerCallbackQuery(
+        callbackQueryId,
+        `⚠️ الطلب ${order.status === 'completed' ? 'مكتمل' : 'مرفوض'} مسبقاً`
+      );
       return res.json({ ok: true });
     }
 
@@ -79,7 +88,6 @@ app.post('/api/telegram/webhook', async (req, res) => {
     order.status = action_data.status;
     order.addTimeline(action_data.status, `${action_data.msg} via Telegram`, 'admin:telegram');
 
-    // تحديث MoneyGo status
     if (action_data.status === 'completed') order.moneygo.transferStatus = 'sent';
     if (action_data.status === 'rejected')  order.moneygo.transferStatus = 'failed';
 
