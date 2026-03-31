@@ -16,17 +16,32 @@ const FALLBACK = { cryptos: [], wallets: [] }
 // حسب نوع الإرسال والاستلام
 // ══════════════════════════════════════════════
 function resolveRate(rates, sendType, recvType, sendItem, recvItem) {
-  if (!rates) return 50 // fallback مؤقت
+  if (!rates) return 50
 
-  // محفظة → crypto  (مستخدم يرسل EGP ويستلم USDT)
   if (sendType === 'wallet' && recvType === 'crypto') {
-    // نستخدم السعر حسب نوع المحفظة
-    if (sendItem?.key === 'vodafone') return rates.vodafoneBuyRate
-    if (sendItem?.key === 'instapay') return rates.instaPayRate
-    if (sendItem?.key === 'fawry')    return rates.fawryRate
-    if (sendItem?.key === 'orange')   return rates.orangeRate
-    return rates.usdtSellRate // fallback
+    // ✅ إصلاح: id بدل key
+    const id = sendItem?.id || ''
+    if (id.includes('vodafone')) return rates.vodafoneBuyRate
+    if (id.includes('instapay')) return rates.instaPayRate
+    if (id.includes('fawry'))    return rates.fawryRate
+    if (id.includes('orange'))   return rates.orangeRate
+    return rates.usdtSellRate
   }
+
+  if (sendType === 'crypto' && recvType === 'wallet') {
+    return rates.usdtBuyRate
+  }
+
+  if (sendType === 'crypto' && recvType === 'crypto') {
+    return 1
+  }
+
+  if (sendType === 'wallet' && recvType === 'wallet') {
+    return 1
+  }
+
+  return rates.usdtBuyRate
+}
 
   // crypto → محفظة  (مستخدم يرسل USDT ويستلم EGP)
   if (sendType === 'crypto' && recvType === 'wallet') {
