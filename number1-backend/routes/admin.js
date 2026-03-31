@@ -580,4 +580,148 @@ router.patch('/wallets/:userId/toggle', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error.' })
   }
 })
+
+// ============================================
+// Deposit Admin Routes — نظام N1 Credit
+// ============================================
+const Deposit = require('../models/Deposit')
+
+// ─── GET /api/admin/deposits ──────────────────
+// كل طلبات الإيداع مع فلترة
+router.get('/deposits', async (req, res) => {
+  try {
+    const {
+      status,   // pending | approved | rejected
+      type,     // bank_transfer | usdt
+      page  = 1,
+      limit = 20
+    } = req.query
+
+    const filter = {}
+    if (status) filter.status = status
+    if (type)   filter.type   = type
+
+    const skip = (parseInt(page) - 1) * parseInt(limit)
+
+    const [deposits, total] = await Promise.all([
+      Deposit.find(filter)
+        .populate('user', 'name email')
+        .populate('processedBy', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Deposit.countDocuments(filter)
+    ])
+
+    res.json({
+      success: true,
+      deposits,
+      pagination: {
+        page:  parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    })
+
+  } catch (error) {
+    console.error('Get deposits error:', error)
+    res.status(500).json({ success: false, message: 'Server error.' })
+  }
+})
+
+// ─── POST /api/admin/deposits/:id/approve ─────
+// الأدمن يوافق على طلب الإيداع → يضيف N1 Balance
+router.post('/deposits/:id/approve', async (req, res) => {
+  try {
+    const deposit = await Deposit.findById(req.params.id).populate('user', 'name email')
+
+    if (!deposit) {
+      return res.status(404).json({ success: false, message: 'طلب الإيداع غير موجود.' })
+    }
+
+    if (deposit.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'هذا الطلب تمت معالجته مسبقاً.' })
+    }
+
+    // ─── 1. تحديث حالة الطلب ──────────────────
+    deposit.status      = 'approved'
+    deposit.processedBy = req.user._id
+    deposit.processedAt = new Date()
+    await deposit.save()
+
+    // ─── 2. إضافة N1 Balance للمحفظة ──────────
+    let wallet = await Wallet.findOne({ user: deposit.user._id })
+    if (!wallet) {
+      wallet = await Wallet.create({ user: deposit.user._id })
+    }
+
+    const balanceBefore       = wallet.n1Balance
+    wallet.n1Balance          += deposit.amount
+    wallet.totalN1Deposited   += deposit.amount
+    await wallet.save()
+
+    // ─── 3. تسجيل في Transaction ──────────────
+    await Transaction.create({
+      user:          deposit.user._id,
+      wallet:        wallet._id,
+      type:          'deposit',
+      amount:        deposit.amount,
+      balanceBefore,
+      balanceAfter:  wallet.n1Balance,
+      status:        'completed',
+      performedBy:   `admin:${req.user.email}`,
+      note:          `N1 Deposit approved — ${deposit.type} — ${deposit.currency}`
+    })
+
+    res.json({
+      success:    true,
+      message:    `تمت الموافقة. تم إضافة ${deposit.amount} N1 للمستخدم.`,
+      deposit,
+      n1Balance:  wallet.n1Balance
+    })
+
+  } catch (error) {
+    console.error('Approve deposit error:', error)
+    res.status(500).json({ success: false, message: 'Server error.' })
+  }
+})
+
+// ─── POST /api/admin/deposits/:id/reject ──────
+// الأدمن يرفض طلب الإيداع مع سبب
+router.post('/deposits/:id/reject', async (req, res) => {
+  try {
+    const { reason } = req.body
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, message: 'يرجى إدخال سبب الرفض.' })
+    }
+
+    const deposit = await Deposit.findById(req.params.id)
+
+    if (!deposit) {
+      return res.status(404).json({ success: false, message: 'طلب الإيداع غير موجود.' })
+    }
+
+    if (deposit.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'هذا الطلب تمت معالجته مسبقاً.' })
+    }
+
+    deposit.status          = 'rejected'
+    deposit.rejectionReason = reason.trim()
+    deposit.processedBy     = req.user._id
+    deposit.processedAt     = new Date()
+    await deposit.save()
+
+    res.json({
+      success: true,
+      message: 'تم رفض طلب الإيداع.',
+      deposit
+    })
+
+  } catch (error) {
+    console.error('Reject deposit error:', error)
+    res.status(500).json({ success: false, message: 'Server error.' })
+  }
+})
 module.exports = router;

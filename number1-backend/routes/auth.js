@@ -58,11 +58,18 @@ router.post('/register', async (req, res) => {
       password,
       emailVerificationToken: verificationToken,
       emailVerificationExpires: verificationExpires,
-      // في البيئة التطويرية، نتجاوز التحقق مؤقتاً
+      
 isVerified: true
     });
 
     const token = generateToken(user._id);
+    const Wallet = require('../models/Wallet')
+try {
+  await Wallet.create({ user: user._id })
+} catch (walletErr) {
+
+  console.warn('Wallet already exists or error:', walletErr.message)
+}
 
     res.status(201).json({
       success: true,

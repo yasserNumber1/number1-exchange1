@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import useLang from "../context/useLang"
 import { SEND_METHODS, RECEIVE_METHODS, EXCHANGE_RATES, TRANSFER_INFO } from "../data/currencies"
+import { useAuth } from '../context/AuthContext'   // أو المسار الصح عندك
+import AuthModal from '../components/common/AuthModal'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -559,39 +561,150 @@ function ConfirmModal({isOpen, onClose, orderData}) {
 
 // ══ Wallet Banners ══
 function WalletBannerV3() {
-  const {lang}=useLang()
-  const [hov,setHov]=useState(false)
+  const { lang } = useLang()
+  const { user } = useAuth()           // ← جلب حالة المستخدم
+  const [hov, setHov] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)  // ← للـ AuthModal
+
+  // ─── إذا المستخدم مسجل — لا نعرض البانر ──
+  if (user) return null
+
   return (
-    <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{display:"flex",alignItems:"center",gap:32,paddingTop:7,paddingBottom:7,paddingLeft:26,paddingRight:26,width:"789px",height:"181px",maxWidth:"100%",textAlign:"right",justifyContent:"center",verticalAlign:"middle",boxSizing:"border-box",borderRadius:"0 0 14px 14px",background:"rgba(255,255,255,0.018)",border:"1px solid rgba(255,255,255,0.06)",borderTop:"none",transition:"border-color .25s,background .25s,box-shadow .25s",boxShadow:hov?"0 0 0 3px rgba(0,210,255,0.05)":"none"}}>
-      <div style={{width:54,height:54,borderRadius:14,flexShrink:0,background:"rgba(0,210,255,0.08)",border:"1px solid rgba(0,210,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",transition:"transform .3s",transform:hov?"scale(1.07) rotate(-5deg)":"none"}}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round"><defs><linearGradient id="wbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="var(--cyan)"/><stop offset="100%" stopColor="var(--purple)"/></linearGradient></defs><path d="M21 12V7H5a2 2 0 010-4h14v4" stroke="url(#wbg)" strokeWidth="1.7"/><path d="M3 5v14a2 2 0 002 2h16v-5" stroke="url(#wbg)" strokeWidth="1.7"/><path d="M18 12a2 2 0 000 4h4v-4z" stroke="url(#wbg)" strokeWidth="1.7"/></svg>
-      </div>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:5,flexWrap:"wrap"}}>
-          <span style={{fontSize:"0.93rem",fontWeight:800,color:"var(--text-1)"}}>{lang==="ar"?"خزّن وأرسل عملاتك في أي وقت":"Store & send your crypto anytime"}</span>
-          <span style={{fontSize:"0.58rem",fontWeight:700,letterSpacing:"1.5px",border:"1px solid rgba(0,210,255,0.22)",padding:"2px 9px",borderRadius:20,background:"linear-gradient(90deg,var(--cyan),var(--purple))",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>FREE</span>
+    <>
+      <div
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{
+          display: "flex", alignItems: "center", gap: 32,
+          paddingTop: 7, paddingBottom: 7, paddingLeft: 26, paddingRight: 26,
+          width: "789px", height: "181px", maxWidth: "100%",
+          textAlign: "right", justifyContent: "center",
+          boxSizing: "border-box", borderRadius: "0 0 14px 14px",
+          background: "rgba(255,255,255,0.018)",
+          border: "1px solid rgba(255,255,255,0.06)", borderTop: "none",
+          transition: "border-color .25s,background .25s,box-shadow .25s",
+          boxShadow: hov ? "0 0 0 3px rgba(0,210,255,0.05)" : "none"
+        }}
+      >
+        {/* ─── أيقونة المحفظة ─── */}
+        <div style={{
+          width: 54, height: 54, borderRadius: 14, flexShrink: 0,
+          background: "rgba(0,210,255,0.08)", border: "1px solid rgba(0,210,255,0.15)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "transform .3s",
+          transform: hov ? "scale(1.07) rotate(-5deg)" : "none"
+        }}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+            <defs>
+              <linearGradient id="wbg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="var(--cyan)" />
+                <stop offset="100%" stopColor="var(--purple)" />
+              </linearGradient>
+            </defs>
+            <path d="M21 12V7H5a2 2 0 010-4h14v4" stroke="url(#wbg)" strokeWidth="1.7" />
+            <path d="M3 5v14a2 2 0 002 2h16v-5" stroke="url(#wbg)" strokeWidth="1.7" />
+            <path d="M18 12a2 2 0 000 4h4v-4z" stroke="url(#wbg)" strokeWidth="1.7" />
+          </svg>
         </div>
-        <p style={{fontSize:"0.78rem",color:"var(--text-3)",lineHeight:1.62,margin:"0 0 14px"}}>{lang==="ar"?"محفظة Number 1 مجانية — اشحن بالبطاقة، حوّل للجنيه أو USDT، واستقبل في ثوانٍ بدون رسوم إنشاء.":"Free Number 1 wallet — fund by card, convert to EGP or USDT, receive in seconds with zero setup fees."}</p>
-        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-          {[{ico:<svg width="15" height="15" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#00e5a0"/></svg>,bg:"rgba(0,229,160,0.07)",border:"rgba(0,229,160,0.13)",titleAr:"تحويل فوري",titleEn:"Instant Transfer",subAr:"خلال ثوانٍ",subEn:"Within seconds"},{ico:<svg width="15" height="15" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" fill="#00d2ff" opacity="0.85"/><path d="M7 11V7a5 5 0 0110 0v4" fill="none" stroke="#00d2ff" strokeWidth="2.2" strokeLinecap="round"/><circle cx="12" cy="16" r="1.5" fill="rgba(255,255,255,0.95)"/></svg>,bg:"rgba(0,210,255,0.06)",border:"rgba(0,210,255,0.12)",titleAr:"أمان عالي",titleEn:"High Security",subAr:"AES-256",subEn:"AES-256"},{ico:<svg width="28" height="20" viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="12" r="11" fill="#EB001B"/><circle cx="24" cy="12" r="11" fill="#F79E1B"/><path d="M19 4.8a11 11 0 010 14.4A11 11 0 0119 4.8z" fill="#FF5F00"/></svg>,bg:"rgba(245,158,11,0.06)",border:"rgba(245,158,11,0.12)",titleAr:"شحن بالبطاقة",titleEn:"Card Funding",subAr:"Visa · Mastercard",subEn:"Visa · Mastercard"}].map((f,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",flex:1,minWidth:140,background:f.bg,border:`1px solid ${f.border}`,borderRadius:10,transition:"border-color .2s,background .2s"}}>
-              <div style={{width:30,height:30,borderRadius:8,background:"rgba(255,255,255,0.05)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{f.ico}</div>
-              <div>
-                <div style={{fontSize:"0.8rem",fontWeight:700,lineHeight:1.2,color:"var(--text-1)"}}>{lang==="ar"?f.titleAr:f.titleEn}</div>
-                <div style={{fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>{lang==="ar"?f.subAr:f.subEn}</div>
+
+        {/* ─── النص ─── */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 5, flexWrap: "wrap" }}>
+            <span style={{ fontSize: "0.93rem", fontWeight: 800, color: "var(--text-1)" }}>
+              {lang === "ar" ? "خزّن وأرسل عملاتك في أي وقت" : "Store & send your crypto anytime"}
+            </span>
+            <span style={{
+              fontSize: "0.58rem", fontWeight: 700, letterSpacing: "1.5px",
+              border: "1px solid rgba(0,210,255,0.22)", padding: "2px 9px", borderRadius: 20,
+              background: "linear-gradient(90deg,var(--cyan),var(--purple))",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              fontFamily: "'JetBrains Mono',monospace", flexShrink: 0
+            }}>FREE</span>
+          </div>
+
+          <p style={{ fontSize: "0.78rem", color: "var(--text-3)", lineHeight: 1.62, margin: "0 0 14px" }}>
+            {lang === "ar"
+              ? "محفظة Number 1 مجانية — اشحن بالبطاقة، حوّل للجنيه أو USDT، واستقبل في ثوانٍ بدون رسوم إنشاء."
+              : "Free Number 1 wallet — fund by card, convert to EGP or USDT, receive in seconds with zero setup fees."}
+          </p>
+
+          {/* ─── المميزات الثلاث ─── */}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {[
+              {
+                ico: <svg width="15" height="15" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#00e5a0" /></svg>,
+                bg: "rgba(0,229,160,0.07)", border: "rgba(0,229,160,0.13)",
+                titleAr: "تحويل فوري", titleEn: "Instant Transfer",
+                subAr: "خلال ثوانٍ", subEn: "Within seconds"
+              },
+              {
+                ico: <svg width="15" height="15" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" fill="#00d2ff" opacity="0.85" /><path d="M7 11V7a5 5 0 0110 0v4" fill="none" stroke="#00d2ff" strokeWidth="2.2" strokeLinecap="round" /><circle cx="12" cy="16" r="1.5" fill="rgba(255,255,255,0.95)" /></svg>,
+                bg: "rgba(0,210,255,0.06)", border: "rgba(0,210,255,0.12)",
+                titleAr: "أمان عالي", titleEn: "High Security",
+                subAr: "AES-256", subEn: "AES-256"
+              },
+              {
+                ico: <svg width="28" height="20" viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="12" r="11" fill="#EB001B" /><circle cx="24" cy="12" r="11" fill="#F79E1B" /><path d="M19 4.8a11 11 0 010 14.4A11 11 0 0119 4.8z" fill="#FF5F00" /></svg>,
+                bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.12)",
+                titleAr: "شحن بالبطاقة", titleEn: "Card Funding",
+                subAr: "Visa · Mastercard", subEn: "Visa · Mastercard"
+              }
+            ].map((f, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "9px 14px", flex: 1, minWidth: 140,
+                background: f.bg, border: `1px solid ${f.border}`,
+                borderRadius: 10, transition: "border-color .2s,background .2s"
+              }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{f.ico}</div>
+                <div>
+                  <div style={{ fontSize: "0.8rem", fontWeight: 700, lineHeight: 1.2, color: "var(--text-1)" }}>{lang === "ar" ? f.titleAr : f.titleEn}</div>
+                  <div style={{ fontSize: "0.68rem", color: "var(--text-3)", fontFamily: "'JetBrains Mono',monospace", marginTop: 2 }}>{lang === "ar" ? f.subAr : f.subEn}</div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+
+        {/* ─── زر إنشاء محفظة → يفتح AuthModal ─── */}
+        <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => setShowAuth(true)}   // ← يفتح AuthModal
+            style={{
+              padding: "12px 26px",
+              background: "linear-gradient(135deg,var(--cyan),var(--purple))",
+              border: "none", borderRadius: 11, color: "#000",
+              fontWeight: 800, fontSize: "0.87rem",
+              fontFamily: "'Tajawal',sans-serif", cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 7,
+              whiteSpace: "nowrap",
+              boxShadow: hov ? "0 8px 26px rgba(0,210,255,0.34)" : "0 4px 16px rgba(0,210,255,0.18)",
+              transition: "transform .2s,box-shadow .2s",
+              transform: hov ? "translateY(-2px)" : "none"
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12V7H5a2 2 0 010-4h14v4" />
+              <path d="M3 5v14a2 2 0 002 2h16v-5" />
+              <path d="M18 12a2 2 0 000 4h4v-4z" />
+            </svg>
+            {lang === "ar" ? "إنشاء محفظة" : "Create Wallet"}
+          </button>
+          <span style={{ fontSize: "0.65rem", color: "var(--text-3)", fontFamily: "'JetBrains Mono',monospace" }}>
+            {lang === "ar" ? "مجاني · لا بطاقة مطلوبة" : "free · no card needed"}
+          </span>
         </div>
       </div>
-      <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-        <button style={{padding:"12px 26px",background:"linear-gradient(135deg,var(--cyan),var(--purple))",border:"none",borderRadius:11,color:"#000",fontWeight:800,fontSize:"0.87rem",fontFamily:"'Tajawal',sans-serif",cursor:"pointer",display:"flex",alignItems:"center",gap:7,whiteSpace:"nowrap",boxShadow:hov?"0 8px 26px rgba(0,210,255,0.34)":"0 4px 16px rgba(0,210,255,0.18)",transition:"transform .2s,box-shadow .2s",transform:hov?"translateY(-2px)":"none"}}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>
-          {lang==="ar"?"إنشاء محفظة":"Create Wallet"}
-        </button>
-        <span style={{fontSize:"0.65rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace"}}>{lang==="ar"?"مجاني · لا بطاقة مطلوبة":"free · no card needed"}</span>
-      </div>
-    </div>
+
+      {/* ─── AuthModal يفتح عند الضغط ─── */}
+      {showAuth && (
+        <AuthModal
+          isOpen={showAuth}
+          onClose={() => setShowAuth(false)}
+          defaultTab="register"   // يفتح على تبويب إنشاء حساب
+        />
+      )}
+    </>
   )
 }
 

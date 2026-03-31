@@ -26,6 +26,7 @@ import AdminRates          from './pages/admin/AdminRates'
 import AdminPaymentMethods from './pages/admin/AdminPaymentMethods'
 import AdminUsers          from './pages/admin/AdminUsers'
 import AdminSettings       from './pages/admin/AdminSettings'
+import AdminDeposits from './pages/admin/AdminDeposits'
 
 import useAuth from './context/useAuth'
 
@@ -129,6 +130,7 @@ function App() {
         <Route path="/admin/users"           element={<AdminRoute><AdminUsers          /></AdminRoute>} />
         <Route path="/admin/settings"        element={<AdminRoute><AdminSettings       /></AdminRoute>} />
         <Route path="/admin/wallets" element={<AdminRoute><AdminWallets /></AdminRoute>} />
+        <Route path="/admin/deposits" element={<AdminDeposits />} />
       </Routes>
     )
   }

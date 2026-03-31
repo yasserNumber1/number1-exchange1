@@ -70,9 +70,9 @@ function HeroSection({ onAbout, counterKey = 0 }) {
       {/* Stats — key prop triggers remount = rerun animation */}
       <div key={counterKey} style={{ display: 'flex', gap: 30, justifyContent: 'center', marginTop: 26 }}>
         {[
-          { target: 52000,  suffix: '',  label: 'مستخدم نشط'   },
-          { target: 980000, suffix: '+', label: 'معاملة ناجحة' },
-          { target: 50,     suffix: '+', label: 'زوج تبادل'    },
+          { target: 520,  suffix: '',  label: 'مستخدم نشط'   },
+          { target: 5347, suffix: '+', label: 'معاملة ناجحة' },
+          { target: 15,     suffix: '+', label: 'زوج تبادل'    },
         ].map((k, i) => (
           <div key={i}>
             <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '1.5rem', fontWeight: 700, color: 'var(--cyan)', display: 'block', textShadow: '0 0 18px rgba(0,210,255,0.5)' }}>

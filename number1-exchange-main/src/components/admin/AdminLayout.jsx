@@ -45,6 +45,7 @@ const NAV = [
       </svg>
     ),
   },
+  
   {
     path:  '/admin/payment-methods',
     label: 'Payment Methods',
@@ -78,6 +79,7 @@ const NAV = [
       </svg>
     ),
   },
+  { path: '/admin/deposits', label: 'طلبات الإيداع', icon: '💳' }
 ]
 
 // ── AdminLayout ───────────────────────────────────────────
