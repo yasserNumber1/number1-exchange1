@@ -51,6 +51,30 @@ router.get('/payment-methods', async (req, res) => {
   }
 })
 
+// ─── GET /api/public/deposit-info ─────────────
+// معلومات الإيداع للمستخدمين
+router.get('/deposit-info', async (req, res) => {
+  try {
+    const Setting = require('../models/Setting')
+    const s = await Setting.getSingleton()
+    res.json({
+      success: true,
+      bank: {
+        bankName:      s.depositBankName      || '',
+        accountName:   s.depositAccountName   || '',
+        accountNumber: s.depositAccountNumber || '',
+      },
+      usdt: {
+        address: s.depositUsdtAddress || '',
+        network: s.depositUsdtNetwork || 'TRC20',
+      },
+      note: s.depositNote || '',
+    })
+  } catch {
+    res.status(500).json({ success: false, message: 'Server error.' })
+  }
+})
+
 // ─── GET /api/public/settings ─────────────────
 // إعدادات عامة للمستخدمين
 router.get('/settings', async (req, res) => {
