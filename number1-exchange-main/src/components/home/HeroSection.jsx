@@ -42,6 +42,25 @@ function HeroSection({ onAbout, counterKey = 0 }) {
   return (
     <div style={{ textAlign: 'center', marginBottom: 36 }}>
 
+      {/* N1 Logo */}
+      <div style={{ marginBottom: 18, display: 'flex', justifyContent: 'center' }}>
+        <img
+          src="/images/N1.png"
+          alt="شراء وبيع USDT بسهولة — Number1 Exchange منصة تبادل العملات الرقمية"
+          loading="lazy"
+          width="110"
+          height="110"
+          style={{
+            width: 110,
+            height: 'auto',
+            objectFit: 'contain',
+            animation: 'n1float 3.5s ease-in-out infinite',
+            filter: 'drop-shadow(0 0 18px rgba(0,210,255,0.35))',
+            borderRadius: 18,
+          }}
+        />
+      </div>
+
       {/* LIVE badge */}
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px', border: '1px solid rgba(0,210,255,0.2)', borderRadius: 30, background: 'rgba(0,210,255,0.05)', fontSize: '0.73rem', color: 'var(--cyan)', letterSpacing: 1, fontFamily: "'JetBrains Mono',monospace", marginBottom: 22 }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--cyan)', animation: 'blink 1.5s ease-in-out infinite', boxShadow: '0 0 8px var(--cyan)', display: 'inline-block' }} />

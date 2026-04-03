@@ -15,7 +15,7 @@ function CurrencyIcon({ method, size = 26 }) {
   return (
     <div style={{ width:size, height:size, borderRadius:"50%", background: showImg?"#fff":method.color, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'JetBrains Mono',monospace", fontSize:size*0.38+"px", fontWeight:700, color:"#fff", flexShrink:0, overflow:"hidden", border: showImg?"1.5px solid rgba(0,0,0,0.08)":"none" }}>
       {showImg ? (
-        <img src={method.img} alt={method.name} onError={()=>setImgErr(true)} style={{ width:"78%", height:"78%", objectFit:"contain" }} />
+        <img src={method.img} alt={method.name} loading="lazy" onError={()=>setImgErr(true)} style={{ width:"78%", height:"78%", objectFit:"contain" }} />
       ) : (
         method.symbol
       )}

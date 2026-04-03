@@ -2,6 +2,58 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 
+// ── Per-page SEO metadata ──────────────────────────────────
+const PAGE_SEO = {
+  '/': {
+    title: 'Number1 Exchange | شراء وبيع USDT | تبادل العملات الرقمية',
+    description: 'اشتري وبيع USDT TRC20 بأفضل الأسعار في مصر. حول من فودافون كاش وإنستا باي واتصالات كاش إلى USDT وMoneyGo USD بسرعة وأمان.',
+  },
+  '/rates': {
+    title: 'أسعار الصرف اليومية | Number1 Exchange',
+    description: 'تحقق من أحدث أسعار صرف USDT مقابل الجنيه المصري والدولار في الوقت الفعلي على منصة Number1 Exchange.',
+  },
+  '/how-it-works': {
+    title: 'كيف تعمل المنصة | Number1 Exchange',
+    description: 'دليل خطوة بخطوة لشراء وبيع USDT وتحويل الأموال عبر منصة Number1 Exchange بكل سهولة.',
+  },
+  '/reviews': {
+    title: 'آراء العملاء | Number1 Exchange',
+    description: 'اقرأ تقييمات وآراء عملاء منصة Number1 Exchange حول تجربتهم في تبادل العملات الرقمية.',
+  },
+  '/contact': {
+    title: 'تواصل معنا | Number1 Exchange',
+    description: 'تواصل مع فريق دعم Number1 Exchange للحصول على المساعدة في عمليات تبادل USDT.',
+  },
+  '/faq': {
+    title: 'الأسئلة الشائعة | Number1 Exchange',
+    description: 'إجابات على الأسئلة الأكثر شيوعاً حول منصة Number1 Exchange وعمليات شراء وبيع USDT.',
+  },
+  '/about': {
+    title: 'من نحن | Number1 Exchange',
+    description: 'تعرف على منصة Number1 Exchange — المنصة الموثوقة لتبادل العملات الرقمية وشراء وبيع USDT في مصر.',
+  },
+  '/track': {
+    title: 'تتبع طلبك | Number1 Exchange',
+    description: 'تتبع حالة طلب التبادل الخاص بك على منصة Number1 Exchange في الوقت الفعلي.',
+  },
+  '/my-orders': {
+    title: 'طلباتي | Number1 Exchange',
+    description: 'عرض جميع طلبات التبادل الخاصة بك على منصة Number1 Exchange.',
+  },
+  '/wallet': {
+    title: 'المحفظة | Number1 Exchange',
+    description: 'أدر محفظتك الرقمية على منصة Number1 Exchange.',
+  },
+}
+
+function applyPageSEO(pathname) {
+  const seo = PAGE_SEO[pathname]
+  if (!seo) return
+  document.title = seo.title
+  let desc = document.querySelector('meta[name="description"]')
+  if (desc) desc.setAttribute('content', seo.description)
+}
+
 import Navbar         from './components/common/Navbar'
 import Footer         from './components/common/Footer'
 import AuthModal      from './components/common/AuthModal'
@@ -86,6 +138,9 @@ function App() {
   const location    = useLocation()
   const isAdminPage = location.pathname.startsWith('/admin')
   const { user }    = useAuth()
+
+  // ── Update title + meta description on every route change ──
+  useEffect(() => { applyPageSEO(location.pathname) }, [location.pathname])
 
   const [authOpen,     setAuthOpen]     = useState(false)
   const [authTab,      setAuthTab]      = useState('login')
