@@ -5,11 +5,9 @@
 const express        = require('express')
 const router         = express.Router()
 const Order          = require('../models/Order')
-const HDCounter      = require('../models/HDCounter')
 const { protect, optionalProtect } = require('../middleware/auth')
 const { upload }     = require('../services/cloudinary')
 const telegramService = require('../services/telegram')
-const { generateDepositAddress, depositExpiresAt } = require('../services/hdwallet')
 
 // ══════════════════════════════════════════════
 // ⚠ Routes الثابتة لازم تكون قبل Routes الـ :id
@@ -154,20 +152,34 @@ router.post('/', optionalProtect, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Recipient ID must be at least 5 characters.' })
     }
 
-    // ── توليد عنوان إيداع فريد لطلبات USDT TRC20 ──
-    let depositAddress = {}
-    if (payment.method === 'USDT_TRC20' && process.env.HD_MASTER_SEED) {
-      try {
-        const index   = await HDCounter.nextIndex()
-        const { address } = generateDepositAddress(index)
-        depositAddress = {
-          address,
-          hdIndex:   index,
-          expiresAt: depositExpiresAt(30),
+    // ── التحقق من TXID إذا أرسله المستخدم ────
+    if (payment.method === 'USDT_TRC20' && payment.txHash) {
+      // منع استخدام نفس الـ TXID مرتين
+      const duplicate = await Order.findOne({ 'payment.txHash': payment.txHash })
+      if (duplicate) {
+        return res.status(400).json({
+          success: false,
+          message: 'رقم المعاملة (TXID) مستخدم مسبقاً في طلب آخر.'
+        })
+      }
+      // التحقق من وجود الـ TXID على شبكة TRON
+      if (process.env.TRONGRID_API_KEY) {
+        try {
+          const tronRes = await fetch(
+            `https://api.trongrid.io/v1/transactions/${payment.txHash}`,
+            { headers: { 'TRON-PRO-API-KEY': process.env.TRONGRID_API_KEY } }
+          )
+          const tronData = await tronRes.json()
+          if (!tronData?.data?.[0]) {
+            return res.status(400).json({
+              success: false,
+              message: 'رقم المعاملة (TXID) غير موجود على شبكة TRON — تأكد من نسخه بشكل صحيح.'
+            })
+          }
+        } catch (tronErr) {
+          console.warn('TronGrid check failed:', tronErr.message)
+          // لا نوقف الطلب لو فشل الاتصال بـ TronGrid
         }
-      } catch (hdErr) {
-        console.error('HD Wallet error:', hdErr.message)
-        // لا نوقف الطلب — نكمل بدون عنوان مؤقت
       }
     }
 
@@ -181,7 +193,6 @@ router.post('/', optionalProtect, async (req, res) => {
       payment,
       moneygo,
       exchangeRate,
-      depositAddress,
       clientIp: req.ip,
       timeline: [{ status: 'pending', message: 'Order created successfully.', by: 'system' }]
     })
@@ -217,9 +228,6 @@ router.post('/', optionalProtect, async (req, res) => {
         orderNumber: order.orderNumber,
         status:      order.status,
         createdAt:   order.createdAt,
-        // عنوان الإيداع الفريد (لطلبات USDT فقط)
-        depositAddress: order.depositAddress?.address || null,
-        depositExpiresAt: order.depositAddress?.expiresAt || null,
       }
     })
 

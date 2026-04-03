@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(node -e \"const pkg = require\\('tronweb'\\); const TronWeb = pkg.default || pkg; console.log\\(typeof TronWeb\\);\")",
+      "Bash(node -e ':*)",
+      "Bash(node -e \"const pkg = require\\('tronweb'\\); console.log\\(JSON.stringify\\(Object.keys\\(pkg\\), null, 2\\)\\)\")"
     ]
   }
 }

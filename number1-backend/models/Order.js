@@ -149,15 +149,6 @@ const orderSchema = new mongoose.Schema({
     default: null
   },
 
-  // ─── عنوان الإيداع (HD Wallet) ───────────
-  // يُنشأ تلقائياً لطلبات USDT_TRC20
-  depositAddress: {
-    address:   { type: String, default: null },   // عنوان TRON المؤقت
-    hdIndex:   { type: Number, default: null },   // index في HD Wallet
-    expiresAt: { type: Date,   default: null },   // وقت انتهاء الصلاحية (30 دقيقة)
-    usedAt:    { type: Date,   default: null },   // متى وصل الدفع
-  },
-
   // ─── IP العميل ────────────────────────────
   clientIp: {
     type: String,

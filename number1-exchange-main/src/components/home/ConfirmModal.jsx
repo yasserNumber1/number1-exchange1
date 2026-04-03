@@ -14,7 +14,10 @@ function ConfirmModal({ isOpen, onClose, orderData }) {
   const [loading,        setLoading]        = useState(false)
   const [error,          setError]          = useState('')
   const [orderNumber,    setOrderNumber]    = useState('')
+  const [txid,           setTxid]           = useState('')
   const fileRef = useRef(null)
+
+  const isUSDT = orderData?.sendType === 'crypto'
 
   if (!isOpen || !orderData) return null
 
@@ -131,6 +134,7 @@ function ConfirmModal({ isOpen, onClose, orderData }) {
           currencySent:  orderData.sendType === 'crypto' ? 'USDT' : 'EGP',
           receiptImageUrl,
           senderPhoneNumber: orderData.userPhone || '',
+          txHash: txid.trim() || null,
         },
 
         // بيانات الاستلام
@@ -281,9 +285,32 @@ function ConfirmModal({ isOpen, onClose, orderData }) {
                 </div>
               </div>
 
-              {/* ── خطوة 2: رفع الإيصال ─────── */}
+              {/* ── TXID (لطلبات USDT فقط) ───── */}
+              {isUSDT && (
+                <div>
+                  <StepHeader n={2} text="رقم المعاملة TXID (اختياري)" />
+                  <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '12px 14px' }}>
+                    <input
+                      type="text"
+                      value={txid}
+                      onChange={e => setTxid(e.target.value)}
+                      placeholder="الصق رقم المعاملة هنا — مثال: abc123def456..."
+                      style={{
+                        width: '100%', background: 'transparent', border: 'none',
+                        outline: 'none', color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace",
+                        fontSize: '0.72rem', direction: 'ltr', boxSizing: 'border-box',
+                      }}
+                    />
+                    <div style={{ marginTop: 8, fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", lineHeight: 1.6 }}>
+                      ℹ️ أدخل الـ TXID لتسريع التحقق من طلبك — إذا لم يتأكد الطلب تلقائياً تواصل معنا وأرسل الـ TXID
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── خطوة 2/3: رفع الإيصال ────── */}
               <div>
-                <StepHeader n={2} text="ارفع صورة الإيصال (اختياري)" />
+                <StepHeader n={isUSDT ? 3 : 2} text="ارفع صورة الإيصال (اختياري)" />
                 <div
                   onClick={() => fileRef.current.click()}
                   style={{
