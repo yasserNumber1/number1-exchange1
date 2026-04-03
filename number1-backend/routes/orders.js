@@ -5,9 +5,11 @@
 const express        = require('express')
 const router         = express.Router()
 const Order          = require('../models/Order')
+const HDCounter      = require('../models/HDCounter')
 const { protect, optionalProtect } = require('../middleware/auth')
 const { upload }     = require('../services/cloudinary')
 const telegramService = require('../services/telegram')
+const { generateDepositAddress, depositExpiresAt } = require('../services/hdwallet')
 
 // ══════════════════════════════════════════════
 // ⚠ Routes الثابتة لازم تكون قبل Routes الـ :id
@@ -152,6 +154,23 @@ router.post('/', optionalProtect, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Recipient ID must be at least 5 characters.' })
     }
 
+    // ── توليد عنوان إيداع فريد لطلبات USDT TRC20 ──
+    let depositAddress = {}
+    if (payment.method === 'USDT_TRC20' && process.env.HD_MASTER_SEED) {
+      try {
+        const index   = await HDCounter.nextIndex()
+        const { address } = generateDepositAddress(index)
+        depositAddress = {
+          address,
+          hdIndex:   index,
+          expiresAt: depositExpiresAt(30),
+        }
+      } catch (hdErr) {
+        console.error('HD Wallet error:', hdErr.message)
+        // لا نوقف الطلب — نكمل بدون عنوان مؤقت
+      }
+    }
+
     // ── إنشاء الطلب ───────────────────────────
     const order = await Order.create({
       user: req.user?._id || null,
@@ -162,6 +181,7 @@ router.post('/', optionalProtect, async (req, res) => {
       payment,
       moneygo,
       exchangeRate,
+      depositAddress,
       clientIp: req.ip,
       timeline: [{ status: 'pending', message: 'Order created successfully.', by: 'system' }]
     })
@@ -196,7 +216,10 @@ router.post('/', optionalProtect, async (req, res) => {
         _id:         order._id,
         orderNumber: order.orderNumber,
         status:      order.status,
-        createdAt:   order.createdAt
+        createdAt:   order.createdAt,
+        // عنوان الإيداع الفريد (لطلبات USDT فقط)
+        depositAddress: order.depositAddress?.address || null,
+        depositExpiresAt: order.depositAddress?.expiresAt || null,
       }
     })
 

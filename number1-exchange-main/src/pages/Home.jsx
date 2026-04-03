@@ -5,7 +5,6 @@ import useLang from "../context/useLang"
 import { GooeyText } from "../components/ui/gooey-text-morphing"
 import { SEND_METHODS, RECEIVE_METHODS, EXCHANGE_RATES, TRANSFER_INFO } from "../data/currencies"
 import useAuth from '../context/useAuth'
-import ExchangeFormDynamic from '../components/home/ExchangeForm'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -943,7 +942,7 @@ function Home({ onOpenAuth }) {
           <div className="mobile-order-promo"><PromoBanner /></div>
           <div className="mobile-home-layout" style={{ display:'grid', gridTemplateColumns:'1fr 360px', gap:20, alignItems:'start' }}>
             <div className="mobile-order-exchange" style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              <ExchangeFormDynamic />
+              <ExchangeForm />
               <WalletBanner onOpenAuth={onOpenAuth} />
             </div>
             <div className="mobile-order-sidebars mobile-sidebars-col" style={{ display:'flex', flexDirection:'column', gap:16 }}>

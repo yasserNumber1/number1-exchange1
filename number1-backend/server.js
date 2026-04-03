@@ -105,7 +105,17 @@ app.post('/api/telegram/webhook', async (req, res) => {
 });
 
 // ─── Admin Routes ─────────────────────────────
-app.use('/api/admin', require('./routes/admin'));
+app.use('/api/admin', require('./routes/admin'))
+
+// ─── Payment Monitor (USDT TRC20) ─────────────
+// يبدأ بعد اتصال MongoDB
+mongoose.connection.once('open', () => {
+  if (process.env.HD_MASTER_SEED && process.env.TRONGRID_API_KEY) {
+    require('./services/paymentMonitor').startMonitor()
+  } else {
+    console.warn('⚠️  Payment Monitor معطّل — أضف HD_MASTER_SEED و TRONGRID_API_KEY في .env')
+  }
+});
 
 // ─── Health Check ─────────────────────────────
 app.get('/', (req, res) => {
