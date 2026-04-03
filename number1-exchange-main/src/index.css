@@ -487,3 +487,11 @@ html.light .hero-gooey-text {
   -webkit-background-clip: text;
   background-clip: text;
 }
+
+/*
+  إصلاح الوضع الفاتح: مرشح feColorMatrix يحدّ شفافية النص بـ 45% كحد أقصى
+  مما يجعل النص شبه مخفي على الخلفية الفاتحة — نزيله في الوضع الفاتح
+*/
+html.light [style*="gooey-threshold"] {
+  filter: none !important;
+}

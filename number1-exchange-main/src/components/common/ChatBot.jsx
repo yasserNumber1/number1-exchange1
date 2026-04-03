@@ -2,8 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { ROBOT_IMG } from '../RobotImg'
 
-const WHATSAPP_NUMBER = '9647XXXXXXXXX'
-const TELEGRAM_USER   = 'Number1Exchange'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const BOT_QS = [
   { id: 'q1', text: 'كيف أبدأ عملية التبادل؟' },
@@ -95,8 +94,22 @@ export default function ChatBot() {
   const [robAnim, setRobAnim] = useState('idle')
   const [fabAnim, setFabAnim] = useState(true)
   const [showFaq, setShowFaq] = useState(false)
+  const [whatsapp, setWhatsapp] = useState('9647XXXXXXXXX')
+  const [telegram, setTelegram] = useState('Number1Exchange')
   const bottomRef = useRef(null)
   const faqRef    = useRef(null)
+
+  useEffect(() => {
+    fetch(`${API}/api/public/settings`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.data) {
+          if (d.data.contactWhatsapp) setWhatsapp(d.data.contactWhatsapp.replace(/\D/g, ''))
+          if (d.data.contactTelegram) setTelegram(d.data.contactTelegram.replace(/^@/, ''))
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const now = () => {
     const d = new Date()
@@ -256,7 +269,7 @@ export default function ChatBot() {
 
             {showSup && !typing && (
               <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:10, animation:'msgIn .3s ease' }}>
-                <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer"
+                <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer"
                   style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:14, background:'linear-gradient(135deg,rgba(37,211,102,0.12),rgba(18,140,126,0.08))', border:'1px solid rgba(37,211,102,0.4)', textDecoration:'none', transition:'all 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.transform='translateY(-2px)'}
                   onMouseLeave={e => e.currentTarget.style.transform='none'}>
@@ -266,14 +279,14 @@ export default function ChatBot() {
                   <div><div style={{ fontWeight:800, fontSize:'0.88rem', color:'#25d366' }}>واتساب</div><div style={{ fontSize:'0.72rem', color:'var(--text-2)' }}>تواصل فوري مع الدعم</div></div>
                   <span style={{ marginRight:'auto', color:'var(--text-3)' }}>←</span>
                 </a>
-                <a href={`https://t.me/${TELEGRAM_USER}`} target="_blank" rel="noreferrer"
+                <a href={`https://t.me/${telegram}`} target="_blank" rel="noreferrer"
                   style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:14, background:'linear-gradient(135deg,rgba(0,136,204,0.12),rgba(0,100,180,0.08))', border:'1px solid rgba(0,136,204,0.4)', textDecoration:'none', transition:'all 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.transform='translateY(-2px)'}
                   onMouseLeave={e => e.currentTarget.style.transform='none'}>
                   <div style={{ width:40, height:40, borderRadius:12, background:'#0088cc', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 4px 12px rgba(0,136,204,0.4)' }}>
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
                   </div>
-                  <div><div style={{ fontWeight:800, fontSize:'0.88rem', color:'#0088cc' }}>تيليجرام</div><div style={{ fontSize:'0.72rem', color:'var(--text-2)' }}>@{TELEGRAM_USER}</div></div>
+                  <div><div style={{ fontWeight:800, fontSize:'0.88rem', color:'#0088cc' }}>تيليجرام</div><div style={{ fontSize:'0.72rem', color:'var(--text-2)' }}>@{telegram}</div></div>
                   <span style={{ marginRight:'auto', color:'var(--text-3)' }}>←</span>
                 </a>
                 <button onClick={() => { setShowSup(false); setShowFaq(true) }}
