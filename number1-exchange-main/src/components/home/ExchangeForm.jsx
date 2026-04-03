@@ -180,9 +180,24 @@ function ExchangeForm() {
   // ══════════════════════════════════════════════════
   const handleSubmit = () => {
     const amt = parseFloat(sendAmount)
-    if (!email)                     return alert('يرجى إدخال البريد الإلكتروني')
-    if (sendIsWallet && !userPhone) return alert(`يرجى إدخال رقم هاتفك على ${sendItem?.name}`)
-    if (!recipientId)               return alert('يرجى إدخال بيانات الاستلام')
+
+    // ── Validation ─────────────────────────────────
+    const emailRx  = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+    const phoneRx  = /^01[0-2,5]\d{8}$/   // Egyptian mobile: 010, 011, 012, 015
+
+    if (!email || !emailRx.test(email))
+      return alert('يرجى إدخال بريد إلكتروني صحيح (مثال: name@example.com)')
+
+    if (sendIsWallet) {
+      if (!userPhone)
+        return alert(`يرجى إدخال رقم هاتفك على ${sendItem?.name}`)
+      if (!phoneRx.test(userPhone.replace(/\s/g, '')))
+        return alert('رقم الهاتف غير صحيح — يجب أن يكون رقماً مصرياً من 11 رقم (مثال: 01012345678)')
+    }
+
+    if (!recipientId || recipientId.trim().length < 5)
+      return alert('يرجى إدخال بيانات الاستلام بشكل صحيح (5 أحرف على الأقل)')
+
     if (!amlChecked || !tosChecked) return alert('يرجى الموافقة على الشروط')
     if (amt < minOrder)             return alert(`الحد الأدنى ${minOrder} وحدة`)
     if (amt > maxOrder)             return alert(`الحد الأقصى ${maxOrder} وحدة`)

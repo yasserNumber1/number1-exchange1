@@ -126,11 +126,31 @@ router.post('/', optionalProtect, async (req, res) => {
     if (!customerName || !customerEmail || !orderType || !payment || !moneygo || !exchangeRate) {
       return res.status(400).json({ success: false, message: 'Missing required fields.' })
     }
-    if (!moneygo.recipientName || !moneygo.recipientPhone || !moneygo.amountUSD) {
-      return res.status(400).json({ success: false, message: 'Recipient name, phone, and amount are required.' })
+    if (!moneygo.recipientPhone || !moneygo.amountUSD) {
+      return res.status(400).json({ success: false, message: 'Recipient info and amount are required.' })
     }
     if (!payment.method || !payment.amountSent || !payment.currencySent) {
       return res.status(400).json({ success: false, message: 'Payment method and amount are required.' })
+    }
+
+    // ── التحقق من صحة البريد الإلكتروني ──────
+    const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+    if (!emailRx.test(customerEmail)) {
+      return res.status(400).json({ success: false, message: 'Invalid email address.' })
+    }
+
+    // ── التحقق من رقم الهاتف (إذا وُجد) ──────
+    if (payment.senderPhoneNumber) {
+      const phoneRx = /^01[0-2,5]\d{8}$/
+      const cleaned = payment.senderPhoneNumber.replace(/\s/g, '')
+      if (!phoneRx.test(cleaned)) {
+        return res.status(400).json({ success: false, message: 'Invalid Egyptian phone number.' })
+      }
+    }
+
+    // ── التحقق من معرّف الاستلام ──────────────
+    if (!moneygo.recipientPhone || moneygo.recipientPhone.trim().length < 5) {
+      return res.status(400).json({ success: false, message: 'Recipient ID must be at least 5 characters.' })
     }
 
     // ── إنشاء الطلب ───────────────────────────
