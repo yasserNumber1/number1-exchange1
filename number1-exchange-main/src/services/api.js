@@ -73,6 +73,10 @@ export const adminAPI = {
   // الأدمن يتحكم في وسائل الدفع وأرقام الاستلام
   getPaymentMethods:  ()     => request('/admin/payment-methods'),
   savePaymentMethods: (body) => request('/admin/payment-methods', { method: 'PUT', body: JSON.stringify(body) }),
+
+  // ── Wallet Deposit Addresses (منفصلة عن وسائل الدفع) ───────
+  getWalletDepositAddresses:  ()     => request('/admin/wallet-deposit-addresses'),
+  saveWalletDepositAddresses: (body) => request('/admin/wallet-deposit-addresses', { method: 'PUT', body: JSON.stringify(body) }),
 }
 
 // ─── Wallet ───────────────────────────────────────────────

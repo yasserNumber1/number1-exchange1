@@ -51,6 +51,20 @@ router.get('/payment-methods', async (req, res) => {
   }
 })
 
+// ─── GET /api/public/wallet-deposit-addresses ─
+// عناوين إيداع المحفظة (منفصلة عن وسائل الدفع)
+router.get('/wallet-deposit-addresses', async (req, res) => {
+  try {
+    const WalletDeposit = mongoose.model('WalletDeposit')
+    let doc = await WalletDeposit.findOne()
+    if (!doc) return res.json({ success: true, cryptos: [] })
+    const cryptos = (doc.cryptos || []).filter(c => c.enabled && c.address)
+    res.json({ success: true, cryptos })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.' })
+  }
+})
+
 // ─── GET /api/public/deposit-info ─────────────
 // معلومات الإيداع للمستخدمين
 router.get('/deposit-info', async (req, res) => {

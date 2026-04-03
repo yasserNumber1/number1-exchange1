@@ -82,7 +82,7 @@ function DepositModal({ isOpen, onClose, onSuccess }) {
     setStep('method'); setMethod(null); setAmount(''); setTxid(''); setError('')
 
     Promise.all([
-      fetch(`${API}/api/public/payment-methods`).then(r => r.json()).catch(() => null),
+      fetch(`${API}/api/public/wallet-deposit-addresses`).then(r => r.json()).catch(() => null),
       fetch(`${API}/api/wallet/deposit-info`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       }).then(r => r.json()).catch(() => null),
@@ -122,8 +122,8 @@ function DepositModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null
 
   const cryptos = (payMethods?.cryptos || []).filter(c => c.enabled && c.address)
-  const ewallets = (payMethods?.wallets || []).filter(w => w.enabled && w.number)
-  const hasPayMethods = cryptos.length > 0 || ewallets.length > 0
+  const ewallets = []
+  const hasPayMethods = cryptos.length > 0
   const useLegacy = !hasPayMethods && depositInfo?.usdtAddress
 
   return (

@@ -2,7 +2,7 @@
 // src/pages/admin/AdminWallets.jsx
 // إدارة المحافظ + طلبات الإيداع — مدمجة في صفحة واحدة
 // ============================================
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { walletAPI, adminAPI } from '../../services/api'
 
@@ -557,7 +557,6 @@ export default function AdminWallets() {
   const [netsSaved,    setNetsSaved]    = useState(false)
   const [editNet,      setEditNet]      = useState(null)   // net being edited in modal
   const [showPresets,  setShowPresets]  = useState(false)
-  const existingWalletsRef = useRef([])
 
   // ─── Fetch Wallets ──────────────────────────
   const fetchWallets = useCallback(async () => {
@@ -604,9 +603,8 @@ export default function AdminWallets() {
   const fetchDepositNets = async () => {
     setNetsLoad(true)
     try {
-      const { data } = await adminAPI.getPaymentMethods()
+      const { data } = await adminAPI.getWalletDepositAddresses()
       setDepositNets(data.cryptos || [])
-      existingWalletsRef.current = data.wallets || []
     } catch { setDepositNets([]) }
     finally { setNetsLoad(false) }
   }
@@ -614,10 +612,7 @@ export default function AdminWallets() {
   const saveDepositNets = async () => {
     setNetsSaving(true)
     try {
-      await adminAPI.savePaymentMethods({
-        cryptos: depositNets,
-        wallets: existingWalletsRef.current,
-      })
+      await adminAPI.saveWalletDepositAddresses({ cryptos: depositNets })
       setNetsSaved(true)
       setToast('✅ تم حفظ عناوين الإيداع بنجاح')
       setTimeout(() => setNetsSaved(false), 3000)

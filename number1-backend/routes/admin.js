@@ -228,6 +228,14 @@ const paymentMethodSchema = new mongoose.Schema({
 const PaymentMethod = mongoose.models.PaymentMethod ||
   mongoose.model('PaymentMethod', paymentMethodSchema)
 
+// ─── Wallet Deposit Addresses (separate from payment methods) ──
+const walletDepositSchema = new mongoose.Schema({
+  cryptos: { type: Array, default: [] },
+}, { timestamps: true })
+
+const WalletDeposit = mongoose.models.WalletDeposit ||
+  mongoose.model('WalletDeposit', walletDepositSchema)
+
 router.get('/payment-methods', async (req, res) => {
   try {
     let doc = await PaymentMethod.findOne()
@@ -247,6 +255,31 @@ router.put('/payment-methods', async (req, res) => {
       { new: true, upsert: true }
     )
     res.json({ success: true, message: 'Saved.', cryptos: doc.cryptos, wallets: doc.wallets })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.' })
+  }
+})
+
+// ─── Wallet Deposit Addresses routes ──────────
+router.get('/wallet-deposit-addresses', async (req, res) => {
+  try {
+    let doc = await WalletDeposit.findOne()
+    if (!doc) doc = await WalletDeposit.create({ cryptos: [] })
+    res.json({ success: true, cryptos: doc.cryptos })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.' })
+  }
+})
+
+router.put('/wallet-deposit-addresses', async (req, res) => {
+  try {
+    const { cryptos } = req.body
+    const doc = await WalletDeposit.findOneAndUpdate(
+      {},
+      { $set: { cryptos: cryptos || [] } },
+      { new: true, upsert: true }
+    )
+    res.json({ success: true, message: 'Saved.', cryptos: doc.cryptos })
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.' })
   }
