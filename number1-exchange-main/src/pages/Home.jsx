@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import useLang from "../context/useLang"
+import { GooeyText } from "../components/ui/gooey-text-morphing"
 import { SEND_METHODS, RECEIVE_METHODS, EXCHANGE_RATES, TRANSFER_INFO } from "../data/currencies"
 import useAuth from '../context/useAuth'
 
@@ -175,39 +176,48 @@ function ReviewsSidebar() {
   )
 }
 
+// نصوص الـ GooeyText المتناوبة — عربي وإنجليزي
+const HERO_GOOEY_AR = ["بشكل آمن", "وسهل", "وفوري"]
+const HERO_GOOEY_EN = ["Securely", "Easily", "Instantly"]
+
 function HeroSection({onAbout}) {
-  const {t}=useLang()
-  const [counts,setCounts]=useState({users:0,tx:0,pairs:0})
-  useEffect(()=>{
-    const targets={users:52000,tx:980000,pairs:50}; let step=0
-    const timer=setInterval(()=>{step++;const p=step/60;setCounts({users:Math.floor(targets.users*p),tx:Math.floor(targets.tx*p),pairs:Math.floor(targets.pairs*p)});if(step>=60)clearInterval(timer)},25)
-    return()=>clearInterval(timer)
-  },[])
-  const fmt=n=>n>=1000?(n/1000).toFixed(1)+"K":n+""
+  const {t, lang}=useLang()
+  const gooeyTexts = lang === "ar" ? HERO_GOOEY_AR : HERO_GOOEY_EN
+
   return (
-    <div style={{textAlign:"center",marginBottom:36}}>
+    <div className="n1-hero-block" style={{textAlign:"center",marginBottom:36}}>
+      {/* شارة LIVE */}
       <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"5px 14px",border:"1px solid rgba(0,210,255,0.2)",borderRadius:30,background:"rgba(0,210,255,0.05)",fontSize:"0.73rem",color:"var(--cyan)",letterSpacing:1,fontFamily:"'JetBrains Mono',monospace",marginBottom:22}}>
         <span style={{width:6,height:6,borderRadius:"50%",background:"var(--cyan)",animation:"blink 1.5s ease-in-out infinite",boxShadow:"0 0 8px var(--cyan)",display:"inline-block"}}/>
         {t("hero_badge")}
       </div>
-      <h1 style={{fontSize:"clamp(1.8rem,3.5vw,2.8rem)",fontWeight:900,marginBottom:12,lineHeight:1.2}}>
-        {t("hero_title")}
-        <span style={{fontFamily:"'Orbitron',sans-serif",background:"linear-gradient(90deg,var(--cyan),var(--purple))",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginRight:10}}> NUMBER 1</span>
+
+      {/* العنوان الثابت */}
+      <h1 style={{fontSize:"clamp(2rem,4vw,3.2rem)",fontWeight:900,marginBottom:0,lineHeight:1.15}}>
+        {lang === "ar" ? "تبادل العملات" : "Exchange Currencies"}
       </h1>
+
+      {/*
+        حاوية النص المتحرك — الارتفاع الثابت يمنع الصفحة من الاهتزاز
+        عند تبديل النصوص. GooeyText يستخدم مرشح SVG لتأثير الذوبان.
+      */}
+      <div style={{position:"relative",height:"80px",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}>
+        <GooeyText
+          texts={gooeyTexts}
+          morphTime={1.2}
+          cooldownTime={1.5}
+          style={{width:"100%"}}
+          textClassName="hero-gooey-text"
+        />
+      </div>
+
       <p style={{color:"var(--text-2)",fontSize:"0.95rem",maxWidth:520,margin:"0 auto 18px",lineHeight:1.75}}>{t("hero_desc")}</p>
+
       <button onClick={onAbout} style={{background:"transparent",border:"1px solid var(--border-1)",color:"var(--text-2)",padding:"13px 30px",borderRadius:12,fontFamily:"'Tajawal',sans-serif",fontSize:"1rem",fontWeight:700,cursor:"pointer",transition:"all 0.22s"}}
         onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--border-2)";e.currentTarget.style.color="var(--text-1)";e.currentTarget.style.background="var(--cyan-dim)"}}
         onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border-1)";e.currentTarget.style.color="var(--text-2)";e.currentTarget.style.background="transparent"}}>
         {t("hero_btn")}
       </button>
-      <div style={{display:"flex",gap:30,justifyContent:"center",marginTop:26}}>
-        {[{val:fmt(counts.users),label:t("hero_users")},{val:fmt(counts.tx)+"+",label:t("hero_tx")},{val:counts.pairs+"+",label:t("hero_pairs")}].map((k,i)=>(
-          <div key={i}>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:"1.5rem",fontWeight:700,color:"var(--cyan)",display:"block",textShadow:"0 0 18px rgba(0,210,255,0.5)"}}>{k.val}</span>
-            <div style={{fontSize:"0.7rem",color:"var(--text-3)",marginTop:3}}>{k.label}</div>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }
@@ -226,9 +236,10 @@ function PromoBanner() {
   const circumference=239
   const progressOffset=circumference-(pct/100)*circumference
   return (
-    <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{display:"flex",alignItems:"center",gap:24,background:"var(--card)",border:`1px solid ${hov?"rgba(200,168,75,0.32)":"rgba(200,168,75,0.18)"}`,borderRadius:16,padding:"22px 28px",marginBottom:36,position:"relative",overflow:"hidden",transition:"border-color .25s,box-shadow .25s",boxShadow:hov?"0 0 0 4px rgba(200,168,75,0.05)":"none"}}>
-      <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#c8a84b 40%,#f59e0b 60%,transparent)"}}/>
-      <div style={{flexShrink:0,width:90,height:90}}>
+    <div className="promo-banner-app" onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{display:"flex",flexDirection:"column",gap:0,background:"var(--card)",border:`1px solid ${hov?"rgba(200,168,75,0.32)":"rgba(200,168,75,0.18)"}`,borderRadius:16,padding:"22px 28px",marginBottom:36,position:"relative",overflow:"visible",transition:"border-color .25s,box-shadow .25s",boxShadow:hov?"0 0 0 4px rgba(200,168,75,0.05)":"none",zIndex:2}}>
+      <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#c8a84b 40%,#f59e0b 60%,transparent)",borderRadius:"16px 16px 0 0"}}/>
+      <div className="promo-app-main" style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:20,width:"100%"}}>
+      <div className="promo-app-visual" style={{flexShrink:0,width:90,height:90}}>
         <svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
           <defs><linearGradient id="pg1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#c8a84b"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs>
           <circle cx="45" cy="45" r="38" fill="none" stroke="rgba(200,168,75,0.12)" strokeWidth="6" transform="rotate(-90 45 45)"/>
@@ -242,31 +253,35 @@ function PromoBanner() {
           {ready&&(<text x="45" y="70" textAnchor="middle" fontSize="9" fontWeight="700" fill="#f59e0b" fontFamily="monospace">OK</text>)}
         </svg>
       </div>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:"0.68rem",fontFamily:"'JetBrains Mono',monospace",letterSpacing:"2px",color:"var(--gold)",textTransform:"uppercase",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
-          <span style={{width:6,height:6,borderRadius:"50%",background:"var(--gold)",animation:"blink 1.4s ease-in-out infinite",display:"inline-block"}}/>
-          {lang==="ar"?"عرض حصري للمستخدمين الجدد":"Exclusive Offer for New Users"}
+      <div className="promo-app-body" style={{flex:1,minWidth:220}}>
+        <div className="promo-app-head" style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:8,marginBottom:8}}>
+          <div style={{fontSize:"0.68rem",fontFamily:"'JetBrains Mono',monospace",letterSpacing:"1.2px",color:"var(--gold)",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap"}}>
+            <span style={{width:6,height:6,borderRadius:"50%",background:"var(--gold)",animation:"blink 1.4s ease-in-out infinite",display:"inline-block"}}/>
+            {lang==="ar"?"بونص ترحيبي · مستخدم جديد":"Welcome bonus · New users"}
+          </div>
+          <h3 style={{fontSize:"0.95rem",fontWeight:900,lineHeight:1.25,margin:0,flex:"1 1 200px"}}>
+            {lang==="ar"?<>أكمل <span style={{color:"var(--gold)"}}>10 تحويلات</span> — هدية في محفظتك</>:<>Complete <span style={{color:"var(--gold)"}}>10 transfers</span> — wallet gift</>}
+          </h3>
         </div>
-        <h3 style={{fontSize:"0.95rem",fontWeight:900,lineHeight:1.3,marginBottom:6}}>
-          {lang==="ar"?<>أكمل <span style={{color:"var(--gold)"}}>10 تحويلات</span> واحصل على هدية مجانية في محفظتك</>:<>Complete <span style={{color:"var(--gold)"}}>10 transfers</span> and get a free gift in your wallet</>}
-        </h3>
-        <p style={{fontSize:"0.8rem",color:"var(--text-2)",lineHeight:1.65,marginBottom:12}}>
-          {lang==="ar"?"كل مستخدم جديد يُكمل 10 عمليات تحويل بأي مبلغ يحصل فوراً على بونص يُضاف تلقائياً لمحفظته.":"Every new user who completes 10 transfers of any amount instantly receives a bonus added to their wallet."}
+        <p className="promo-app-desc" style={{fontSize:"0.8rem",color:"var(--text-2)",lineHeight:1.55,margin:"0 0 10px"}}>
+          {lang==="ar"?"أكمل 10 عمليات بأي مبلغ — يُضاف البونص تلقائياً لمحفظتك فور الإكمال.":"Complete 10 transfers of any amount — bonus credits to your wallet automatically."}
         </p>
-        <div style={{background:"rgba(255,255,255,0.05)",borderRadius:20,height:5,overflow:"hidden",marginBottom:5}}>
-          <div style={{height:"100%",borderRadius:20,background:"linear-gradient(90deg,#c8a84b,#f59e0b)",width:`${pct}%`,transition:"width 0.6s cubic-bezier(.4,0,.2,1)"}}/>
+        <div className="promo-app-progress-row" style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:8}}>
+          <div style={{flex:"1 1 140px",background:"rgba(255,255,255,0.05)",borderRadius:20,height:5,overflow:"hidden",minWidth:100}}>
+            <div style={{height:"100%",borderRadius:20,background:"linear-gradient(90deg,#c8a84b,#f59e0b)",width:`${pct}%`,transition:"width 0.6s cubic-bezier(.4,0,.2,1)"}}/>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:10,fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>
+            <span>{lang==="ar"?`${transfers}/10`:`${transfers}/10`}</span>
+            <span style={{color:ready?"var(--green)":"var(--text-3)"}}>{ready?(lang==="ar"?"جاهز":"Ready"):(lang==="ar"?`${MAX-transfers} متبقي`:`${MAX-transfers} left`)}</span>
+          </div>
         </div>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",marginBottom:13}}>
-          <span>{lang==="ar"?`تقدّمك: ${transfers} / 10`:`Progress: ${transfers} / 10`}</span>
-          <span style={{color:ready?"var(--green)":"var(--text-3)"}}>{ready?(lang==="ar"?"اكتمل!":"Complete!"):(lang==="ar"?`${MAX-transfers} متبقية`:`${MAX-transfers} remaining`)}</span>
-        </div>
-        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-          {[{ar:"بونص تلقائي",en:"Auto Bonus",c:"var(--green)",bg:"rgba(0,229,160,0.1)",b:"rgba(0,229,160,0.2)"},{ar:"بدون حد أدنى",en:"No Minimum",c:"var(--cyan)",bg:"rgba(0,210,255,0.1)",b:"rgba(0,210,255,0.2)"},{ar:"عرض محدود",en:"Limited Offer",c:"var(--gold)",bg:"rgba(200,168,75,0.1)",b:"rgba(200,168,75,0.2)"}].map((tag,i)=>(
-            <span key={i} style={{fontSize:"0.62rem",fontWeight:700,fontFamily:"'JetBrains Mono',monospace",padding:"2px 9px",borderRadius:20,background:tag.bg,border:`1px solid ${tag.b}`,color:tag.c}}>{lang==="ar"?tag.ar:tag.en}</span>
+        <div className="promo-app-tags" style={{display:"flex",flexDirection:"row",flexWrap:"wrap",alignItems:"center",gap:6}}>
+          {[{ar:"بونص تلقائي",en:"Auto credit",c:"var(--green)",bg:"rgba(0,229,160,0.1)",b:"rgba(0,229,160,0.2)"},{ar:"بدون حد أدنى",en:"No minimum",c:"var(--cyan)",bg:"rgba(0,210,255,0.1)",b:"rgba(0,210,255,0.2)"},{ar:"لفترة محدودة",en:"Limited time",c:"var(--gold)",bg:"rgba(200,168,75,0.1)",b:"rgba(200,168,75,0.2)"}].map((tag,i)=>(
+            <span key={i} style={{fontSize:"0.62rem",fontWeight:700,fontFamily:"'JetBrains Mono',monospace",padding:"4px 10px",borderRadius:20,background:tag.bg,border:`1px solid ${tag.b}`,color:tag.c,whiteSpace:"nowrap"}}>{lang==="ar"?tag.ar:tag.en}</span>
           ))}
         </div>
       </div>
-      <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:7}}>
+      <div className="promo-app-aside" style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:7,minWidth:160}}>
         <button onClick={handleClick} style={{position:"relative",overflow:"hidden",width:180,height:50,border:ready?"2px solid rgba(245,158,11,0.8)":"2px solid rgba(200,168,75,0.35)",borderRadius:26,background:"#120e04",cursor:ready?"pointer":"not-allowed",transition:"box-shadow .4s,border-color .4s,transform .2s",boxShadow:ready?"0 0 28px rgba(245,158,11,0.5), 0 0 60px rgba(245,158,11,0.2)":"none",transform:ready&&hov?"translateY(-2px)":"none",padding:0}}>
           <div style={{position:"absolute",bottom:0,left:"-5%",width:"110%",height:"100%",pointerEvents:"none"}}>
             <svg viewBox="0 0 220 52" preserveAspectRatio="none" style={{width:"100%",height:"100%",display:"block"}}>
@@ -284,7 +299,8 @@ function PromoBanner() {
             {ready?(lang==="ar"?"استلم هديتك!":"Claim Bonus!"):(lang==="ar"?"احصل على البونص":"Get Bonus")}
           </div>
         </button>
-        <span style={{fontSize:"0.64rem",color:ready?"var(--green)":"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",transition:"color 0.4s"}}>{ready?(lang==="ar"?"مكتمل — اضغط لاستلام هديتك":"Complete — click to claim"):(lang==="ar"?"سجّل مجاناً · لا شروط":"Free signup · No conditions")}</span>
+        <span style={{fontSize:"0.64rem",color:ready?"var(--green)":"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",transition:"color 0.4s",textAlign:"center"}}>{ready?(lang==="ar"?"اضغط لاستلام الهدية":"Tap to claim"):(lang==="ar"?"مجاناً · بلا شروط":"Free · No strings")}</span>
+      </div>
       </div>
     </div>
   )
@@ -570,21 +586,23 @@ function WalletBannerV3({ onOpenAuth }) {
 
   return (
     <div
+      className="wallet-banner-mob"
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        display:"flex", alignItems:"center", gap:32,
-        paddingTop:7, paddingBottom:7, paddingLeft:26, paddingRight:26,
-        width:"789px", height:"181px", maxWidth:"100%",
-        textAlign:"right", justifyContent:"center",
-        boxSizing:"border-box", borderRadius:"0 0 14px 14px",
-        background:"rgba(255,255,255,0.018)",
-        border:"1px solid rgba(255,255,255,0.06)", borderTop:"none",
+        display:"flex", flexWrap:"wrap", alignItems:"center", gap:16,
+        padding:"14px 20px",
+        width:"789px", minHeight:0, maxWidth:"100%",
+        textAlign:"right", justifyContent:"space-between",
+        boxSizing:"border-box", borderRadius:16,
+        background:"var(--card)",
+        border:"1px solid var(--border-1)",
         transition:"border-color .25s,background .25s,box-shadow .25s",
-        boxShadow: hov ? "0 0 0 3px rgba(0,210,255,0.05)" : "none"
+        boxShadow: hov ? "0 0 0 3px rgba(0,210,255,0.05)" : "none",
+        position:"relative", zIndex:2
       }}
     >
-      {/* أيقونة */}
+      <div className="wallet-banner-mob__lead" style={{ display:"flex", alignItems:"center", gap:14, flex:"1 1 260px", minWidth:0 }}>
       <div style={{
         width:54, height:54, borderRadius:14, flexShrink:0,
         background:"rgba(0,210,255,0.08)", border:"1px solid rgba(0,210,255,0.15)",
@@ -605,11 +623,10 @@ function WalletBannerV3({ onOpenAuth }) {
         </svg>
       </div>
 
-      {/* النص */}
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:5, flexWrap:"wrap" }}>
-          <span style={{ fontSize:"0.93rem", fontWeight:800, color:"var(--text-1)" }}>
-            {lang === "ar" ? "خزّن وأرسل عملاتك في أي وقت" : "Store & send your crypto anytime"}
+        <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:4, flexWrap:"wrap" }}>
+          <span style={{ fontSize:"0.92rem", fontWeight:800, color:"var(--text-1)" }}>
+            {lang === "ar" ? "محفظة Number 1 — آمنة وسريعة" : "Number 1 Wallet — fast & secure"}
           </span>
           <span style={{
             fontSize:"0.58rem", fontWeight:700, letterSpacing:"1.5px",
@@ -619,34 +636,38 @@ function WalletBannerV3({ onOpenAuth }) {
             fontFamily:"'JetBrains Mono',monospace", flexShrink:0
           }}>FREE</span>
         </div>
-        <p style={{ fontSize:"0.78rem", color:"var(--text-3)", lineHeight:1.62, margin:"0 0 14px" }}>
+        <p style={{ fontSize:"0.76rem", color:"var(--text-3)", lineHeight:1.55, margin:0 }}>
           {lang === "ar"
-            ? "محفظة Number 1 مجانية — اشحن بالبطاقة، حوّل للجنيه أو USDT، واستقبل في ثوانٍ بدون رسوم إنشاء."
-            : "Free Number 1 wallet — fund by card, convert to EGP or USDT, receive in seconds with zero setup fees."}
+            ? "تخزين وتحويل بالجنيه أو USDT · شحن بالبطاقة متاح · بلا رسوم تفعيل."
+            : "Hold & transfer EGP or USDT · optional card top-up · zero activation fees."}
         </p>
-        <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+      </div>
+      </div>
+
+      <div className="wallet-banner-mob__features" style={{ display:"flex", flexDirection:"row", flexWrap:"wrap", alignItems:"center", gap:8, flex:"2 1 320px", justifyContent:"center" }}>
           {[
-            { ico:"⚡", bg:"rgba(0,229,160,0.07)",  border:"rgba(0,229,160,0.13)",  titleAr:"تحويل فوري",   subAr:"خلال ثوانٍ"       },
-            { ico:"🔒", bg:"rgba(0,210,255,0.06)",  border:"rgba(0,210,255,0.12)",  titleAr:"أمان عالي",    subAr:"AES-256"          },
-            { ico:"💳", bg:"rgba(245,158,11,0.06)", border:"rgba(245,158,11,0.12)", titleAr:"شحن بالبطاقة", subAr:"Visa · Mastercard" },
+            { bg:"rgba(0,229,160,0.07)", border:"rgba(0,229,160,0.13)", titleAr:"فوري", titleEn:"Instant", subAr:"ثوانٍ", subEn:"Seconds",
+              icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
+            { bg:"rgba(0,210,255,0.06)", border:"rgba(0,210,255,0.12)", titleAr:"AES-256", titleEn:"AES-256", subAr:"تشفير", subEn:"Encrypted",
+              icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
+            { bg:"rgba(245,158,11,0.06)", border:"rgba(245,158,11,0.12)", titleAr:"بطاقة", titleEn:"Card", subAr:"Visa / MC", subEn:"Visa / MC",
+              icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
           ].map((f,i) => (
-            <div key={i} style={{
-              display:"flex", alignItems:"center", gap:10,
-              padding:"9px 14px", flex:1, minWidth:130,
-              background:f.bg, border:`1px solid ${f.border}`, borderRadius:10
+            <div key={i} className="wallet-banner-mob__feat" style={{
+              display:"inline-flex", alignItems:"center", gap:8,
+              padding:"8px 12px", flex:"0 1 auto", minWidth:0,
+              background:f.bg, border:`1px solid ${f.border}`, borderRadius:12
             }}>
-              <span style={{ fontSize:"1.1rem" }}>{f.ico}</span>
-              <div>
-                <div style={{ fontSize:"0.8rem", fontWeight:700, color:"var(--text-1)" }}>{f.titleAr}</div>
-                <div style={{ fontSize:"0.68rem", color:"var(--text-3)", fontFamily:"'JetBrains Mono',monospace", marginTop:2 }}>{f.subAr}</div>
+              <span style={{ display:"flex", flexShrink:0 }}>{f.icon}</span>
+              <div style={{ textAlign:"right" }}>
+                <div style={{ fontSize:"0.76rem", fontWeight:800, color:"var(--text-1)", lineHeight:1.2 }}>{lang === "ar" ? f.titleAr : f.titleEn}</div>
+                <div style={{ fontSize:"0.62rem", color:"var(--text-3)", fontFamily:"'JetBrains Mono',monospace", marginTop:1 }}>{lang === "ar" ? f.subAr : f.subEn}</div>
               </div>
             </div>
           ))}
-        </div>
       </div>
 
-      {/* زر — يستخدم onOpenAuth من App.jsx */}
-      <div style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", gap:8 }}>
+      <div className="wallet-banner-mob__cta" style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
         <button
           onClick={() => onOpenAuth('register')}
           style={{
@@ -668,8 +689,8 @@ function WalletBannerV3({ onOpenAuth }) {
           </svg>
           {lang === "ar" ? "إنشاء محفظة" : "Create Wallet"}
         </button>
-        <span style={{ fontSize:"0.65rem", color:"var(--text-3)", fontFamily:"'JetBrains Mono',monospace" }}>
-          {lang === "ar" ? "مجاني · لا بطاقة مطلوبة" : "free · no card needed"}
+        <span style={{ fontSize:"0.62rem", color:"var(--text-3)", fontFamily:"'JetBrains Mono',monospace", textAlign:"center" }}>
+          {lang === "ar" ? "مجاني بالكامل" : "100% free"}
         </span>
       </div>
     </div>
@@ -738,7 +759,7 @@ function ExchangeForm() {
   return (
     <>
       <div className="ex-inner-grid" style={{display:"grid",gridTemplateColumns:"300px 1fr",gap:18,alignItems:"start"}}>
-        <div className="ex-card">
+        <div className="ex-card ex-details-card">
           <div style={{fontSize:16,fontWeight:800,textAlign:"center",paddingBottom:14,marginBottom:16,borderBottom:"1px solid var(--border-1)",display:"flex",alignItems:"center",justifyContent:"center",gap:8,color:"var(--text-1)"}}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             {lang==="ar"?"بياناتك":"Your Details"}
@@ -789,7 +810,7 @@ function ExchangeForm() {
           </button>
         </div>
 
-        <div style={{display:"flex",flexDirection:"column",gap:0}}>
+        <div className="ex-currency-stack" style={{display:"flex",flexDirection:"column",gap:0}}>
           <div className="ex-card">
             <SecLabel color="blue" icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>}>{lang==="ar"?"ترسل":"YOU SEND"}</SecLabel>
             <div style={{display:"flex",gap:10,alignItems:"stretch"}}>
@@ -914,20 +935,22 @@ function Home({ onOpenAuth }) {
   return (
     <div style={{ position:'relative', zIndex:2 }}>
       <section style={{ padding:'45px 0 0' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 22px' }}>
-          <HeroSection onAbout={() => navigate("/about")} />
-          <PromoBanner />
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 360px', gap:20, alignItems:'start' }}>
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        <div className="mobile-home-root n1-home-shell" style={{ maxWidth:1200, margin:'0 auto', padding:'0 22px' }}>
+          <div className="mobile-order-hero">
+            <HeroSection onAbout={() => navigate("/about")} />
+          </div>
+          <div className="mobile-order-promo"><PromoBanner /></div>
+          <div className="mobile-home-layout" style={{ display:'grid', gridTemplateColumns:'1fr 360px', gap:20, alignItems:'start' }}>
+            <div className="mobile-order-exchange" style={{ display:'flex', flexDirection:'column', gap:10 }}>
               <ExchangeForm />
-              <WalletBanner onOpenAuth={onOpenAuth} />  {/* ← أضف هنا */}
+              <WalletBanner onOpenAuth={onOpenAuth} />
             </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+            <div className="mobile-order-sidebars mobile-sidebars-col" style={{ display:'flex', flexDirection:'column', gap:16 }}>
               <ReviewsSidebar />
               <LiveActivitySidebar />
             </div>
           </div>
-          <FeaturesSection />
+          <div className="mobile-order-features"><FeaturesSection /></div>
         </div>
       </section>
     </div>

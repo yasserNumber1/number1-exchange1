@@ -2,10 +2,11 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 
-import Navbar     from './components/common/Navbar'
-import Footer     from './components/common/Footer'
-import AuthModal  from './components/common/AuthModal'
-import SupportFAB from './components/common/SupportFAB'
+import Navbar         from './components/common/Navbar'
+import Footer         from './components/common/Footer'
+import AuthModal      from './components/common/AuthModal'
+import SupportFAB     from './components/common/SupportFAB'
+import MobileBottomNav from './components/common/MobileBottomNav'
 
 import Home       from './pages/Home'
 import Rates      from './pages/Rates'
@@ -90,6 +91,7 @@ function App() {
   const [authTab,      setAuthTab]      = useState('login')
   const [maintenance,  setMaintenance]  = useState(false)
   const [siteSettings, setSiteSettings] = useState(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const openAuth = (tab = 'login') => {
     setAuthTab(tab)
@@ -140,8 +142,12 @@ function App() {
   // ══════════════════════════════════════════
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      <Navbar onOpenAuth={openAuth} />
-      <main style={{ flex: 1 }}>
+      <Navbar
+        onOpenAuth={openAuth}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      />
+      <main className="n1-main-pad" style={{ flex: 1 }}>
         <Routes>
           <Route path="/"             element={<Home onOpenAuth={openAuth} />} />
           <Route path="/wallet" element={<WalletPage />} />
@@ -161,6 +167,7 @@ function App() {
         </Routes>
       </main>
       <Footer />
+      <MobileBottomNav onOpenMenu={() => setMobileMenuOpen(true)} />
       <AuthModal isOpen={authOpen} type={authTab} onClose={() => setAuthOpen(false)} />
       <SupportFAB />
     </div>

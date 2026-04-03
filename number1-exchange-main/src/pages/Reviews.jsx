@@ -145,12 +145,12 @@ export default function Reviews() {
       </div>
 
       {/* Row 1 — scrolls LEFT */}
-      <div style={{ marginBottom:14 }}>
+      <div className="reviews-carousel-row" style={{ marginBottom:14 }}>
         <CarouselTrack reviews={row1} direction="left"/>
       </div>
 
       {/* Row 2 — scrolls RIGHT */}
-      <div style={{ marginBottom:60 }}>
+      <div className="reviews-carousel-row" style={{ marginBottom:60 }}>
         <CarouselTrack reviews={row2} direction="right"/>
       </div>
 

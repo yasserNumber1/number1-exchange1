@@ -69,17 +69,72 @@ function NavLink({ label, isActive, onClick }) {
 }
 
 // ── Mobile Drawer ──────────────────────────────────────────
-function MobileDrawer({ isOpen, items, currentPath, onNavigate, onClose, isAr }) {
+// NAV_ICONS — أيقونات SVG لكل صفحة
+const NAV_ICONS = {
+  '/':             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  '/rates':        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+  '/how-it-works': <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>,
+  '/reviews':      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  '/faq':          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  '/contact':      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
+}
+
+function MobileDrawer({ isOpen, items, currentPath, onNavigate, onClose, isAr, onOpenAuth, user, isDark, onToggleTheme, lang, onToggleLang }) {
   if (!isOpen) return null
   return (
-    <div onClick={onClose} style={{ position:'fixed', inset:0, zIndex:300, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(8px)' }}>
-      <div onClick={e=>e.stopPropagation()} style={{ position:'absolute', top:0, left:0, right:0, background:'var(--card)', borderBottom:'1px solid var(--border-1)', padding:'20px 22px', display:'flex', flexDirection:'column', gap:4 }}>
-        {items.map(item => (
-          <button key={item.path} onClick={()=>{ onNavigate(item.path); onClose() }}
-            style={{ textAlign:isAr?'right':'left', padding:'12px 16px', borderRadius:10, border:'none', background:currentPath===item.path?'var(--cyan-dim)':'transparent', color:currentPath===item.path?'var(--cyan)':'var(--text-1)', fontFamily:"'Tajawal',sans-serif", fontSize:'1rem', fontWeight:700, cursor:'pointer', transition:'all 0.2s' }}>
-            {isAr ? item.ar : item.en}
-          </button>
-        ))}
+    <div onClick={onClose} style={{ position:'fixed', inset:0, zIndex:300, background:'rgba(0,0,0,0.72)', backdropFilter:'blur(10px)' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ position:'absolute', top:0, left:0, right:0, background:'var(--card)', borderRadius:'0 0 28px 28px', boxShadow:'0 20px 60px rgba(0,0,0,0.55)', overflow:'hidden' }}>
+
+        {/* Header row */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px', borderBottom:'1px solid var(--border-1)' }}>
+          <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:'0.9rem', fontWeight:900, color:'var(--cyan)', letterSpacing:2 }}>MENU</span>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            {/* Lang toggle */}
+            <button onClick={onToggleLang} style={{ padding:'5px 10px', borderRadius:8, border:'1px solid var(--border-1)', background:'transparent', color:'var(--text-2)', fontFamily:"'JetBrains Mono',monospace", fontSize:'0.72rem', fontWeight:700, cursor:'pointer', minHeight:34 }}>
+              {lang==='ar' ? 'EN' : 'AR'}
+            </button>
+            {/* Theme toggle */}
+            <button onClick={onToggleTheme} style={{ width:34, height:34, borderRadius:8, border:'1px solid var(--border-1)', background:'transparent', color:'var(--text-2)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              {isDark
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
+              }
+            </button>
+            {/* Close */}
+            <button onClick={onClose} style={{ width:34, height:34, borderRadius:8, border:'1px solid var(--border-1)', background:'transparent', color:'var(--text-2)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Nav Links */}
+        <div style={{ padding:'8px 12px', display:'flex', flexDirection:'column', gap:2 }}>
+          {items.map(item => {
+            const active = item.path === '/' ? currentPath === '/' : currentPath.startsWith(item.path)
+            return (
+              <button key={item.path} onClick={()=>{ onNavigate(item.path); onClose() }}
+                style={{ display:'flex', alignItems:'center', gap:12, textAlign:isAr?'right':'left', padding:'12px 14px', borderRadius:14, border:'none', background:active?'var(--cyan-dim)':'transparent', color:active?'var(--cyan)':'var(--text-1)', fontFamily:"'Tajawal',sans-serif", fontSize:'0.97rem', fontWeight:700, cursor:'pointer', transition:'all 0.18s', minHeight:48, flexDirection:isAr?'row':'row' }}>
+                <span style={{ color:active?'var(--cyan)':'var(--text-3)', flexShrink:0 }}>{NAV_ICONS[item.path]}</span>
+                <span style={{ flex:1 }}>{isAr ? item.ar : item.en}</span>
+                {active && <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--cyan)', flexShrink:0 }}/>}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Auth Buttons — للزوار فقط */}
+        {!user && (
+          <div style={{ display:'flex', gap:10, padding:'12px 18px 20px', borderTop:'1px solid var(--border-1)', marginTop:6 }}>
+            <button onClick={()=>{ onOpenAuth('login'); onClose() }}
+              style={{ flex:1, padding:'12px', borderRadius:14, border:'1.5px solid var(--border-2)', background:'transparent', color:'var(--text-1)', fontFamily:"'Tajawal',sans-serif", fontSize:'0.92rem', fontWeight:700, cursor:'pointer', minHeight:48 }}>
+              {isAr ? 'تسجيل الدخول' : 'Login'}
+            </button>
+            <button onClick={()=>{ onOpenAuth('register'); onClose() }}
+              style={{ flex:1, padding:'12px', borderRadius:14, border:'none', background:'linear-gradient(135deg,var(--cyan),var(--purple))', color:'#000', fontFamily:"'Tajawal',sans-serif", fontSize:'0.92rem', fontWeight:800, cursor:'pointer', minHeight:48 }}>
+              {isAr ? 'إنشاء حساب' : 'Sign Up'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -277,7 +332,7 @@ function UserMenu({ user, onLogout, isAr, onNavigate }) {
 }
 
 // ── Main Navbar ────────────────────────────────────────────
-function Navbar({ onOpenAuth }) {
+function Navbar({ onOpenAuth, mobileMenuOpen, setMobileMenuOpen }) {
   const { isDark, toggleTheme } = useTheme()
   const { lang, toggleLang }    = useLang()
   const navigate  = useNavigate()
@@ -285,8 +340,11 @@ function Navbar({ onOpenAuth }) {
   const [scrolled,   setScrolled]   = useState(false)
   const [lHov,       setLHov]       = useState(false)
   const [rHov,       setRHov]       = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [localMenuOpen, setLocalMenuOpen] = useState(false)
   const { user, logout } = useContext(AuthContext)
+
+  const menuOpen = mobileMenuOpen !== undefined ? mobileMenuOpen : localMenuOpen
+  const setMenuOpen = setMobileMenuOpen || setLocalMenuOpen
 
   const isAr    = lang === 'ar'
   const curPath = location.pathname
@@ -297,7 +355,7 @@ function Navbar({ onOpenAuth }) {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  useEffect(() => { setMobileOpen(false) }, [curPath])
+  useEffect(() => { setMenuOpen(false) }, [curPath])
 
   const isActive = (path) =>
     path === '/' ? curPath === '/' : curPath.startsWith(path)
@@ -307,7 +365,7 @@ function Navbar({ onOpenAuth }) {
       <style>{`
         .nav-links { display:flex; align-items:center; gap:2px; }
         .nav-hamburger { display:none !important; }
-        @media (max-width:900px) {
+        @media (max-width:1024px) {
           .nav-links { display:none !important; }
           .nav-hamburger { display:flex !important; }
         }
@@ -331,20 +389,22 @@ function Navbar({ onOpenAuth }) {
             ))}
           </div>
 
-          {/* Right controls */}
+          {/* Right controls — Lang/Theme/Auth hidden on mobile/tablet (see .n1-nav-desktop-ctl in mobile.css) */}
           <div style={{ display:'flex', gap:9, alignItems:'center', flexShrink:0 }}>
-            <LangToggle lang={lang} onToggle={toggleLang} />
-            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+            <div className="n1-nav-desktop-ctl" style={{ display:'flex', gap:9, alignItems:'center' }}>
+              <LangToggle lang={lang} onToggle={toggleLang} />
+              <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+            </div>
 
             {user ? (
               <UserMenu
                 user={user}
                 onLogout={logout}
                 isAr={isAr}
-                onNavigate={navigate}   // ← لازم نمرره عشان navigate('/admin')
+                onNavigate={navigate}
               />
             ) : (
-              <>
+              <div className="n1-nav-desktop-ctl" style={{ display:'flex', gap:9, alignItems:'center' }}>
                 <button onClick={() => onOpenAuth('login')}
                   onMouseEnter={() => setLHov(true)} onMouseLeave={() => setLHov(false)}
                   style={{ background:lHov?'var(--cyan-dim)':'transparent', border:`1px solid ${lHov?'var(--border-2)':'var(--border-1)'}`, color:lHov?'var(--text-1)':'var(--text-2)', padding:'9px 20px', borderRadius:9, fontFamily:"'Tajawal',sans-serif", fontSize:'0.88rem', fontWeight:700, cursor:'pointer', transition:'all 0.22s', whiteSpace:'nowrap' }}>
@@ -356,10 +416,10 @@ function Navbar({ onOpenAuth }) {
                   style={{ background:'linear-gradient(135deg,#00b8d9,#0086b3)', border:'none', color:'#fff', padding:'9px 20px', borderRadius:9, fontFamily:"'Tajawal',sans-serif", fontSize:'0.88rem', fontWeight:700, cursor:'pointer', transform:rHov?'translateY(-2px)':'translateY(0)', boxShadow:rHov?'0 6px 26px rgba(0,210,255,0.38)':'0 0 18px rgba(0,210,255,0.18)', transition:'all 0.22s', whiteSpace:'nowrap' }}>
                   {isAr ? 'إنشاء حساب' : 'Sign Up'}
                 </button>
-              </>
+              </div>
             )}
 
-            <button onClick={() => setMobileOpen(v => !v)} className="nav-hamburger"
+            <button onClick={() => setMenuOpen(v => !v)} className="nav-hamburger"
               style={{ background:'transparent', border:'1px solid var(--border-1)', borderRadius:8, padding:'6px 10px', cursor:'pointer', color:'var(--text-1)', display:'flex', alignItems:'center' }}>
               <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5' strokeLinecap='round'><line x1='3' y1='6' x2='21' y2='6'/><line x1='3' y1='12' x2='21' y2='12'/><line x1='3' y1='18' x2='21' y2='18'/></svg>
             </button>
@@ -368,12 +428,18 @@ function Navbar({ onOpenAuth }) {
       </nav>
 
       <MobileDrawer
-        isOpen={mobileOpen}
+        isOpen={menuOpen}
         items={NAV_ITEMS}
         currentPath={curPath}
         onNavigate={navigate}
-        onClose={() => setMobileOpen(false)}
+        onClose={() => setMenuOpen(false)}
         isAr={isAr}
+        onOpenAuth={onOpenAuth}
+        user={user}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        lang={lang}
+        onToggleLang={toggleLang}
       />
     </>
   )

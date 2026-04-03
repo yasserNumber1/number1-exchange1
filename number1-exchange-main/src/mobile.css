@@ -1,0 +1,775 @@
+/* ═══════════════════════════════════════════════════════════════════
+   mobile.css — App-Style Responsive Design (Mobile & Tablet ONLY)
+   Desktop (>= 1025px) is completely untouched.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────────
+   VARIABLES
+   ────────────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  :root {
+    --mob-radius: 20px;
+    --mob-radius-sm: 14px;
+    --mob-pad: 16px;
+    --mob-gap: 12px;
+  }
+  body { overflow-x: hidden !important; }
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   NAVBAR — App Header
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .nav-links { display: none !important; }
+  .nav-hamburger { display: flex !important; }
+  nav { padding: 8px 0 !important; }
+  nav > div { padding: 0 14px !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   APP MOBILE DRAWER — Full Redesign
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+
+  /* Existing MobileDrawer overlay */
+  .mob-drawer-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 300 !important;
+    background: rgba(0,0,0,0.72) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+
+  /* Drawer panel */
+  .mob-drawer-panel {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: var(--card) !important;
+    border-radius: 0 0 28px 28px !important;
+    padding-bottom: 20px !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important;
+  }
+
+  /* Nav links inside drawer */
+  .mob-drawer-panel button {
+    display: flex !important;
+    align-items: center !important;
+    padding: 13px 18px !important;
+    border-radius: 14px !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    min-height: 48px !important;
+  }
+
+  /* Add auth buttons area */
+  .mob-drawer-auth-row {
+    display: flex !important;
+    gap: 10px !important;
+    padding: 12px 18px 0 !important;
+    border-top: 1px solid var(--border-1) !important;
+    margin-top: 8px !important;
+  }
+
+  .mob-drawer-auth-row button {
+    flex: 1 !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
+    font-family: 'Tajawal', sans-serif !important;
+    font-size: 0.92rem !important;
+    font-weight: 800 !important;
+    cursor: pointer !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HOME PAGE — App Layout
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+
+  [style*="maxWidth:1200"][style*="padding:'0 22px'"] {
+    padding: 0 14px !important;
+    max-width: 100% !important;
+  }
+
+  section[style*="padding:'45px 0 0'"] {
+    padding: 10px 0 0 !important;
+  }
+
+  .mobile-home-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+
+  /* Hero مضغوط */
+  [style*="textAlign:'center'"][style*="marginBottom:36"] {
+    margin-bottom: 16px !important;
+  }
+
+  [style*="clamp(1.8rem"] {
+    font-size: clamp(1.25rem, 5.5vw, 1.8rem) !important;
+  }
+
+  [style*="gap:30"][style*="justifyContent:'center'"] {
+    gap: 14px !important;
+    margin-top: 12px !important;
+  }
+}
+
+/* ── PromoBanner — صف أفقي واضح (لا يختبئ خلف القوائم) ── */
+@media (max-width: 1024px) {
+
+  .promo-banner-app {
+    padding: 14px 16px !important;
+    margin-bottom: 14px !important;
+    border-radius: var(--mob-radius) !important;
+    overflow: visible !important;
+  }
+
+  .promo-app-main {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .promo-app-visual {
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  .promo-app-visual svg {
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  .promo-app-body {
+    min-width: 0 !important;
+  }
+
+  .promo-app-head {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .promo-app-desc {
+    display: block !important;
+    font-size: 0.74rem !important;
+    margin-bottom: 8px !important;
+  }
+
+  .promo-app-tags {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .promo-app-aside {
+    flex: 1 1 100% !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-width: 0 !important;
+    padding-top: 4px !important;
+  }
+
+  .promo-app-aside button {
+    width: auto !important;
+    min-width: 160px !important;
+    max-width: 100% !important;
+    height: 44px !important;
+  }
+
+  .promo-app-aside span {
+    text-align: center !important;
+    max-width: 200px !important;
+  }
+}
+
+/* ── Exchange Form — App Style ── */
+@media (max-width: 1024px) {
+
+  .mobile-order-exchange { width: 100% !important; }
+
+  .ex-inner-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .ex-card {
+    padding: 16px !important;
+    border-radius: var(--mob-radius) !important;
+  }
+
+  .ex-inp {
+    font-size: 16px !important;
+    min-height: 48px !important;
+    border-radius: 12px !important;
+    padding: 12px 14px 12px 38px !important;
+  }
+
+  .ex-amount-input {
+    width: 100% !important;
+    font-size: 17px !important;
+    min-height: 52px !important;
+    border-radius: 12px !important;
+  }
+
+  .ex-currency-box { border-radius: 12px !important; }
+  .ex-swap-btn { width: 36px !important; height: 36px !important; }
+
+  .ex-submit-btn {
+    padding: 13px !important;
+    font-size: 14px !important;
+    border-radius: 14px !important;
+  }
+}
+
+/* ── WalletBanner — عرض كامل، نصوص ظاهرة، صف أفقي ── */
+@media (max-width: 1024px) {
+
+  .wallet-banner-mob {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 12px 14px !important;
+    gap: 12px !important;
+    border-radius: var(--mob-radius) !important;
+    align-items: center !important;
+  }
+
+  .wallet-banner-mob [style*="width:54"][style*="height:54"] {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+  }
+
+  .wallet-banner-mob button {
+    padding: 10px 18px !important;
+    font-size: 0.82rem !important;
+    border-radius: 12px !important;
+  }
+}
+
+/* ── Sidebars — Horizontal Swipeable Cards ── */
+@media (max-width: 1024px) {
+
+  .mobile-order-sidebars { width: 100% !important; }
+
+  .mobile-sidebars-col {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 12px !important;
+    padding: 2px 0 8px !important;
+    scrollbar-width: none !important;
+  }
+
+  .mobile-sidebars-col::-webkit-scrollbar { display: none !important; }
+
+  .mobile-sidebars-col > * {
+    flex-shrink: 0 !important;
+    width: calc(88vw - 28px) !important;
+    max-width: 360px !important;
+    scroll-snap-align: start !important;
+    border-radius: var(--mob-radius) !important;
+  }
+}
+
+/* ── Features (لماذا نحن الأفضل) — Horizontal Scroll ── */
+@media (max-width: 1024px) {
+
+  [style*="marginTop:60"] { margin-top: 24px !important; }
+  [style*="marginBottom:48"][style*="width:'100%'"] { margin-bottom: 16px !important; }
+
+  /* Grid → Horizontal Scroll */
+  [style*="gridTemplateColumns:'repeat(3,1fr)'"] {
+    display: flex !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 10px !important;
+    padding: 4px 0 10px !important;
+    scrollbar-width: none !important;
+    grid-template-columns: unset !important;
+  }
+
+  [style*="gridTemplateColumns:'repeat(3,1fr)'"]::-webkit-scrollbar { display: none !important; }
+
+  [style*="gridTemplateColumns:'repeat(3,1fr)'"] > * {
+    flex-shrink: 0 !important;
+    width: 185px !important;
+    scroll-snap-align: start !important;
+    border-radius: var(--mob-radius) !important;
+    padding: 16px 14px !important;
+  }
+
+  /* أيقونات أصغر */
+  [style*="width:62"][style*="height:62"] {
+    width: 46px !important;
+    height: 46px !important;
+    border-radius: 13px !important;
+    margin-bottom: 10px !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RATES PAGE
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .rates-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    padding: 0 14px !important;
+  }
+  .rates-grid > div {
+    padding: 13px 11px !important;
+    border-radius: var(--mob-radius-sm) !important;
+  }
+}
+@media (max-width: 480px) {
+  .rates-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   REVIEWS PAGE — Swipeable
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+
+  /* إخفاء الصف الثاني */
+  .reviews-carousel-row:nth-of-type(2) { display: none !important; }
+
+  /* Overflow container */
+  .reviews-carousel-row {
+    overflow: hidden !important;
+  }
+
+  /* الـ rev-pauser → Swiper */
+  .reviews-carousel-row .rev-pauser {
+    animation: none !important;
+    display: flex !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 10px !important;
+    padding: 4px 14px 8px !important;
+    scrollbar-width: none !important;
+    width: 100% !important;
+  }
+
+  .reviews-carousel-row .rev-pauser::-webkit-scrollbar { display: none !important; }
+
+  .reviews-carousel-row .rev-pauser > div {
+    flex-shrink: 0 !important;
+    width: calc(80vw - 28px) !important;
+    max-width: 290px !important;
+    scroll-snap-align: start !important;
+    margin: 0 !important;
+  }
+
+  /* إخفاء الـ gradient overlays */
+  .reviews-carousel-row > div > div:not(.rev-pauser) { display: none !important; }
+
+  /* Stats 2×2 */
+  [style*="gridTemplateColumns:'repeat(4,1fr)'"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    padding: 0 14px !important;
+    margin-bottom: 24px !important;
+  }
+
+  [style*="gridTemplateColumns:'repeat(4,1fr)'"] > div {
+    border-radius: var(--mob-radius-sm) !important;
+    padding: 13px 10px !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HOW IT WORKS
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  /* إخفاء canvas عدا لوحة خطوات «كيف تعمل» على الموبايل */
+  canvas:not(.hiw-step-canvas) {
+    display: none !important;
+  }
+
+  canvas.hiw-step-canvas {
+    display: block !important;
+    max-width: 100%;
+    touch-action: manipulation;
+  }
+
+  [style*="padding:'60px 0'"] { padding: 24px 14px !important; }
+  [style*="padding: 60px 0"] { padding: 24px 14px !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   FAQ PAGE
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+
+  [style*="padding:'0 24px'"] { padding: 0 14px !important; }
+
+  /* Tabs scroll */
+  [style*="flexWrap:'wrap'"][style*="gap:8"] {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding-bottom: 4px !important;
+  }
+
+  [style*="flexWrap:'wrap'"][style*="gap:8"]::-webkit-scrollbar { display: none !important; }
+
+  [style*="flexWrap:'wrap'"][style*="gap:8"] button {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CONTACT PAGE
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+
+  [style*="maxWidth:900"] { padding: 0 14px !important; }
+
+  .support-cards {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  input[type="text"], input[type="email"], textarea, select {
+    font-size: 16px !important;
+    border-radius: 12px !important;
+    min-height: 48px !important;
+  }
+  textarea { min-height: 120px !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   AUTH & CONFIRM MODALS
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+
+  [style*="maxWidth:480"][style*="borderRadius:22"],
+  [style*="maxWidth:480"][style*="maxHeight:'90vh'"] {
+    width: calc(100vw - 20px) !important;
+    max-height: 93vh !important;
+    border-radius: var(--mob-radius) !important;
+  }
+
+  [style*="maxWidth:480"] input:not([type="checkbox"]):not([type="file"]) {
+    font-size: 16px !important;
+    min-height: 48px !important;
+    border-radius: 12px !important;
+  }
+
+  [style*="maxWidth:480"] button[style*="width:'100%'"],
+  [style*="maxWidth:480"] button[style*="width: 100%"] {
+    min-height: 48px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Currency dropdown fix */
+  [style*="minWidth:200"][style*="position:'absolute'"] {
+    min-width: min(calc(100vw - 28px), 320px) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SUPPORT FAB — panel width (anchor position handled in bottom-nav block)
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  [style*="width:355"],
+  [style*="width: 355"] {
+    width: calc(100vw - 28px) !important;
+    max-width: 380px !important;
+    border-radius: var(--mob-radius) !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   GENERAL APP POLISH
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+
+  body, #root { overflow-x: hidden !important; max-width: 100vw !important; }
+
+  button, a { min-height: 44px !important; }
+
+  [style*="borderRadius:20"] { border-radius: var(--mob-radius) !important; }
+  [style*="borderRadius:16"] { border-radius: var(--mob-radius-sm) !important; }
+
+  [style*="marginBottom:60"] { margin-bottom: 28px !important; }
+  [style*="marginBottom:52"] { margin-bottom: 24px !important; }
+  [style*="marginBottom:48"] { margin-bottom: 20px !important; }
+  [style*="marginBottom:36"] { margin-bottom: 16px !important; }
+  [style*="marginTop:60"]    { margin-top: 24px !important; }
+
+  [style*="padding:'40px 0'"] { padding: 20px 0 !important; }
+  [style*="padding:'60px 0'"] { padding: 24px 0 !important; }
+
+  /* Footer */
+  footer [style*="gridTemplateColumns"],
+  footer [style*="grid-template-columns"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 18px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  footer [style*="gridTemplateColumns"],
+  footer [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   TABLET (769–1024px) — same app column flow as phone (no desktop split)
+   ════════════════════════════════════════════════════════════════ */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .mobile-home-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+
+  .mobile-sidebars-col {
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
+  }
+
+  .mobile-sidebars-col > * {
+    flex-shrink: 0 !important;
+    width: min(360px, calc(88vw - 28px)) !important;
+    max-width: 360px !important;
+    scroll-snap-align: start !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BOTTOM NAV (hidden on desktop ≥1025px)
+   ════════════════════════════════════════════════════════════════ */
+.n1-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .n1-bottom-nav {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 420;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    pointer-events: none;
+  }
+
+  .n1-bottom-nav__inner {
+    pointer-events: auto;
+    margin: 0 10px 10px;
+    padding: 6px 6px 8px;
+    border-radius: 22px;
+    background: var(--card);
+    border: 1px solid var(--border-1);
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 210, 255, 0.06);
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 2px;
+    backdrop-filter: blur(16px) saturate(160%);
+  }
+
+  .n1-bottom-nav__item {
+    flex: 1;
+    min-width: 0;
+    min-height: 0 !important;
+    border: none;
+    background: transparent;
+    border-radius: 16px;
+    padding: 6px 4px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: var(--text-3);
+    cursor: pointer;
+    font-family: 'Tajawal', sans-serif;
+    transition: color 0.2s, background 0.2s;
+  }
+
+  .n1-bottom-nav__item:active {
+    transform: scale(0.97);
+  }
+
+  .n1-bottom-nav__item--active {
+    color: var(--cyan);
+    background: rgba(0, 210, 255, 0.08);
+  }
+
+  .n1-bottom-nav__ico {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.92;
+  }
+
+  .n1-bottom-nav__item--active .n1-bottom-nav__ico {
+    opacity: 1;
+  }
+
+  .n1-bottom-nav__lbl {
+    font-size: 0.58rem;
+    font-weight: 800;
+    line-height: 1.15;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .n1-main-pad {
+    padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .n1-site-footer {
+    display: none !important;
+  }
+
+  .n1-nav-desktop-ctl {
+    display: none !important;
+  }
+
+  /* Home: هيرو أولاً → بونص → محتوى رئيسي → المميزات */
+  .mobile-home-root.n1-home-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+
+  .mobile-order-hero {
+    order: 1;
+  }
+
+  .n1-hero-block {
+    margin-bottom: 12px !important;
+  }
+
+  .mobile-order-promo {
+    order: 2;
+    width: calc(100% + 2 * var(--mob-pad)) !important;
+    max-width: 100vw !important;
+    margin-left: calc(-1 * var(--mob-pad)) !important;
+    margin-right: calc(-1 * var(--mob-pad)) !important;
+    align-self: center;
+  }
+
+  .mobile-home-layout {
+    order: 3;
+  }
+
+  .mobile-order-features {
+    order: 4;
+  }
+
+  /* Exchange: تحويل العملات ثم بياناتك */
+  .ex-inner-grid {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .ex-currency-stack {
+    order: 1;
+  }
+
+  .ex-details-card {
+    order: 2;
+  }
+
+  .ex-submit-btn {
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+    min-height: 44px !important;
+    border-radius: 14px !important;
+  }
+
+  /* محفظة — صف أفقي (شريحة pills) */
+  .wallet-banner-mob__features {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    flex: 1 1 100% !important;
+  }
+
+  .wallet-banner-mob__feat {
+    flex: 0 1 auto !important;
+    min-height: 0 !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    text-align: right !important;
+    padding: 8px 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .wallet-banner-mob__lead {
+    flex: 1 1 100% !important;
+  }
+
+  .wallet-banner-mob__cta {
+    flex: 1 1 auto !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    width: 100%;
+  }
+
+  /* FAB فوق الشريط السفلي */
+  .support-fab-anchor {
+    left: auto !important;
+    right: 14px !important;
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px) + 6px) !important;
+  }
+
+  .support-fab-btn {
+    width: 52px !important;
+    height: 52px !important;
+    box-shadow: 0 6px 20px rgba(0, 210, 255, 0.45) !important;
+  }
+
+  .support-fab-btn > div {
+    transform: scale(0.82);
+    transform-origin: center center;
+  }
+
+  .support-fab-badge {
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 0.55rem !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .wallet-banner-mob__features {
+    justify-content: flex-start !important;
+  }
+
+  .wallet-banner-mob__feat {
+    flex: 1 1 calc(50% - 6px) !important;
+    min-width: 120px !important;
+  }
+}

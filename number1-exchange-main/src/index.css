@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Orbitron:wght@700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+@import './mobile.css';
 
 @tailwind base;
 @tailwind components;
@@ -437,4 +438,31 @@ html.light .n1-chat-sb [style*="rgba(255,255,255,0.045)"],
 html.light .n1-chat-sb [style*="rgba(255,255,255,0.055)"] {
   background: rgba(0,119,182,0.07) !important;
   border-color: rgba(0,119,182,0.15) !important;
+}
+
+
+/* ══ GooeyText Hero Animation ══════════════════════════════════════════ */
+/*
+  هذا النص يظهر تحت "تبادل العملات" ويتناوب بتأثير الذوبان Gooey
+  - font-size متغير حسب حجم الشاشة (clamp)
+  - الألوان: تدرج من cyan إلى purple مطابق لألوان المنصة
+  - white-space: nowrap يمنع النص من الانكسار أثناء التحريك
+*/
+.hero-gooey-text {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 900;
+  font-family: 'Tajawal', sans-serif;
+  background: linear-gradient(90deg, var(--cyan), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+/* في الوضع الفاتح نحتفظ بنفس التدرج لأن المتغيرات تتغير تلقائياً */
+html.light .hero-gooey-text {
+  background: linear-gradient(90deg, var(--cyan), var(--purple));
+  -webkit-background-clip: text;
+  background-clip: text;
 }

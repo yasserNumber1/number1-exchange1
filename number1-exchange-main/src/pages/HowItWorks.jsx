@@ -1,5 +1,20 @@
 // src/pages/HowItWorks.jsx
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+
+const PHONE_MQ = '(max-width: 768px)'
+
+function useIsPhone() {
+  const [phone, setPhone] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia(PHONE_MQ).matches
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(PHONE_MQ)
+    const onChange = () => setPhone(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return phone
+}
 
 /* ─── SVG Icons (same as before) ─── */
 const IcCalculator = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="12" y2="18"/><line x1="16" y1="18" x2="16" y2="18"/></svg>
@@ -166,7 +181,13 @@ function StepCanvas({ activeStep }) {
     }
   }, [])
 
-  return <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
+  return (
+    <canvas
+      ref={canvasRef}
+      className="hiw-step-canvas"
+      style={{ width: '100%', height: '100%', display: 'block' }}
+    />
+  )
 }
 
 /* ─── Count-up ─── */
@@ -191,15 +212,39 @@ function useCountUp(target, suffix = '', go = false) {
 
 /* ─── Main ─── */
 export default function HowItWorks() {
+  const isPhone = useIsPhone()
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
-  /* scroll-stop */
+  /* scroll-stop — سطح المكتب والتابلت العريض فقط (ليس الهاتف) */
   const sectionRef = useRef(null)
   const [activeStep, setActiveStep]   = useState(0)
-  const [snapLocked, setSnapLocked]   = useState(false)
   const snapLockedRef = useRef(false)
 
+  const goPrev = useCallback(() => {
+    setActiveStep(s => Math.max(0, s - 1))
+  }, [])
+  const goNext = useCallback(() => {
+    setActiveStep(s => Math.min(STEPS.length - 1, s + 1))
+  }, [])
+
+  const touchStartX = useRef(null)
+
+  const onTouchStart = useCallback(e => {
+    touchStartX.current = e.touches[0].clientX
+  }, [])
+
+  const onTouchEnd = useCallback(e => {
+    if (touchStartX.current == null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    touchStartX.current = null
+    if (Math.abs(dx) < 48) return
+    if (dx < 0) goNext()
+    else goPrev()
+  }, [goNext, goPrev])
+
   useEffect(() => {
+    if (isPhone) return undefined
+
     const SNAP_ZONE  = 0.065
     const HOLD       = 530
     const SNAP_PTS   = [0.10, 0.28, 0.50, 0.72, 0.90]
@@ -210,6 +255,7 @@ export default function HowItWorks() {
       const el = sectionRef.current
       if (!el) return
       const scrollable = el.offsetHeight - window.innerHeight
+      if (scrollable <= 0) return
       const scrolled   = -el.getBoundingClientRect().top
       const raw        = Math.max(0, Math.min(1, scrolled / scrollable))
 
@@ -219,11 +265,10 @@ export default function HowItWorks() {
         if (Math.abs(raw - SNAP_PTS[i]) < SNAP_ZONE && lastSnap !== i) {
           lastSnap = i
           snapLockedRef.current = true
-          setSnapLocked(true)
           const sTop   = el.getBoundingClientRect().top + window.scrollY
           const target = sTop + SNAP_PTS[i] * scrollable
           window.scrollTo({ top: target, behavior: 'smooth' })
-          setTimeout(() => { snapLockedRef.current = false; setSnapLocked(false) }, HOLD)
+          setTimeout(() => { snapLockedRef.current = false }, HOLD)
           break
         }
       }
@@ -231,7 +276,7 @@ export default function HowItWorks() {
 
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  }, [isPhone])
 
   /* scroll progress bar */
   useEffect(() => {
@@ -340,62 +385,124 @@ export default function HowItWorks() {
 
           {/* scroll hint */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, color: 'var(--text-3)', fontSize: '0.76rem', letterSpacing: 1 }}>
-            <span>مرّر للأسفل لاستعراض الخطوات</span>
+            <span>{isPhone ? 'استخدم الأسهم أو اسحب يمين/يسار في الخطوات' : 'مرّر للأسفل لاستعراض الخطوات'}</span>
             <div style={{ width: 17, height: 17, borderRight: '2px solid rgba(0,210,255,0.35)', borderBottom: '2px solid rgba(0,210,255,0.35)', transform: 'rotate(45deg)', animation: 'hiwBounce 1.6s ease-in-out infinite' }} />
           </div>
         </div>
       </section>
 
-      {/* ── SCROLL-STOP STEPS ── */}
-      <section ref={sectionRef} style={{ height: '550vh', position: 'relative', zIndex: 1 }}>
-        <div style={{ position: 'sticky', top: 0, height: '100vh', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      {/* ── STEPS: سكرول + سناب (ديسكتوب) | أسهم + سحب (هاتف ≤768px) ── */}
+      <section
+        ref={sectionRef}
+        className="hiw-steps-section"
+        style={{
+          height: isPhone ? 'auto' : '550vh',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <div
+          className="hiw-swipe-zone"
+          onTouchStart={isPhone ? onTouchStart : undefined}
+          onTouchEnd={isPhone ? onTouchEnd : undefined}
+          style={{
+            position: isPhone ? 'relative' : 'sticky',
+            top: isPhone ? undefined : 0,
+            height: isPhone ? 'auto' : '100vh',
+            minHeight: isPhone ? 'min(82vh, 720px)' : undefined,
+            width: '100%',
+            display: 'flex',
+            flexDirection: isPhone ? 'column' : 'row',
+            alignItems: 'center',
+            justifyContent: isPhone ? 'flex-start' : 'center',
+            overflow: 'hidden',
+            touchAction: isPhone ? 'pan-y' : undefined,
+            paddingBottom: isPhone ? 'env(safe-area-inset-bottom, 0px)' : undefined,
+          }}
+        >
 
           {/* scanlines */}
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(0,210,255,0.007) 3px,rgba(0,210,255,0.007) 4px)' }} />
           {/* ambient orb that follows step color */}
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 500, height: 500, borderRadius: '50%', background: ac, filter: 'blur(140px)', opacity: 0.055, transition: 'background 0.6s ease', pointerEvents: 'none' }} />
 
-          <div style={{
-            display: 'flex', alignItems: 'center',
-            gap: 'clamp(20px,4vw,64px)',
-            maxWidth: 980, width: '100%',
-            padding: '0 clamp(16px,4vw,48px)',
-            position: 'relative', zIndex: 2,
-          }}>
+          <div
+            className="hiw-layout"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexDirection: isPhone ? 'column' : undefined,
+              gap: isPhone ? 20 : 'clamp(20px,4vw,64px)',
+              maxWidth: 980,
+              width: '100%',
+              padding: isPhone ? '20px 18px 28px' : '0 clamp(16px,4vw,48px)',
+              position: 'relative',
+              zIndex: 2,
+            }}
+          >
             {/* Canvas */}
-            <div style={{ flex: '0 0 clamp(180px,36%,360px)', height: 'clamp(180px,36vw,360px)' }}>
+            <div
+              style={{
+                flex: isPhone ? '0 0 auto' : '0 0 clamp(180px,36%,360px)',
+                width: isPhone ? 'min(260px, 72vw)' : undefined,
+                height: isPhone ? 'min(260px, 72vw)' : 'clamp(180px,36vw,360px)',
+              }}
+            >
               <StepCanvas activeStep={activeStep} />
             </div>
 
             {/* Step info */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, width: isPhone ? '100%' : undefined }}>
               {/* step tag */}
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', borderRadius: 8, marginBottom: 16, border: `1px solid ${ac}40`, background: `${ac}10`, transition: 'all .4s' }}>
                 <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.62rem', letterSpacing: 2, color: ac, transition: 'color .4s' }}>STEP {STEPS[activeStep].num}</span>
               </div>
 
               {/* title */}
-              <h2 style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 'clamp(1.1rem,2.8vw,1.8rem)', fontWeight: 900, color: 'var(--text-1)', margin: '0 0 14px', lineHeight: 1.25, transition: 'all .35s' }}>
+              <h2
+                key={activeStep}
+                className="hiw-step-animate"
+                style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 'clamp(1.1rem,2.8vw,1.8rem)', fontWeight: 900, color: 'var(--text-1)', margin: '0 0 14px', lineHeight: 1.25, transition: 'all .35s' }}
+              >
                 {STEPS[activeStep].title}
               </h2>
 
               {/* desc */}
-              <p style={{ fontFamily: "'Tajawal',sans-serif", fontSize: '0.95rem', color: 'var(--text-2)', lineHeight: 1.85, margin: '0 0 26px', maxWidth: 400, transition: 'all .35s' }}>
+              <p
+                key={`d-${activeStep}`}
+                className="hiw-step-animate"
+                style={{ fontFamily: "'Tajawal',sans-serif", fontSize: '0.95rem', color: 'var(--text-2)', lineHeight: 1.85, margin: '0 0 22px', maxWidth: 400, transition: 'all .35s' }}
+              >
                 {STEPS[activeStep].desc}
               </p>
 
-              {/* progress pills */}
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 28 }}>
-                {STEPS.map((s, i) => (
-                  <div key={i} style={{
-                    height: 7, borderRadius: 4,
+              {/* progress pills — على الهاتف: نقرة للانتقال */}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: isPhone ? 18 : 28, flexWrap: 'wrap' }}>
+                {STEPS.map((s, i) => {
+                  const pillStyle = {
+                    height: 7,
+                    borderRadius: 4,
                     width: i === activeStep ? 32 : 8,
                     background: i <= activeStep ? STEPS[i].color : 'rgba(255,255,255,0.10)',
                     opacity: i === activeStep ? 1 : i < activeStep ? 0.5 : 0.2,
                     boxShadow: i === activeStep ? `0 0 10px ${s.color}80` : 'none',
                     transition: 'all .4s ease',
-                  }} />
-                ))}
+                    border: 'none',
+                    padding: 0,
+                  }
+                  return isPhone ? (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setActiveStep(i)}
+                      style={{ ...pillStyle, cursor: 'pointer', minHeight: 12, minWidth: i === activeStep ? 32 : 12 }}
+                      aria-label={`الخطوة ${i + 1}`}
+                      aria-current={i === activeStep ? 'step' : undefined}
+                    />
+                  ) : (
+                    <div key={i} style={pillStyle} aria-hidden />
+                  )
+                })}
                 <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.62rem', color: 'var(--text-3)', marginRight: 4 }}>
                   {activeStep + 1} / 5
                 </span>
@@ -415,7 +522,38 @@ export default function HowItWorks() {
                 </span>
               </div>
             </div>
+
           </div>
+
+          {isPhone && (
+            <div className="hiw-phone-nav">
+              <button
+                type="button"
+                className="hiw-phone-nav__btn"
+                onClick={goPrev}
+                disabled={activeStep <= 0}
+                aria-label="الخطوة السابقة"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="15 6 9 12 15 18" />
+                </svg>
+                <span>السابق</span>
+              </button>
+              <p className="hiw-phone-nav__hint">اسحب لليمين أو لليسار</p>
+              <button
+                type="button"
+                className="hiw-phone-nav__btn"
+                onClick={goNext}
+                disabled={activeStep >= STEPS.length - 1}
+                aria-label="الخطوة التالية"
+              >
+                <span>التالي</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="9 6 15 12 9 18" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -488,6 +626,62 @@ export default function HowItWorks() {
         @keyframes hiwBounce {
           0%,100% { transform: rotate(45deg) translateY(0); }
           50%      { transform: rotate(45deg) translateY(6px); }
+        }
+        @keyframes hiwStepIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .hiw-step-animate {
+          animation: hiwStepIn 0.35s ease-out;
+        }
+        @media (max-width: 768px) {
+          .hiw-phone-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 12px 14px 16px;
+            z-index: 6;
+            flex-shrink: 0;
+          }
+          .hiw-phone-nav__btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 48px;
+            padding: 0 16px;
+            border-radius: 14px;
+            border: 1px solid var(--border-1);
+            background: var(--card);
+            color: var(--text-1);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+          }
+          .hiw-phone-nav__btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+          }
+          .hiw-phone-nav__btn:active:not(:disabled) {
+            transform: scale(0.98);
+          }
+          .hiw-phone-nav__hint {
+            flex: 1;
+            text-align: center;
+            margin: 0;
+            font-size: 0.62rem;
+            color: var(--text-3);
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.35;
+            max-width: 120px;
+          }
         }
         @media (max-width: 600px) {
           .hiw-layout { flex-direction: column !important; }
