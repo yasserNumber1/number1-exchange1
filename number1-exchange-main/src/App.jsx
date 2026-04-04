@@ -70,6 +70,7 @@ import About      from './pages/About'
 import OrderTrack from './pages/OrderTrack'
 import NotFound   from './pages/NotFound'
 import MyOrders from './pages/MyOrders'
+import OrderConfirmPage from './pages/OrderConfirmPage'
 import WalletPage    from './pages/Wallet'
 import AdminWallets  from './pages/admin/AdminWallets'
 
@@ -218,7 +219,8 @@ function App() {
           <Route path="/aml"          element={<AML />}        />
           <Route path="/cookies"      element={<Cookies />}    />
           <Route path="*"             element={<NotFound />}   />
-          <Route path="/my-orders" element={<MyOrders />} />
+          <Route path="/my-orders"      element={<MyOrders />} />
+          <Route path="/order-confirm"  element={<OrderConfirmPage />} />
         </Routes>
       </main>
       <Footer />

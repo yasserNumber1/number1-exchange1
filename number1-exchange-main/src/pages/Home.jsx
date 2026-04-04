@@ -831,6 +831,7 @@ const WalletBanner = WalletBannerV3
 // ══ Exchange Form ══
 function ExchangeForm() {
   const {t,lang}=useLang()
+  const navigate=useNavigate()
   const [sendMethod,setSendMethod]=useState(SEND_METHODS[0])
   const [receiveMethod,setReceiveMethod]=useState(RECEIVE_METHODS[0])
   const [sendAmount,setSendAmount]=useState("100")
@@ -968,8 +969,9 @@ function ExchangeForm() {
       const id = sendMethod.id  // vodafone | instapay | etisalat
       sendItem = adminMethods.wallets.find(w=>(w.name||'').toLowerCase().includes(id)) || null
     }
-    setOrderData({ sendMethod, receiveMethod, sendAmount, receiveAmount, email: email||user?.email||'', userPhone, recipientId, sendItem })
-    setModalOpen(true)
+    const data = { sendMethod, receiveMethod, sendAmount, receiveAmount, email: email||user?.email||'', userPhone, recipientId, sendItem }
+    setOrderData(data)
+    navigate('/order-confirm', { state: data })
   }
 
   const SecLabel=({color, icon, children})=>(
