@@ -71,6 +71,9 @@ import OrderTrack from './pages/OrderTrack'
 import NotFound   from './pages/NotFound'
 import MyOrders from './pages/MyOrders'
 import OrderConfirmPage from './pages/OrderConfirmPage'
+import ExchangeSelect   from './pages/ExchangeSelect'
+import ExchangeFormPage from './pages/ExchangeFormPage'
+import ExchangeOrder    from './pages/ExchangeOrder'
 import WalletPage    from './pages/Wallet'
 import AdminWallets  from './pages/admin/AdminWallets'
 
@@ -219,8 +222,11 @@ function App() {
           <Route path="/aml"          element={<AML />}        />
           <Route path="/cookies"      element={<Cookies />}    />
           <Route path="*"             element={<NotFound />}   />
-          <Route path="/my-orders"      element={<MyOrders />} />
-          <Route path="/order-confirm"  element={<OrderConfirmPage />} />
+          <Route path="/my-orders"             element={<MyOrders />} />
+          <Route path="/order-confirm"         element={<OrderConfirmPage />} />
+          <Route path="/exchange"              element={<ExchangeSelect />} />
+          <Route path="/exchange/form"         element={<ExchangeFormPage />} />
+          <Route path="/exchange/order/:orderId" element={<ExchangeOrder />} />
         </Routes>
       </main>
       <Footer />
