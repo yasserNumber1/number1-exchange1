@@ -553,9 +553,9 @@ function Toggle({ value, onChange, color = '#3b82f6' }) {
     <button
       onClick={onChange}
       title={value ? 'تعطيل' : 'تفعيل'}
-      style={{ width: 42, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', background: value ? color : '#334155', position: 'relative', transition: 'background 0.25s', flexShrink: 0, boxShadow: value ? `0 0 8px ${color}44` : 'none' }}
+      style={{ width: 44, height: 24, minWidth: 44, minHeight: 24, padding: 0, boxSizing: 'content-box', borderRadius: 12, border: 'none', cursor: 'pointer', background: value ? color : '#334155', position: 'relative', transition: 'background 0.25s', flexShrink: 0, boxShadow: value ? `0 0 8px ${color}44` : 'none' }}
     >
-      <span style={{ position: 'absolute', top: 3, right: value ? 3 : 'auto', left: value ? 'auto' : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'all 0.2s', display: 'block', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
+      <span style={{ position: 'absolute', top: 2, right: value ? 2 : 'auto', left: value ? 'auto' : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'all 0.2s', display: 'block', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
     </button>
   )
 }
