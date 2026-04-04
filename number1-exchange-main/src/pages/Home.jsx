@@ -8,7 +8,6 @@ import useAuth from '../context/useAuth'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
-// ══ Currency Icon — صورة حقيقية مع fallback للدائرة الملونة ══
 function CurrencyIcon({ method, size = 26 }) {
   const [imgErr, setImgErr] = useState(false)
   const isWalletType = method.type === 'wallet'
@@ -30,7 +29,6 @@ function CurrencyIcon({ method, size = 26 }) {
   )
 }
 
-// ══ قاعدة التعليقات ══
 const ALL_REVIEWS = [
   { nameAr:"زكريا عمر",     nameEn:"Zakaria Omar",     color:"linear-gradient(135deg,#00d2ff,#7c5cfc)", textAr:"أفضل خدمة تبادل! سريع وموثوق جداً",                   textEn:"Best exchange service! Very fast and reliable" },
   { nameAr:"محتار عدن",     nameEn:"Mokhtar Aden",     color:"linear-gradient(135deg,#c8a84b,#f59e0b)", textAr:"خدمة ممتازة وسريعة، أنصح بها للجميع",                  textEn:"Excellent and fast service, recommend to everyone" },
@@ -52,7 +50,6 @@ function getRandomReviews(count=3) {
   return [...ALL_REVIEWS].sort(()=>Math.random()-0.5).slice(0,count)
 }
 
-// ══ Live Activity ══
 const OPERATION_PAIRS = [
   { sendId:"vodafone",  sendName:"فودافون كاش", sendNameEn:"Vodafone Cash", recvId:"mgo-recv",  recvName:"MoneyGo USD", sendColor:"#e40000", recvColor:"#e91e63" },
   { sendId:"instapay",  sendName:"إنستا باي",   sendNameEn:"Instapay",      recvId:"mgo-recv",  recvName:"MoneyGo USD", sendColor:"#1a56db", recvColor:"#e91e63" },
@@ -183,43 +180,25 @@ function ReviewsSidebar() {
   )
 }
 
-// نصوص الـ GooeyText المتناوبة — عربي وإنجليزي
 const HERO_GOOEY_AR = ["بشكل آمن", "وسهل", "وفوري"]
 const HERO_GOOEY_EN = ["Securely", "Easily", "Instantly"]
 
 function HeroSection({onAbout}) {
   const {t, lang}=useLang()
   const gooeyTexts = lang === "ar" ? HERO_GOOEY_AR : HERO_GOOEY_EN
-
   return (
     <div className="n1-hero-block" style={{textAlign:"center",marginBottom:36}}>
-      {/* شارة LIVE */}
       <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"5px 14px",border:"1px solid rgba(0,210,255,0.2)",borderRadius:30,background:"rgba(0,210,255,0.05)",fontSize:"0.73rem",color:"var(--cyan)",letterSpacing:1,fontFamily:"'JetBrains Mono',monospace",marginBottom:22}}>
         <span style={{width:6,height:6,borderRadius:"50%",background:"var(--cyan)",animation:"blink 1.5s ease-in-out infinite",boxShadow:"0 0 8px var(--cyan)",display:"inline-block"}}/>
         {t("hero_badge")}
       </div>
-
-      {/* العنوان الثابت */}
       <h1 style={{fontSize:"clamp(2rem,4vw,3.2rem)",fontWeight:900,marginBottom:0,lineHeight:1.15}}>
         {lang === "ar" ? "تبادل العملات" : "Exchange Currencies"}
       </h1>
-
-      {/*
-        حاوية النص المتحرك — الارتفاع الثابت يمنع الصفحة من الاهتزاز
-        عند تبديل النصوص. GooeyText يستخدم مرشح SVG لتأثير الذوبان.
-      */}
       <div style={{position:"relative",height:"80px",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}>
-        <GooeyText
-          texts={gooeyTexts}
-          morphTime={1.2}
-          cooldownTime={1.5}
-          style={{width:"100%"}}
-          textClassName="hero-gooey-text"
-        />
+        <GooeyText texts={gooeyTexts} morphTime={1.2} cooldownTime={1.5} style={{width:"100%"}} textClassName="hero-gooey-text"/>
       </div>
-
       <p style={{color:"var(--text-2)",fontSize:"0.95rem",maxWidth:520,margin:"0 auto 18px",lineHeight:1.75}}>{t("hero_desc")}</p>
-
       <button onClick={onAbout} style={{background:"transparent",border:"1px solid var(--border-1)",color:"var(--text-2)",padding:"13px 30px",borderRadius:12,fontFamily:"'Tajawal',sans-serif",fontSize:"1rem",fontWeight:700,cursor:"pointer",transition:"all 0.22s"}}
         onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--border-2)";e.currentTarget.style.color="var(--text-1)";e.currentTarget.style.background="var(--cyan-dim)"}}
         onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border-1)";e.currentTarget.style.color="var(--text-2)";e.currentTarget.style.background="transparent"}}>
@@ -278,7 +257,7 @@ function PromoBanner() {
             <div style={{height:"100%",borderRadius:20,background:"linear-gradient(90deg,#c8a84b,#f59e0b)",width:`${pct}%`,transition:"width 0.6s cubic-bezier(.4,0,.2,1)"}}/>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:10,fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>
-            <span>{lang==="ar"?`${transfers}/10`:`${transfers}/10`}</span>
+            <span>{`${transfers}/10`}</span>
             <span style={{color:ready?"var(--green)":"var(--text-3)"}}>{ready?(lang==="ar"?"جاهز":"Ready"):(lang==="ar"?`${MAX-transfers} متبقي`:`${MAX-transfers} left`)}</span>
           </div>
         </div>
@@ -313,514 +292,53 @@ function PromoBanner() {
   )
 }
 
-// ══ Currency Inline Dropdown ══
-function CurrencyInlineDropdown({options, selected, onSelect, open, onClose}) {
-  const {lang,t}=useLang()
-  const ref=useRef(null)
-  useEffect(()=>{
-    if(!open) return undefined
-    const fn=e=>{const node=ref.current;if(!node||node.contains(e.target)) return;onClose()}
-    document.addEventListener("click",fn)
-    return()=>document.removeEventListener("click",fn)
-  },[open,onClose])
-  if(!open) return null
-  return (
-    <div ref={ref} style={{position:"absolute",top:"calc(100% + 6px)",right:0,left:0,background:"var(--drop-bg,#0d1520)",border:"1px solid var(--border-2)",borderRadius:12,boxShadow:"0 16px 48px rgba(0,0,0,0.75)",zIndex:999,overflow:"hidden",minWidth:200}}>
-      {options.map(c=>{
-        const isSel=selected.id===c.id
-        return (
-          <div key={c.id} onClick={()=>{onSelect(c);onClose()}} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 14px",cursor:"pointer",background:isSel?"var(--cyan-dim)":"transparent",transition:"background .15s"}}
-            onMouseEnter={e=>{if(!isSel)e.currentTarget.style.background="var(--cyan-dim)"}}
-            onMouseLeave={e=>{if(!isSel)e.currentTarget.style.background="transparent"}}>
-            <div style={{width:34,height:34,borderRadius:"50%",flexShrink:0,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",background:c.color||"#222"}}>
-              <CurrencyIcon method={c} size={34}/>
-            </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:"0.87rem",fontWeight:700,color:"var(--text-1)",lineHeight:1.2}}>{lang==="ar"?c.name:c.nameEn||c.name}</div>
-              <div style={{fontSize:"0.65rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>{c.symbol} · {c.type==="egp"?t("curr_egp"):t("curr_crypto")}</div>
-            </div>
-            {isSel&&(<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><polyline points="20 6 9 17 4 12"/></svg>)}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ══ Confirm Modal ══
-function ConfirmModal({isOpen, onClose, orderData}) {
-  const {t, lang} = useLang()
-  const [copied, setCopied] = useState(false)
-  const [receipt, setReceipt] = useState(null)
-  const [preview, setPreview] = useState(null)
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [orderNumber, setOrderNumber] = useState('')
-  const [txid, setTxid] = useState('')
-  const [txidErr, setTxidErr] = useState('')
-  const fileRef = useRef(null)
-
-  if (!isOpen || !orderData) return null
-
-  const isWalletDeposit  = orderData.receiveMethod?.id === 'wallet-recv'
-  const isWalletTransfer = orderData.sendMethod?.id   === 'wallet-usdt'
-  const isEgp = !isWalletDeposit && !isWalletTransfer && orderData.sendMethod.type === "egp"
-  const adminItem = orderData.sendItem
-  const fallback  = TRANSFER_INFO[orderData.sendMethod.id] || {}
-  // قيم العرض: من لوحة التحكم أولاً، ثم الـ fallback المحلي
-  const info = {
-    value:   adminItem ? (isEgp ? adminItem.number  : adminItem.address) : fallback.value,
-    labelAr: adminItem ? (isEgp ? `رقم ${adminItem.name||orderData.sendMethod.name} للتحويل` : `عنوان ${adminItem.coin||'USDT'} (${adminItem.network||'TRC20'})`) : fallback.labelAr,
-    labelEn: adminItem ? (isEgp ? `${adminItem.name||orderData.sendMethod.name} Number` : `${adminItem.coin||'USDT'} Address (${adminItem.network||'TRC20'})`) : fallback.labelEn,
-    noteAr:  adminItem?.note || (adminItem?.accountName ? `حوّل باسم: ${adminItem.accountName}` : fallback.noteAr),
-    noteEn:  adminItem?.accountName ? `Transfer to: ${adminItem.accountName}` : fallback.noteEn,
-  }
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(info.value)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handleFile = e => {
-    const file = e.target.files[0]
-    if (!file) return
-    setReceipt(file)
-    const r = new FileReader()
-    r.onload = ev => setPreview(ev.target.result)
-    r.readAsDataURL(file)
-  }
-
-  // الدالة الصحيحة — ترسل للـ API الحقيقي
-  const handleSubmit = async () => {
-    setLoading(true)
-    try {
-      const token = localStorage.getItem('n1_token')
-
-      // ── إيداع في المحفظة الداخلية (USDT → Wallet) ──
-      if (isWalletDeposit) {
-        if (!txid.trim()) { setTxidErr('يرجى إدخال رقم المعاملة (TXID)'); setLoading(false); return }
-        const res  = await fetch(`${API}/api/wallet/deposit`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body:    JSON.stringify({ amount: parseFloat(orderData.sendAmount), txid: txid.trim() })
-        })
-        const data = await res.json()
-        if (data.success) setSubmitted(true)
-        else alert(data.message || 'حدث خطأ')
-        setLoading(false); return
-      }
-
-      // ── تحويل من المحفظة إلى MoneyGo ──
-      if (isWalletTransfer) {
-        const res  = await fetch(`${API}/api/wallet/transfer-to-moneygo`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body:    JSON.stringify({
-            amount:        parseFloat(orderData.sendAmount),
-            recipientId:   orderData.recipientId,
-            recipientName: orderData.email?.split('@')[0] || ''
-          })
-        })
-        const data = await res.json()
-        if (data.success) setSubmitted(true)
-        else alert(data.message || 'حدث خطأ')
-        setLoading(false); return
-      }
-
-      // ── تدفق عادي ──
-      // 1 — رفع الصورة
-      let receiptImageUrl = ''
-      try {
-        const formData = new FormData()
-        formData.append('receipt', receipt)
-        const token = localStorage.getItem('n1_token')
-        const uploadRes = await fetch(`${API}/api/orders/upload-receipt`, {
-          method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body: formData,
-        })
-        const uploadData = await uploadRes.json()
-        if (uploadData.url) receiptImageUrl = uploadData.url
-      } catch(e) {
-        console.warn('upload failed:', e.message)
-      }
-
-      // تحويل اسم الوسيلة إلى enum صحيح
-      const resolveMethod = (method) => {
-        if (method.type === 'crypto') return 'USDT_TRC20'
-        const name = (method.name || '').toLowerCase()
-        if (name.includes('vodafone')) return 'VODAFONE_CASH'
-        if (name.includes('instapay') || name.includes('insta')) return 'INSTAPAY'
-        if (name.includes('orange')) return 'ORANGE_CASH'
-        if (name.includes('fawry')) return 'FAWRY'
-        if (name.includes('etisalat')) return 'VODAFONE_CASH'
-        return 'VODAFONE_CASH'
-      }
-
-      // 2 — إرسال الطلب
-      const res = await fetch(`${API}/api/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName:  orderData.email?.split('@')[0] || 'مستخدم',
-          customerEmail: orderData.email || '',
-          customerPhone: orderData.userPhone || '',
-          orderType:     orderData.sendMethod.type === 'egp' ? 'EGP_WALLET_TO_MONEYGO' : 'USDT_TO_MONEYGO',
-          payment: {
-            method:            resolveMethod(orderData.sendMethod),
-            amountSent:        parseFloat(orderData.sendAmount),
-            currencySent:      orderData.sendMethod.type === 'egp' ? 'EGP' : 'USDT',
-            receiptImageUrl,
-            senderPhoneNumber: orderData.userPhone || '',
-          },
-          moneygo: {
-            recipientName:  orderData.email?.split('@')[0] || 'مستخدم',
-            recipientPhone: orderData.recipientId || '',
-            amountUSD:      parseFloat(orderData.receiveAmount),
-          },
-          exchangeRate: {
-            appliedRate:    parseFloat(orderData.receiveAmount) / parseFloat(orderData.sendAmount) || 1,
-            finalAmountUSD: parseFloat(orderData.receiveAmount),
-          },
-        })
-      })
-
-      const data = await res.json()
-      console.log('Order created:', data)
-
-      if (data.success) {
-        setOrderNumber(data.order?.orderNumber || '')
-        setSubmitted(true)
-      } else {
-        alert(data.message || 'حدث خطأ، حاول مرة أخرى')
-      }
-
-    } catch(err) {
-      console.error('❌ Error:', err)
-      alert('حدث خطأ، حاول مرة أخرى')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleClose = () => {
-    setReceipt(null)
-    setPreview(null)
-    setSubmitted(false)
-    setLoading(false)
-    setCopied(false)
-    setOrderNumber('')
-    setTxid('')
-    setTxidErr('')
-    onClose()
-  }
-
-  return (
-    <div onClick={e=>{if(e.target===e.currentTarget)handleClose()}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.78)",backdropFilter:"blur(8px)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-      <div style={{background:"var(--card)",border:"1px solid var(--border-2)",borderRadius:22,width:"100%",maxWidth:480,maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",position:"relative",boxShadow:"0 30px 80px rgba(0,0,0,0.7)"}}>
-        <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,var(--cyan),var(--purple),transparent)"}}/>
-        <div style={{padding:"22px 24px 18px",borderBottom:"1px solid var(--border-1)",display:"flex",alignItems:"center",gap:12}}>
-          <div style={{width:40,height:40,borderRadius:11,background:"var(--cyan-dim)",border:"1px solid rgba(0,210,255,0.18)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-          </div>
-          <div style={{flex:1}}><div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.95rem",fontWeight:700,color:"var(--cyan)",letterSpacing:1}}>{t("confirm_title")}</div></div>
-          <button onClick={handleClose} style={{width:32,height:32,borderRadius:8,background:"transparent",border:"1px solid var(--border-1)",color:"var(--text-2)",fontSize:"1.1rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s"}}
-            onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,61,90,0.1)";e.currentTarget.style.color="var(--red)"}}
-            onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="var(--text-2)"}}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-
-        <div style={{padding:24,overflowY:"auto",display:"flex",flexDirection:"column",gap:16}}>
-          {submitted ? (
-            <div style={{textAlign:"center",padding:"20px 0"}}>
-              <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(0,229,160,0.1)",border:"2px solid rgba(0,229,160,0.3)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px"}}>
-                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="succ" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#00e5a0"/><stop offset="100%" stopColor="#00b37a"/></linearGradient></defs><circle cx="20" cy="20" r="19" fill="url(#succ)" opacity="0.18"/><circle cx="20" cy="20" r="19" fill="none" stroke="#00e5a0" strokeWidth="1.5"/><polyline points="11,20 17,27 30,13" fill="none" stroke="#00e5a0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </div>
-              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",fontWeight:700,color:"var(--green)",marginBottom:8}}>{t("confirm_success_title")}</div>
-              {orderNumber && (
-                <div style={{background:"rgba(0,210,255,0.06)",border:"1px solid var(--border-1)",borderRadius:9,padding:"10px 16px",fontSize:"0.85rem",color:"var(--text-2)",margin:"10px 0"}}>
-                  رقم طلبك: <strong style={{color:"var(--cyan)",fontFamily:"'JetBrains Mono',monospace"}}>{orderNumber}</strong>
-                </div>
-              )}
-              <p style={{fontSize:"0.85rem",color:"var(--text-2)",lineHeight:1.65}}>{t("confirm_success_desc")}</p>
-              <button onClick={handleClose} style={{marginTop:20,padding:"12px 30px",background:"linear-gradient(135deg,#00c97a,#009960)",border:"none",borderRadius:12,color:"#fff",fontFamily:"'Tajawal',sans-serif",fontSize:"1rem",fontWeight:800,cursor:"pointer"}}>{t("confirm_success_btn")}</button>
-            </div>
-          ) : isWalletTransfer ? (
-            // ── تحويل من المحفظة إلى MoneyGo ──
-            <>
-              <div style={{background:"rgba(0,210,255,0.04)",border:"1px solid var(--border-1)",borderRadius:12,padding:"13px 16px"}}>
-                <div style={{fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",marginBottom:10,letterSpacing:1}}>ملخص التحويل</div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,fontSize:"0.88rem"}}>
-                  <span style={{color:"var(--text-2)"}}>من المحفظة الداخلية</span>
-                  <span style={{fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color:"var(--red)"}}>{orderData.sendAmount} USDT</span>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:"0.88rem"}}>
-                  <span style={{color:"var(--text-2)"}}>إلى MoneyGo</span>
-                  <span style={{fontWeight:700,color:"var(--green)",fontFamily:"'JetBrains Mono',monospace"}}>{orderData.receiveAmount} USD</span>
-                </div>
-                <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid var(--border-1)",fontSize:"0.82rem",color:"var(--text-3)",display:"flex",gap:6}}>
-                  <span>المستلِم:</span>
-                  <strong style={{color:"var(--cyan)",fontFamily:"'JetBrains Mono',monospace"}}>{orderData.recipientId}</strong>
-                </div>
-              </div>
-              <div style={{background:"rgba(245,158,11,0.06)",border:"1px dashed rgba(245,158,11,0.25)",borderRadius:9,padding:"9px 13px",fontSize:"0.78rem",color:"var(--gold)",display:"flex",alignItems:"center",gap:8}}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" style={{flexShrink:0}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                سيتم خصم المبلغ من محفظتك فوراً وإرساله على MoneyGo خلال دقائق.
-              </div>
-              <button onClick={handleSubmit} disabled={loading}
-                style={{width:"100%",padding:13,background:"linear-gradient(135deg,#009fc0,#006e9e)",border:"none",borderRadius:12,fontFamily:"'Tajawal',sans-serif",fontSize:"1.02rem",fontWeight:800,color:"#fff",cursor:loading?"not-allowed":"pointer",transition:"all 0.3s",opacity:loading?0.7:1}}>
-                {loading?"جاري التحويل...":"تأكيد التحويل"}
-              </button>
-            </>
-          ) : isWalletDeposit ? (
-            // ── إيداع في المحفظة الداخلية ──
-            <>
-              <div style={{background:"rgba(0,210,255,0.04)",border:"1px solid var(--border-1)",borderRadius:12,padding:"13px 16px"}}>
-                <div style={{fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",marginBottom:6,letterSpacing:1}}>إيداع USDT → محفظة داخلية</div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:"0.88rem"}}>
-                  <span style={{color:"var(--text-2)"}}>المبلغ</span>
-                  <span style={{fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{orderData.sendAmount} USDT</span>
-                </div>
-              </div>
-              {/* خطوة 1: عنوان الإيداع */}
-              <div>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                  <div style={{width:24,height:24,borderRadius:"50%",background:"var(--cyan-dim)",border:"1px solid var(--border-2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem",fontWeight:700,color:"var(--cyan)",flexShrink:0}}>1</div>
-                  <span style={{fontSize:"0.88rem",fontWeight:700}}>أرسل USDT TRC20 على هذا العنوان</span>
-                </div>
-                <div style={{background:"rgba(0,0,0,0.25)",border:"1px solid var(--border-1)",borderRadius:12,padding:"14px 16px"}}>
-                  <div style={{fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",marginBottom:6}}>عنوان محفظة USDT TRC20</div>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{flex:1,fontFamily:"'JetBrains Mono',monospace",fontSize:"0.75rem",fontWeight:700,color:"var(--cyan)",wordBreak:"break-all"}}>
-                      {(typeof orderData.sendItem === 'object' && orderData.sendItem?.address) || 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE'}
-                    </div>
-                    <button onClick={()=>{navigator.clipboard.writeText((orderData.sendItem?.address)||'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE');setCopied(true);setTimeout(()=>setCopied(false),2000)}}
-                      style={{flexShrink:0,padding:"8px 14px",background:copied?"rgba(0,229,160,0.15)":"var(--cyan-dim)",border:`1px solid ${copied?"rgba(0,229,160,0.3)":"var(--border-2)"}`,borderRadius:9,color:copied?"var(--green)":"var(--cyan)",fontFamily:"'JetBrains Mono',monospace",fontSize:"0.75rem",fontWeight:700,cursor:"pointer"}}>
-                      {copied?"✓ تم":"نسخ"}
-                    </button>
-                  </div>
-                  <div style={{marginTop:6,fontSize:"0.7rem",color:"var(--text-3)"}}>⚠ تأكد من شبكة TRC20 فقط</div>
-                </div>
-              </div>
-              {/* خطوة 2: TXID */}
-              <div>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                  <div style={{width:24,height:24,borderRadius:"50%",background:"var(--cyan-dim)",border:"1px solid var(--border-2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem",fontWeight:700,color:"var(--cyan)",flexShrink:0}}>2</div>
-                  <span style={{fontSize:"0.88rem",fontWeight:700}}>أدخل رقم المعاملة (TXID)</span>
-                </div>
-                <input value={txid} onChange={e=>{setTxid(e.target.value);setTxidErr('')}}
-                  placeholder="رقم المعاملة على البلوكتشين..."
-                  style={{width:"100%",padding:"12px 16px",background:"rgba(255,255,255,0.03)",border:`1px solid ${txidErr?"rgba(239,68,68,0.6)":"var(--border-1)"}`,borderRadius:11,color:"var(--text-1)",fontFamily:"'JetBrains Mono',monospace",fontSize:"0.82rem",outline:"none",direction:"ltr"}}
-                  onFocus={e=>e.target.style.borderColor="var(--cyan)"}
-                  onBlur={e=>e.target.style.borderColor=txidErr?"rgba(239,68,68,0.6)":"var(--border-1)"}
-                />
-                {txidErr&&<div style={{marginTop:4,fontSize:"0.68rem",color:"#f87171",fontFamily:"'JetBrains Mono',monospace"}}>⚠ {txidErr}</div>}
-              </div>
-              <button onClick={handleSubmit} disabled={loading}
-                style={{width:"100%",padding:13,background:"linear-gradient(135deg,#009fc0,#006e9e)",border:"none",borderRadius:12,fontFamily:"'Tajawal',sans-serif",fontSize:"1.02rem",fontWeight:800,color:"#fff",cursor:loading?"not-allowed":"pointer",transition:"all 0.3s",opacity:loading?0.7:1}}>
-                {loading?"جاري الإرسال...":"إرسال طلب الإيداع"}
-              </button>
-            </>
-          ) : (
-            // ── التدفق العادي ──
-            <>
-              <div style={{background:"rgba(0,210,255,0.04)",border:"1px solid var(--border-1)",borderRadius:12,padding:"13px 16px"}}>
-                <div style={{fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",marginBottom:10,letterSpacing:1}}>{t("confirm_summary").toUpperCase()}</div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,fontSize:"0.88rem"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}><CurrencyIcon method={orderData.sendMethod} size={24}/><span style={{color:"var(--text-2)"}}>{t("confirm_send")}</span></div>
-                  <span style={{fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>{orderData.sendAmount} {orderData.sendMethod.name}</span>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:"0.88rem"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}><CurrencyIcon method={orderData.receiveMethod} size={24}/><span style={{color:"var(--text-2)"}}>{t("confirm_recv")}</span></div>
-                  <span style={{fontWeight:700,color:"var(--green)",fontFamily:"'JetBrains Mono',monospace"}}>{orderData.receiveAmount} {orderData.receiveMethod.name}</span>
-                </div>
-              </div>
-
-              <div>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                  <div style={{width:24,height:24,borderRadius:"50%",background:"var(--cyan-dim)",border:"1px solid var(--border-2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem",fontWeight:700,color:"var(--cyan)",flexShrink:0}}>1</div>
-                  <span style={{fontSize:"0.88rem",fontWeight:700}}>{isEgp?t("confirm_step1_num"):t("confirm_step1_addr")}</span>
-                </div>
-                <div style={{background:"rgba(0,0,0,0.25)",border:"1px solid var(--border-1)",borderRadius:12,padding:"14px 16px"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                    <CurrencyIcon method={orderData.sendMethod} size={20}/>
-                    <div style={{fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace"}}>{lang==="ar"?info.labelAr:info.labelEn}</div>
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{flex:1,fontFamily:"'JetBrains Mono',monospace",fontSize:isEgp?"1.4rem":"0.75rem",fontWeight:700,color:"var(--cyan)",wordBreak:"break-all",letterSpacing:isEgp?2:1}}>{info.value}</div>
-                    <button onClick={handleCopy} style={{flexShrink:0,padding:"8px 14px",background:copied?"rgba(0,229,160,0.15)":"var(--cyan-dim)",border:`1px solid ${copied?"rgba(0,229,160,0.3)":"var(--border-2)"}`,borderRadius:9,color:copied?"var(--green)":"var(--cyan)",fontFamily:"'JetBrains Mono',monospace",fontSize:"0.75rem",fontWeight:700,cursor:"pointer",transition:"all 0.25s",whiteSpace:"nowrap"}}>{copied?t("confirm_copied"):t("confirm_copy")}</button>
-                  </div>
-                  <div style={{marginTop:8,fontSize:"0.7rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace"}}>{lang==="ar"?info.noteAr:info.noteEn}</div>
-                </div>
-                <div style={{marginTop:10,background:"rgba(200,168,75,0.06)",border:"1px dashed rgba(200,168,75,0.25)",borderRadius:9,padding:"9px 13px",fontSize:"0.78rem",color:"var(--gold)",display:"flex",alignItems:"center",gap:8}}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  <span>{t("confirm_timer")}</span>
-                </div>
-              </div>
-
-              <div>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                  <div style={{width:24,height:24,borderRadius:"50%",background:"var(--cyan-dim)",border:"1px solid var(--border-2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem",fontWeight:700,color:"var(--cyan)",flexShrink:0}}>2</div>
-                  <span style={{fontSize:"0.88rem",fontWeight:700}}>{t("confirm_step2")}</span>
-                </div>
-                <div onClick={()=>fileRef.current.click()} style={{border:`1.5px dashed ${receipt?"var(--green)":"var(--border-2)"}`,borderRadius:12,padding:receipt?10:20,textAlign:"center",cursor:"pointer",transition:"all 0.25s",background:receipt?"rgba(0,229,160,0.04)":"transparent"}}
-                  onMouseEnter={e=>{if(!receipt)e.currentTarget.style.borderColor="var(--cyan)"}}
-                  onMouseLeave={e=>{if(!receipt)e.currentTarget.style.borderColor="var(--border-2)"}}>
-                  {preview ? (
-                    <div>
-                      <img src={preview} alt="receipt" style={{width:"100%",maxHeight:160,objectFit:"contain",borderRadius:8}}/>
-                      <div style={{marginTop:8,fontSize:"0.75rem",color:"var(--green)",fontFamily:"'JetBrains Mono',monospace",display:"flex",alignItems:"center",gap:4}}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        {receipt.name}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div style={{marginBottom:8,display:"flex",justifyContent:"center"}}>
-                        <svg width="42" height="42" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="upl" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="rgba(0,210,255,0.3)"/><stop offset="100%" stopColor="rgba(0,210,255,0.05)"/></linearGradient></defs><rect x="4" y="4" width="36" height="36" rx="10" fill="url(#upl)" stroke="rgba(0,210,255,0.25)" strokeWidth="1.5" strokeDasharray="4 2"/><path d="M22 28V16" stroke="var(--cyan)" strokeWidth="2.2" strokeLinecap="round"/><polyline points="15,22 22,15 29,22" fill="none" stroke="var(--cyan)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><line x1="14" y1="31" x2="30" y2="31" stroke="var(--cyan)" strokeWidth="2" strokeLinecap="round" opacity="0.5"/></svg>
-                      </div>
-                      <div style={{fontSize:"0.88rem",color:"var(--text-2)",marginBottom:4}}>{t("confirm_upload")}</div>
-                      <div style={{fontSize:"0.72rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace"}}>{t("confirm_upload_hint")}</div>
-                    </>
-                  )}
-                </div>
-                <input ref={fileRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{display:"none"}}/>
-              </div>
-
-              <button onClick={handleSubmit} disabled={loading}
-                style={{width:"100%",padding:13,background:"linear-gradient(135deg,#009fc0,#006e9e)",border:"none",borderRadius:12,fontFamily:"'Tajawal',sans-serif",fontSize:"1.02rem",fontWeight:800,color:"#fff",cursor:loading?"not-allowed":"pointer",transition:"all 0.3s",boxShadow:"0 4px 22px rgba(0,159,192,0.22)",opacity:loading?0.7:1}}
-                onMouseEnter={e=>{if(!loading){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 28px rgba(0,210,255,0.35)"}}}
-                onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 4px 22px rgba(0,159,192,0.22)"}}>
-                {loading?t("confirm_loading"):t("confirm_submit")}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ══ Wallet Banners ══
-// ══ Wallet Banner — يظهر للزوار فقط ══
+// ══ Wallet Banner ══
 function WalletBannerV3({ onOpenAuth }) {
   const { lang } = useLang()
-  const { user } = useAuth()       // ← useAuth الصح
+  const { user } = useAuth()
   const [hov, setHov] = useState(false)
-
-  // ─── مسجل دخول → اختفي ───────────────
   if (user) return null
-
   return (
-    <div
-      className="wallet-banner-mob"
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display:"flex", flexWrap:"wrap", alignItems:"center", gap:16,
-        padding:"14px 20px",
-        width:"789px", minHeight:0, maxWidth:"100%",
-        textAlign:"right", justifyContent:"space-between",
-        boxSizing:"border-box", borderRadius:16,
-        background:"var(--card)",
-        border:"1px solid var(--border-1)",
-        transition:"border-color .25s,background .25s,box-shadow .25s",
-        boxShadow: hov ? "0 0 0 3px rgba(0,210,255,0.05)" : "none",
-        position:"relative", zIndex:2
-      }}
-    >
-      <div className="wallet-banner-mob__lead" style={{ display:"flex", alignItems:"center", gap:14, flex:"1 1 260px", minWidth:0 }}>
-      <div style={{
-        width:54, height:54, borderRadius:14, flexShrink:0,
-        background:"rgba(0,210,255,0.08)", border:"1px solid rgba(0,210,255,0.15)",
-        display:"flex", alignItems:"center", justifyContent:"center",
-        transition:"transform .3s",
-        transform: hov ? "scale(1.07) rotate(-5deg)" : "none"
-      }}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
-          <defs>
-            <linearGradient id="wbg" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="var(--cyan)"/>
-              <stop offset="100%" stopColor="var(--purple)"/>
-            </linearGradient>
-          </defs>
-          <path d="M21 12V7H5a2 2 0 010-4h14v4" stroke="url(#wbg)" strokeWidth="1.7"/>
-          <path d="M3 5v14a2 2 0 002 2h16v-5" stroke="url(#wbg)" strokeWidth="1.7"/>
-          <path d="M18 12a2 2 0 000 4h4v-4z" stroke="url(#wbg)" strokeWidth="1.7"/>
-        </svg>
-      </div>
-
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:4, flexWrap:"wrap" }}>
-          <span style={{ fontSize:"0.92rem", fontWeight:800, color:"var(--text-1)" }}>
-            {lang === "ar" ? "محفظة Number 1 — آمنة وسريعة" : "Number 1 Wallet — fast & secure"}
-          </span>
-          <span style={{
-            fontSize:"0.58rem", fontWeight:700, letterSpacing:"1.5px",
-            border:"1px solid rgba(0,210,255,0.22)", padding:"2px 9px", borderRadius:20,
-            background:"linear-gradient(90deg,var(--cyan),var(--purple))",
-            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
-            fontFamily:"'JetBrains Mono',monospace", flexShrink:0
-          }}>FREE</span>
-        </div>
-        <p style={{ fontSize:"0.76rem", color:"var(--text-3)", lineHeight:1.55, margin:0 }}>
-          {lang === "ar"
-            ? "تخزين وتحويل بالجنيه أو USDT · شحن بالبطاقة متاح · بلا رسوم تفعيل."
-            : "Hold & transfer EGP or USDT · optional card top-up · zero activation fees."}
-        </p>
-      </div>
-      </div>
-
-      <div className="wallet-banner-mob__features" style={{ display:"flex", flexDirection:"row", flexWrap:"wrap", alignItems:"center", gap:8, flex:"2 1 320px", justifyContent:"center" }}>
-          {[
-            { bg:"rgba(0,229,160,0.07)", border:"rgba(0,229,160,0.13)", titleAr:"فوري", titleEn:"Instant", subAr:"ثوانٍ", subEn:"Seconds",
-              icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
-            { bg:"rgba(0,210,255,0.06)", border:"rgba(0,210,255,0.12)", titleAr:"AES-256", titleEn:"AES-256", subAr:"تشفير", subEn:"Encrypted",
-              icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
-            { bg:"rgba(245,158,11,0.06)", border:"rgba(245,158,11,0.12)", titleAr:"بطاقة", titleEn:"Card", subAr:"Visa / MC", subEn:"Visa / MC",
-              icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
-          ].map((f,i) => (
-            <div key={i} className="wallet-banner-mob__feat" style={{
-              display:"inline-flex", alignItems:"center", gap:8,
-              padding:"8px 12px", flex:"0 1 auto", minWidth:0,
-              background:f.bg, border:`1px solid ${f.border}`, borderRadius:12
-            }}>
-              <span style={{ display:"flex", flexShrink:0 }}>{f.icon}</span>
-              <div style={{ textAlign:"right" }}>
-                <div style={{ fontSize:"0.76rem", fontWeight:800, color:"var(--text-1)", lineHeight:1.2 }}>{lang === "ar" ? f.titleAr : f.titleEn}</div>
-                <div style={{ fontSize:"0.62rem", color:"var(--text-3)", fontFamily:"'JetBrains Mono',monospace", marginTop:1 }}>{lang === "ar" ? f.subAr : f.subEn}</div>
-              </div>
-            </div>
-          ))}
-      </div>
-
-      <div className="wallet-banner-mob__cta" style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-        <button
-          onClick={() => onOpenAuth('register')}
-          style={{
-            padding:"12px 26px",
-            background:"linear-gradient(135deg,var(--cyan),var(--purple))",
-            border:"none", borderRadius:11, color:"#000",
-            fontWeight:800, fontSize:"0.87rem",
-            fontFamily:"'Tajawal',sans-serif", cursor:"pointer",
-            display:"flex", alignItems:"center", gap:7, whiteSpace:"nowrap",
-            boxShadow: hov ? "0 8px 26px rgba(0,210,255,0.34)" : "0 4px 16px rgba(0,210,255,0.18)",
-            transition:"transform .2s,box-shadow .2s",
-            transform: hov ? "translateY(-2px)" : "none"
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 12V7H5a2 2 0 010-4h14v4"/>
-            <path d="M3 5v14a2 2 0 002 2h16v-5"/>
-            <path d="M18 12a2 2 0 000 4h4v-4z"/>
+    <div className="wallet-banner-mob" onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:16,padding:"14px 20px",width:"789px",minHeight:0,maxWidth:"100%",textAlign:"right",justifyContent:"space-between",boxSizing:"border-box",borderRadius:16,background:"var(--card)",border:"1px solid var(--border-1)",transition:"border-color .25s,background .25s,box-shadow .25s",boxShadow:hov?"0 0 0 3px rgba(0,210,255,0.05)":"none",position:"relative",zIndex:2}}>
+      <div className="wallet-banner-mob__lead" style={{display:"flex",alignItems:"center",gap:14,flex:"1 1 260px",minWidth:0}}>
+        <div style={{width:54,height:54,borderRadius:14,flexShrink:0,background:"rgba(0,210,255,0.08)",border:"1px solid rgba(0,210,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",transition:"transform .3s",transform:hov?"scale(1.07) rotate(-5deg)":"none"}}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+            <defs><linearGradient id="wbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="var(--cyan)"/><stop offset="100%" stopColor="var(--purple)"/></linearGradient></defs>
+            <path d="M21 12V7H5a2 2 0 010-4h14v4" stroke="url(#wbg)" strokeWidth="1.7"/>
+            <path d="M3 5v14a2 2 0 002 2h16v-5" stroke="url(#wbg)" strokeWidth="1.7"/>
+            <path d="M18 12a2 2 0 000 4h4v-4z" stroke="url(#wbg)" strokeWidth="1.7"/>
           </svg>
-          {lang === "ar" ? "إنشاء محفظة" : "Create Wallet"}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:4,flexWrap:"wrap"}}>
+            <span style={{fontSize:"0.92rem",fontWeight:800,color:"var(--text-1)"}}>{lang==="ar"?"محفظة Number 1 — آمنة وسريعة":"Number 1 Wallet — fast & secure"}</span>
+            <span style={{fontSize:"0.58rem",fontWeight:700,letterSpacing:"1.5px",border:"1px solid rgba(0,210,255,0.22)",padding:"2px 9px",borderRadius:20,background:"linear-gradient(90deg,var(--cyan),var(--purple))",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontFamily:"'JetBrains Mono',monospace",flexShrink:0}}>FREE</span>
+          </div>
+          <p style={{fontSize:"0.76rem",color:"var(--text-3)",lineHeight:1.55,margin:0}}>{lang==="ar"?"تخزين وتحويل بالجنيه أو USDT · شحن بالبطاقة متاح · بلا رسوم تفعيل.":"Hold & transfer EGP or USDT · optional card top-up · zero activation fees."}</p>
+        </div>
+      </div>
+      <div className="wallet-banner-mob__features" style={{display:"flex",flexDirection:"row",flexWrap:"wrap",alignItems:"center",gap:8,flex:"2 1 320px",justifyContent:"center"}}>
+        {[
+          {bg:"rgba(0,229,160,0.07)",border:"rgba(0,229,160,0.13)",titleAr:"فوري",titleEn:"Instant",subAr:"ثوانٍ",subEn:"Seconds",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>},
+          {bg:"rgba(0,210,255,0.06)",border:"rgba(0,210,255,0.12)",titleAr:"AES-256",titleEn:"AES-256",subAr:"تشفير",subEn:"Encrypted",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>},
+          {bg:"rgba(245,158,11,0.06)",border:"rgba(245,158,11,0.12)",titleAr:"بطاقة",titleEn:"Card",subAr:"Visa / MC",subEn:"Visa / MC",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>},
+        ].map((f,i)=>(
+          <div key={i} className="wallet-banner-mob__feat" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"8px 12px",flex:"0 1 auto",minWidth:0,background:f.bg,border:`1px solid ${f.border}`,borderRadius:12}}>
+            <span style={{display:"flex",flexShrink:0}}>{f.icon}</span>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:"0.76rem",fontWeight:800,color:"var(--text-1)",lineHeight:1.2}}>{lang==="ar"?f.titleAr:f.titleEn}</div>
+              <div style={{fontSize:"0.62rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",marginTop:1}}>{lang==="ar"?f.subAr:f.subEn}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="wallet-banner-mob__cta" style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+        <button onClick={()=>onOpenAuth('register')} style={{padding:"12px 26px",background:"linear-gradient(135deg,var(--cyan),var(--purple))",border:"none",borderRadius:11,color:"#000",fontWeight:800,fontSize:"0.87rem",fontFamily:"'Tajawal',sans-serif",cursor:"pointer",display:"flex",alignItems:"center",gap:7,whiteSpace:"nowrap",boxShadow:hov?"0 8px 26px rgba(0,210,255,0.34)":"0 4px 16px rgba(0,210,255,0.18)",transition:"transform .2s,box-shadow .2s",transform:hov?"translateY(-2px)":"none"}}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>
+          {lang==="ar"?"إنشاء محفظة":"Create Wallet"}
         </button>
-        <span style={{ fontSize:"0.62rem", color:"var(--text-3)", fontFamily:"'JetBrains Mono',monospace", textAlign:"center" }}>
-          {lang === "ar" ? "مجاني بالكامل" : "100% free"}
-        </span>
+        <span style={{fontSize:"0.62rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",textAlign:"center"}}>{lang==="ar"?"مجاني بالكامل":"100% free"}</span>
       </div>
     </div>
   )
@@ -828,260 +346,61 @@ function WalletBannerV3({ onOpenAuth }) {
 
 const WalletBanner = WalletBannerV3
 
-// ══ Exchange CTA Card ══
+// ══ Exchange CTA — يوجه المستخدم لصفحة الاختيار ══
 function ExchangeForm() {
-  const {lang}=useLang()
-  const navigate=useNavigate()
-
-
-  const isEgp=sendMethod.type==="egp"
-  const isUSDT=sendMethod.id==="usdt-trc"
-  const isWalletSend=sendMethod.id==='wallet-usdt'
-  const isWalletRecv=receiveMethod.id==='wallet-recv'
-
-  // تصفية الوسائل — المحفظة الداخلية للمسجلين فقط
-  const filteredSendMethods=useMemo(()=>{
-    let m=SEND_METHODS.filter(s=>!s.walletOnly||!!user)
-    if(isWalletRecv) m=m.filter(s=>s.id==='usdt-trc')
-    return m
-  },[user,isWalletRecv])
-  const filteredRecvMethods=useMemo(()=>{
-    let m=RECEIVE_METHODS.filter(r=>!r.walletOnly||!!user)
-    if(isWalletSend) m=m.filter(r=>r.id==='mgo-recv')
-    return m
-  },[user,isWalletSend])
-
-  // إصلاح تلقائي للطرف المقابل عند اختيار المحفظة
-  useEffect(()=>{
-    if(isWalletSend&&receiveMethod.id!=='mgo-recv'){
-      const mgo=RECEIVE_METHODS.find(m=>m.id==='mgo-recv')
-      if(mgo) setReceiveMethod(mgo)
-    }
-  },[isWalletSend])
-  useEffect(()=>{
-    if(isWalletRecv&&sendMethod.id!=='usdt-trc'){
-      const usdt=SEND_METHODS.find(m=>m.id==='usdt-trc')
-      if(usdt) setSendMethod(usdt)
-    }
-  },[isWalletRecv])
-
-  const baseRate=useMemo(()=>{const key=`${sendMethod.id}_${receiveMethod.id}`;return EXCHANGE_RATES[key]||1},[sendMethod,receiveMethod])
-  const currentRate=baseRate*rateFactor
-  const receiveAmount=useMemo(()=>{const amt=parseFloat(sendAmount)||0;return amt>0?(amt*currentRate).toFixed(4):""},[sendAmount,currentRate])
-
-  useEffect(()=>{
-    const timer=setInterval(()=>{
-      const change=(Math.random()-0.5)*0.002
-      setRateFactor(prev=>Math.max(0.998,Math.min(1.002,prev+change)))
-      setRateDir(change>=0?"up":"dn")
-      setTimeout(()=>setRateDir(null),800)
-    },3500)
-    return()=>clearInterval(timer)
-  },[])
-
-  const handleSendMethodChange=m=>{setSendMethod(m);setUserPhone("");setRecipientId("")}
-  const recipientLabel=receiveMethod.id==="mgo-recv"?t("ex_recv_mgo"):t("ex_recv_usdt")
-  const recipientPh=receiveMethod.id==="mgo-recv"?"MGO-XXXXXXXXX":"T... — TRC20"
-
-  const handleSubmit=()=>{
-    // فحص تسجيل الدخول للمحفظة الداخلية
-    if((isWalletSend||isWalletRecv)&&!user){
-      alert(lang==='ar'?'يجب تسجيل الدخول لاستخدام المحفظة الداخلية':'Please login to use the internal wallet')
-      return
-    }
-    // فحص الرصيد عند التحويل من المحفظة
-    if(isWalletSend){
-      const amt=parseFloat(sendAmount)||0
-      if(walletBalance===null||walletBalance<amt){
-        alert(lang==='ar'?`رصيدك غير كافٍ. الرصيد الحالي: ${walletBalance??0} USDT`:`Insufficient balance. Current: ${walletBalance??0} USDT`)
-        return
-      }
-    }
-    const eErr=isWalletSend?'':validateEmail(email)
-    const pErr=isEgp?validatePhone(userPhone):''
-    const rErr=isWalletSend?validateRecipient(recipientId):validateRecipient(recipientId)
-    setEmailErr(eErr); setPhoneErr(pErr); setRecipientErr(rErr)
-    if(eErr||pErr||rErr) return
-    if(!aml||!tos){alert(lang==="ar"?"يرجى الموافقة على الشروط والسياسات":"Please agree to the terms");return}
-    if(parseFloat(sendAmount)<1){alert(lang==="ar"?"الحد الأدنى 1 USDT":"Minimum is 1 USDT");return}
-    // إيجاد وسيلة الدفع من لوحة التحكم بالمطابقة عبر الـ id
-    let sendItem = null
-    if(sendMethod.type==='crypto'){
-      sendItem = adminMethods.cryptos[0] || null
-    } else {
-      const id = sendMethod.id  // vodafone | instapay | etisalat
-      sendItem = adminMethods.wallets.find(w=>(w.name||'').toLowerCase().includes(id)) || null
-    }
-    const data = { sendMethod, receiveMethod, sendAmount, receiveAmount, email: email||user?.email||'', userPhone, recipientId, sendItem }
-    setOrderData(data)
-    navigate('/order-confirm', { state: data })
-  }
-
-  const SecLabel=({color, icon, children})=>(
-    <div style={{display:"flex",alignItems:"center",gap:8,fontSize:"10.5px",fontWeight:700,letterSpacing:"1.3px",textTransform:"uppercase",color:"var(--text-3)",marginBottom:15}}>
-      <div style={{width:22,height:22,borderRadius:6,background:color==="blue"?"rgba(0,210,255,0.18)":"rgba(0,229,160,0.14)",color:color==="blue"?"var(--cyan)":"var(--green)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{icon}</div>
-      {children}
-    </div>
-  )
+  const { lang } = useLang()
+  const navigate = useNavigate()
 
   return (
-    <>
-      <div className="ex-inner-grid" style={{display:"grid",gridTemplateColumns:"300px 1fr",gap:18,alignItems:"start"}}>
-        <div className="ex-card ex-details-card">
-          <div style={{fontSize:16,fontWeight:800,textAlign:"center",paddingBottom:14,marginBottom:16,borderBottom:"1px solid var(--border-1)",display:"flex",alignItems:"center",justifyContent:"center",gap:8,color:"var(--text-1)"}}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            {lang==="ar"?"بياناتك":"Your Details"}
-          </div>
-          <div style={{marginBottom:11}}>
-            <label style={{display:"block",fontSize:"10.5px",fontWeight:700,textTransform:"uppercase",letterSpacing:".9px",color:"var(--text-3)",marginBottom:5}}>{t("ex_email")}</label>
-            <div style={{position:"relative"}}>
-              <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"var(--text-3)",display:"flex",alignItems:"center",pointerEvents:"none"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
-              <input className="ex-inp" type="email" value={email}
-                onChange={e=>{setEmail(e.target.value);if(emailErr)setEmailErr(validateEmail(e.target.value))}}
-                onBlur={e=>setEmailErr(validateEmail(e.target.value))}
-                style={emailErr?{borderColor:'rgba(239,68,68,0.6)'}:{}}
-                placeholder={t("ex_email_ph")}/>
-            </div>
-            {emailErr&&<div style={{marginTop:4,fontSize:'0.68rem',color:'#f87171',display:'flex',alignItems:'center',gap:4,fontFamily:"'JetBrains Mono',monospace"}}>⚠ {emailErr}</div>}
-          </div>
-          {isEgp&&(
-            <div style={{marginBottom:11}}>
-              <label style={{display:"block",fontSize:"10.5px",fontWeight:700,textTransform:"uppercase",letterSpacing:".9px",color:"var(--text-3)",marginBottom:5}}>{t("ex_phone_lbl")} ({sendMethod.name})</label>
-              <div style={{position:"relative"}}>
-                <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"var(--text-3)",display:"flex",alignItems:"center",pointerEvents:"none"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.07 8.63 19.79 19.79 0 011.08 2a2 2 0 012-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 6.91a16 16 0 006 6l.22-.22a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></span>
-                <input className="ex-inp ltr" type="tel" value={userPhone}
-                  onChange={e=>{setUserPhone(e.target.value);if(phoneErr)setPhoneErr(validatePhone(e.target.value))}}
-                  onBlur={e=>setPhoneErr(validatePhone(e.target.value))}
-                  style={phoneErr?{borderColor:'rgba(239,68,68,0.6)'}:{}}
-                  placeholder={t("ex_phone_ph")}/>
-              </div>
-              {phoneErr&&<div style={{marginTop:4,fontSize:'0.68rem',color:'#f87171',display:'flex',alignItems:'center',gap:4,fontFamily:"'JetBrains Mono',monospace"}}>⚠ {phoneErr}</div>}
-              <div style={{marginTop:5,fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace"}}>{t("ex_phone_hint")}</div>
-            </div>
-          )}
-          {!isEgp&&!isWalletSend&&(
-            <div style={{marginBottom:11,background:"rgba(0,210,255,0.03)",border:"1px solid var(--border-1)",borderRadius:9,padding:"9px 13px"}}>
-              <div style={{fontSize:"0.68rem",color:"var(--text-3)",fontFamily:"'JetBrains Mono',monospace",marginBottom:3}}>{isUSDT?"USDT TRC20":"MoneyGo USD"}</div>
-              <div style={{fontSize:"0.78rem",color:"var(--text-2)",lineHeight:1.6}}>{isUSDT?t("ex_note_usdt"):t("ex_note_mgo")}</div>
-            </div>
-          )}
-          <div style={{marginBottom:11}}>
-            <label style={{display:"block",fontSize:"10.5px",fontWeight:700,textTransform:"uppercase",letterSpacing:".9px",color:"var(--text-3)",marginBottom:5}}>{recipientLabel}</label>
-            <div style={{position:"relative"}}>
-              <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"var(--text-3)",display:"flex",alignItems:"center",pointerEvents:"none"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/><circle cx="18" cy="14" r="1" fill="currentColor"/></svg></span>
-              <input className="ex-inp ltr" type="text" value={recipientId}
-                onChange={e=>{setRecipientId(e.target.value);if(recipientErr)setRecipientErr(validateRecipient(e.target.value))}}
-                onBlur={e=>setRecipientErr(validateRecipient(e.target.value))}
-                style={recipientErr?{borderColor:'rgba(239,68,68,0.6)'}:{}}
-                placeholder={recipientPh}/>
-            </div>
-            {recipientErr&&<div style={{marginTop:4,fontSize:'0.68rem',color:'#f87171',display:'flex',alignItems:'center',gap:4,fontFamily:"'JetBrains Mono',monospace"}}>⚠ {recipientErr}</div>}
-          </div>
-          <div className="ex-chk" style={{margin:"13px 0"}}>
-            <label style={{display:"flex",alignItems:"flex-start",gap:9,fontSize:"0.75rem",color:"var(--text-2)",marginBottom:9,cursor:"pointer",lineHeight:1.55}}>
-              <input type="checkbox" id="ex-aml" checked={aml} onChange={e=>setAml(e.target.checked)}/>
-              <span>{t("ex_aml")}</span>
-            </label>
-            <label style={{display:"flex",alignItems:"flex-start",gap:9,fontSize:"0.75rem",color:"var(--text-2)",cursor:"pointer",lineHeight:1.55}}>
-              <input type="checkbox" id="ex-tos" checked={tos} onChange={e=>setTos(e.target.checked)}/>
-              <span>{t("ex_tos")}</span>
-            </label>
-          </div>
-          <button className="ex-submit-btn" onClick={handleSubmit}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
-            {t("ex_submit")}
-          </button>
-        </div>
+    <div className="ex-card" style={{ textAlign: 'center', padding: '40px 30px' }}>
+      <div style={{ fontSize: '3rem', marginBottom: 16 }}>💱</div>
+      <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-1)', marginBottom: 10, fontFamily: "'Tajawal',sans-serif" }}>
+        {lang === 'ar' ? 'ابدأ عملية التبادل' : 'Start Exchange'}
+      </h2>
+      <p style={{ color: 'var(--text-2)', fontSize: '0.9rem', lineHeight: 1.7, marginBottom: 28, maxWidth: 380, margin: '0 auto 28px' }}>
+        {lang === 'ar'
+          ? 'اختر وسيلة الإرسال والاستلام وابدأ عملية التبادل بخطوات بسيطة'
+          : 'Choose your send and receive method and start exchanging in simple steps'}
+      </p>
+      <button
+        onClick={() => navigate('/exchange')}
+        className="ex-submit-btn"
+        style={{ maxWidth: 320, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="17 1 21 5 17 9"/>
+          <path d="M3 11V9a4 4 0 014-4h14"/>
+          <polyline points="7 23 3 19 7 15"/>
+          <path d="M21 13v2a4 4 0 01-4 4H3"/>
+        </svg>
+        {lang === 'ar' ? 'ابدأ التبادل الآن' : 'Start Exchange Now'}
+      </button>
 
-        <div className="ex-currency-stack" style={{display:"flex",flexDirection:"column",gap:0}}>
-          <div className="ex-card">
-            <SecLabel color="blue" icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>}>{lang==="ar"?"ترسل":"YOU SEND"}</SecLabel>
-            {isWalletSend&&(
-              <div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(0,229,160,0.08)",border:"1px solid rgba(0,229,160,0.2)",borderRadius:9,padding:"7px 11px",marginBottom:10,fontSize:"0.78rem"}}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                <span style={{color:"var(--text-2)"}}>{lang==="ar"?"رصيد محفظتك:":"Your balance:"}</span>
-                <strong style={{color:"var(--green)",fontFamily:"'JetBrains Mono',monospace"}}>{walletBalance??0} USDT</strong>
-              </div>
-            )}
-            <div style={{display:"flex",gap:10,alignItems:"stretch"}}>
-              <div style={{position:"relative"}}>
-                <div className="ex-currency-box" onClick={(e)=>{e.stopPropagation();setOpenPicker(openPicker==="send"?null:"send")}}>
-                  <div style={{width:32,height:32,borderRadius:"50%",flexShrink:0,overflow:"hidden"}}><CurrencyIcon method={sendMethod} size={32}/></div>
-                  <div style={{flex:1,display:"flex",flexDirection:"column",gap:2,minWidth:0}}>
-                    <span style={{fontSize:"13.5px",fontWeight:700,color:"var(--text-1)",lineHeight:1}}>{sendMethod.symbol||sendMethod.name.split(" ")[0]}</span>
-                    <span style={{fontSize:"10px",color:"var(--text-3)",lineHeight:1}}>{lang==="ar"?sendMethod.name:sendMethod.nameEn||sendMethod.name}</span>
-                  </div>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-3)" strokeWidth="1.8" strokeLinecap="round" style={{transition:"transform .2s",transform:openPicker==="send"?"rotate(180deg)":"none"}}><polyline points="2,4 7,9 12,4"/></svg>
-                </div>
-                <CurrencyInlineDropdown options={filteredSendMethods} selected={sendMethod} onSelect={handleSendMethodChange} open={openPicker==="send"} onClose={closePicker}/>
-              </div>
-              <div style={{flex:1,position:"relative"}}>
-                <input className="ex-amount-input" type="number" value={sendAmount} onChange={e=>setSendAmount(e.target.value)} placeholder="0.00" min="0" step="any"/>
-                <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:10,fontWeight:700,color:"var(--text-3)",background:"var(--cyan-dim)",border:"1px solid var(--border-1)",padding:"2px 7px",borderRadius:5,fontFamily:"'JetBrains Mono',monospace"}}>{sendMethod.symbol}</span>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:10,marginTop:6}}>
-              <div style={{flex:1,fontSize:"10.5px",color:"var(--text-3)",paddingLeft:2}}>{lang==="ar"?"العملة":"Currency"}</div>
-              <div style={{flex:1,fontSize:"10.5px",color:"var(--text-3)",paddingLeft:2}}>{lang==="ar"?"المبلغ":"Amount"}</div>
-            </div>
+      {/* عرض الأزواج المتاحة */}
+      <div style={{ marginTop: 28, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
+        {[
+          { from: 'فودافون كاش', to: 'MoneyGo USD', color: '#e40000' },
+          { from: 'إنستا باي', to: 'MoneyGo USD', color: '#1a56db' },
+          { from: 'USDT TRC20', to: 'MoneyGo USD', color: '#26a17b' },
+          { from: 'MoneyGo USD', to: 'USDT TRC20', color: '#e91e63' },
+        ].map((pair, i) => (
+          <div key={i} onClick={() => navigate('/exchange')} style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+            background: 'var(--row-bg)', border: '1px solid var(--border-1)',
+            fontSize: '0.72rem', color: 'var(--text-2)',
+            fontFamily: "'Tajawal',sans-serif", fontWeight: 600,
+            transition: 'all 0.2s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = pair.color; e.currentTarget.style.color = 'var(--text-1)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-1)'; e.currentTarget.style.color = 'var(--text-2)' }}
+          >
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: pair.color, flexShrink: 0 }} />
+            {pair.from} → {pair.to}
           </div>
-
-          <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0"}}>
-            <div style={{flex:1,height:1,background:"var(--border-1)"}}/>
-            <button className="ex-swap-btn" onClick={()=>{
-              if(swapping) return; setSwapping(true)
-              const recvToSend={"mgo-recv":"mgo-send","usdt-recv":"usdt-trc"}
-              const sendToRecv={"mgo-send":"mgo-recv","usdt-trc":"usdt-recv","vodafone":"mgo-recv","instapay":"mgo-recv","etisalat":"mgo-recv"}
-              const newSendId=recvToSend[receiveMethod.id]; const newRecvId=sendToRecv[sendMethod.id]
-              if(newSendId&&newRecvId){const newSend=SEND_METHODS.find(m=>m.id===newSendId);const newRecv=RECEIVE_METHODS.find(m=>m.id===newRecvId);if(newSend&&newRecv){setSendMethod(newSend);setReceiveMethod(newRecv);setUserPhone("");setRecipientId("")}}
-              setTimeout(()=>setSwapping(false),500)
-            }}>
-              <span style={{display:"flex",alignItems:"center",gap:5,transition:"transform 0.5s cubic-bezier(.22,1,.36,1)",transform:swapping?"rotate(180deg)":"none"}}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="20" x2="8" y2="4"/><polyline points="4 8 8 4 12 8"/></svg>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="16" y1="4" x2="16" y2="20"/><polyline points="12 16 16 20 20 16"/></svg>
-              </span>
-            </button>
-            <div style={{flex:1,height:1,background:"var(--border-1)"}}/>
-          </div>
-
-          <div className="ex-card">
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:15}}>
-              <SecLabel color="green" icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>}>{lang==="ar"?"تستلم":"YOU GET"}</SecLabel>
-              <div style={{display:"flex",alignItems:"center",gap:5,background:"rgba(0,210,255,0.1)",border:"1px solid rgba(0,210,255,0.22)",borderRadius:20,padding:"4px 11px",fontSize:11,fontWeight:700,color:"#93c5fd",marginBottom:15}}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                0% Fee
-              </div>
-            </div>
-            <div style={{display:"flex",gap:10,alignItems:"stretch"}}>
-              <div className="ex-currency-box-wrapper">
-                <div className="ex-currency-box" onClick={(e)=>{e.stopPropagation();setOpenPicker(openPicker==="receive"?null:"receive")}}>
-                  <div style={{width:32,height:32,borderRadius:"50%",flexShrink:0,overflow:"hidden"}}><CurrencyIcon method={receiveMethod} size={32}/></div>
-                  <div style={{flex:1,display:"flex",flexDirection:"column",gap:2,minWidth:0}}>
-                    <span style={{fontSize:"13.5px",fontWeight:700,color:"var(--text-1)",lineHeight:1}}>{receiveMethod.symbol||receiveMethod.name.split(" ")[0]}</span>
-                    <span style={{fontSize:"10px",color:"var(--text-3)",lineHeight:1}}>{lang==="ar"?receiveMethod.name:receiveMethod.nameEn||receiveMethod.name}</span>
-                  </div>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-3)" strokeWidth="1.8" strokeLinecap="round" style={{transition:"transform .2s",transform:openPicker==="receive"?"rotate(180deg)":"none"}}><polyline points="2,4 7,9 12,4"/></svg>
-                </div>
-                <CurrencyInlineDropdown options={filteredRecvMethods} selected={receiveMethod} onSelect={setReceiveMethod} open={openPicker==="receive"} onClose={closePicker}/>
-              </div>
-              <div style={{flex:1,position:"relative"}}>
-                <input className="ex-amount-input ex-readonly" type="number" readOnly value={receiveAmount} placeholder="0.00"/>
-                <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:10,fontWeight:700,color:"var(--text-3)",background:"var(--cyan-dim)",border:"1px solid var(--border-1)",padding:"2px 7px",borderRadius:5,fontFamily:"'JetBrains Mono',monospace"}}>{receiveMethod.symbol}</span>
-              </div>
-            </div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:11,paddingTop:11,borderTop:"1px solid var(--border-1)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"var(--text-3)"}}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/></svg>
-                {lang==="ar"?"الاحتياطي :":"Reserve:"}
-                <strong style={{color:"var(--red)",fontFamily:"'JetBrains Mono',monospace"}}>{receiveMethod.symbol}</strong>
-              </div>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
-
-      <ConfirmModal isOpen={modalOpen} onClose={()=>setModalOpen(false)} orderData={orderData}/>
-    </>
+    </div>
   )
 }
 
