@@ -152,15 +152,15 @@ app.post('/api/telegram/webhook', async (req, res) => {
     if (finalStatuses.includes(order.status)) {
       await telegramService.answerCallbackQuery(
         callbackQueryId,
-        `⚠️ الطلب ${order.status === 'completed' ? 'مكتمل' : 'مرفوض'} مسبقاً`
+        `⚠️ الطلب ${order.status === 'completed' ? 'مكتمل' : order.status === 'rejected' ? 'مرفوض' : 'ملغي'} مسبقاً`
       );
       return res.json({ ok: true });
     }
 
     const statusMap = {
-      approve:  { status: 'verified',  msg: '✅ تمت الموافقة' },
-      reject:   { status: 'rejected',  msg: '❌ تم الرفض'     },
-      complete: { status: 'completed', msg: '🎉 تم الإكمال'   },
+      approve:  { status: 'verified',  msg: '✅ تمت الموافقة — جاري المراجعة' },
+      reject:   { status: 'rejected',  msg: '❌ تم رفض الطلب'                 },
+      complete: { status: 'completed', msg: '🎉 تم إتمام الطلب بنجاح'          },
     };
 
     const action_data = statusMap[action];
@@ -174,8 +174,9 @@ app.post('/api/telegram/webhook', async (req, res) => {
 
     await order.save();
 
+    // ── الرد على الأدمن + تعديل الرسالة ────────
     await telegramService.answerCallbackQuery(callbackQueryId, action_data.msg);
-    await telegramService.notifyOrderUpdate(order, action_data.status);
+    await telegramService.editOrderMessage(cbMessage?.message_id, order, action);
 
     res.json({ ok: true });
 
@@ -213,6 +214,22 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   console.log(`🚀 Number1 Server running on port ${PORT}`);
+
+  // ─── Cron Job: حذف الطلبات المنتهية كل دقيقة ──
+  setInterval(async () => {
+    try {
+      const Order = require('./models/Order');
+      const result = await Order.deleteMany({
+        expiresAt: { $lt: new Date() },
+        status:    { $in: ['pending'] }
+      });
+      if (result.deletedCount > 0) {
+        console.log(`🧹 Cleaned up ${result.deletedCount} expired pending orders`);
+      }
+    } catch (err) {
+      console.error('Cleanup job error:', err.message);
+    }
+  }, 60 * 1000); // كل دقيقة
 
   if (process.env.BACKEND_URL) {
     try {

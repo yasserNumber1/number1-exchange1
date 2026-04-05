@@ -234,6 +234,19 @@ export default function ExchangeFormPage() {
       })
       const data = await res.json()
       if (data.success && data.order) {
+        // ── حفظ الجلسة للتتبع لاحقاً ──────────
+        if (data.order.sessionToken) {
+          try {
+            const sessionData = JSON.stringify({
+              sessionToken: data.order.sessionToken,
+              orderNumber:  data.order.orderNumber,
+              expiresAt:    data.order.expiresAt,
+            })
+            localStorage.setItem('n1_order_session', sessionData)
+            const expires = new Date(data.order.expiresAt)
+            document.cookie = `n1_order_session=${encodeURIComponent(sessionData)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`
+          } catch (_) {}
+        }
         navigate(`/exchange/order/${data.order.orderNumber}`, {
           state: {
             sendMethod, recvMethod,

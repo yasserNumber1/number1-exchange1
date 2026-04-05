@@ -210,6 +210,19 @@ function TransferSection({ orderData, navigate, lang, onSuccess }) {
       })
       const data = await res.json()
       if (data.success) {
+        // ── حفظ الجلسة للتتبع لاحقاً ──────────
+        if (data.order?.sessionToken) {
+          try {
+            const sessionData = JSON.stringify({
+              sessionToken: data.order.sessionToken,
+              orderNumber:  data.order.orderNumber,
+              expiresAt:    data.order.expiresAt,
+            })
+            localStorage.setItem('n1_order_session', sessionData)
+            const expires = new Date(data.order.expiresAt)
+            document.cookie = `n1_order_session=${encodeURIComponent(sessionData)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`
+          } catch (_) {}
+        }
         onSuccess(data.order?.orderNumber || '', data.order?._id || '')
       } else {
         setError(data.message || 'حدث خطأ، حاول مرة أخرى')

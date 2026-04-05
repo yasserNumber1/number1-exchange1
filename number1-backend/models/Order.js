@@ -153,6 +153,20 @@ const orderSchema = new mongoose.Schema({
   clientIp: {
     type: String,
     default: null
+  },
+
+  // ─── Session Token (للتتبع بدون تسجيل) ───
+  sessionToken: {
+    type: String,
+    default: null,
+    index: true
+  },
+
+  // ─── وقت انتهاء الطلب (30 دقيقة) ─────────
+  expiresAt: {
+    type: Date,
+    default: null,
+    index: { expireAfterSeconds: 0 } // MongoDB TTL index
   }
 
 }, {
