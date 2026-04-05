@@ -124,32 +124,33 @@ router.post('/', optionalProtect, async (req, res) => {
 
     // ── التحقق من البيانات الأساسية ───────────
     if (!customerName || !customerEmail || !orderType || !payment || !moneygo || !exchangeRate) {
-      return res.status(400).json({ success: false, message: 'Missing required fields.' })
+      return res.status(400).json({ success: false, message: 'البيانات المطلوبة غير مكتملة.' })
     }
-    if (!moneygo.recipientPhone || !moneygo.amountUSD) {
-      return res.status(400).json({ success: false, message: 'Recipient info and amount are required.' })
+    if (!moneygo.amountUSD) {
+      return res.status(400).json({ success: false, message: 'المبلغ مطلوب.' })
     }
     if (!payment.method || !payment.amountSent || !payment.currencySent) {
-      return res.status(400).json({ success: false, message: 'Payment method and amount are required.' })
+      return res.status(400).json({ success: false, message: 'بيانات الدفع غير مكتملة.' })
     }
 
     // ── التحقق من صحة البريد الإلكتروني ──────
     const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
     if (!emailRx.test(customerEmail)) {
-      return res.status(400).json({ success: false, message: 'Invalid email address.' })
+      return res.status(400).json({ success: false, message: 'البريد الإلكتروني غير صحيح.' })
     }
 
     // ── التحقق من رقم الهاتف (إذا وُجد) — يقبل أرقام دولية ──
     if (payment.senderPhoneNumber) {
       const phoneRx = /^\+?[0-9\s\-]{7,20}$/
       if (!phoneRx.test(payment.senderPhoneNumber.trim())) {
-        return res.status(400).json({ success: false, message: 'Invalid phone number.' })
+        return res.status(400).json({ success: false, message: 'رقم الهاتف غير صحيح.' })
       }
     }
 
-    // ── التحقق من معرّف الاستلام ──────────────
-    if (!moneygo.recipientPhone || moneygo.recipientPhone.trim().length < 5) {
-      return res.status(400).json({ success: false, message: 'Recipient ID must be at least 5 characters.' })
+    // ── التحقق من معرّف الاستلام (ليس مطلوباً للحساب الداخلي) ──
+    const isInternalWallet = orderType === 'USDT_TO_WALLET' || orderType === 'WALLET_TO_USDT' || orderType === 'EGP_WALLET_TO_MONEYGO'
+    if (!isInternalWallet && (!moneygo.recipientPhone || moneygo.recipientPhone.trim().length < 5)) {
+      return res.status(400).json({ success: false, message: 'معرّف المستلم مطلوب.' })
     }
 
     // ── التحقق من TXID إذا أرسله المستخدم ────
