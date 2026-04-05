@@ -440,7 +440,7 @@ function ExchangeSelector() {
   const { lang } = useLang()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const [sendMethod, setSendMethod] = useState(null)
+  const [sendMethod, setSendMethod] = useState(() => SEND_METHODS.find(m => m.id === 'usdt-trc') ?? null)
   const [recvMethod, setRecvMethod] = useState(null)
   const navigating = useRef(false)
 
