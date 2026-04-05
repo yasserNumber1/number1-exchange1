@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 import useLang from "../context/useLang"
 import { GooeyText } from "../components/ui/gooey-text-morphing"
 import { SEND_METHODS, RECEIVE_METHODS } from "../data/currencies"
+import FlowDots from "../components/shared/FlowDots"
 
 // ══ أيقونة العملة / المحفظة ══
 function CurrencyIcon({ method, size = 36 }) {
@@ -321,10 +322,9 @@ function MobileMethodCard({ method, selected, disabled, onClick }) {
   )
 }
 
-// ══ تخطيط الموبايل: تاب + شبكة 2×2 ══
+// ══ تخطيط الموبايل: شبكتان مرئيتان معاً ══
 function MobileExchangeSelector({
-  sendMethod, recvMethod, onSend, onRecv,
-  tab, setTab, bothReady, lang,
+  sendMethod, recvMethod, onSend, onRecv, bothReady, lang,
 }) {
   const sendMethods = [
     ...SEND_METHODS.filter(m => !m.walletOnly),
@@ -335,72 +335,52 @@ function MobileExchangeSelector({
     m => m.id !== "wallet-recv" || sendMethod?.id === "usdt-trc"
   )
 
-  return (
-    <div style={{ background: "var(--card)", border: "1px solid var(--border-1)", borderRadius: 22, overflow: "hidden" }}>
+  const sectionLabel = (text, accent) => (
+    <div style={{
+      fontSize: "0.72rem", fontWeight: 800, letterSpacing: 1.2,
+      color: accent, fontFamily: "'JetBrains Mono',monospace",
+      padding: "0 2px 6px",
+    }}>
+      {text}
+    </div>
+  )
 
-      {/* ── شريط التابات ── */}
-      <div style={{ display: "flex", borderBottom: "1px solid var(--border-1)" }}>
-        {[
-          { key: "send", label: "ترسل · SEND",  accent: "var(--cyan)" },
-          { key: "recv", label: "تستلم · RECV", accent: "var(--green)" },
-        ].map(({ key, label, accent }) => {
-          const active = tab === key
-          return (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              style={{
-                flex: 1, padding: "14px 8px", border: "none", cursor: "pointer",
-                background: active
-                  ? `linear-gradient(180deg,${accent}12,transparent)`
-                  : "transparent",
-                borderBottom: active ? `2px solid ${accent}` : "2px solid transparent",
-                color: active ? accent : "var(--text-3)",
-                fontFamily: "'Tajawal',sans-serif", fontSize: "0.85rem", fontWeight: 800,
-                transition: "all 0.22s", letterSpacing: 0.3,
-              }}
-            >
-              {label}
-              {key === "send" && sendMethod && (
-                <span style={{
-                  display: "inline-block", width: 6, height: 6, borderRadius: "50%",
-                  background: "var(--cyan)", marginRight: 6, verticalAlign: "middle",
-                }} />
-              )}
-              {key === "recv" && recvMethod && (
-                <span style={{
-                  display: "inline-block", width: 6, height: 6, borderRadius: "50%",
-                  background: "var(--green)", marginRight: 6, verticalAlign: "middle",
-                }} />
-              )}
-            </button>
-          )
-        })}
+  return (
+    <div style={{
+      background: "var(--card)", border: "1px solid var(--border-1)",
+      borderRadius: 22, overflow: "hidden", padding: "14px 12px",
+      display: "flex", flexDirection: "column", gap: 0,
+    }}>
+
+      {/* ── SEND label + grid ── */}
+      {sectionLabel("ترسل · SEND", "var(--cyan)")}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        {sendMethods.map(m => (
+          <MobileMethodCard key={m.id} method={m}
+            selected={sendMethod} disabled={false} onClick={onSend} />
+        ))}
       </div>
 
-      {/* ── شبكة 2×2 ── */}
-      <div style={{
-        display: "grid", gridTemplateColumns: "1fr 1fr",
-        gap: 10, padding: "12px",
-      }}>
-        {tab === "send"
-          ? sendMethods.map(m => (
-              <MobileMethodCard key={m.id} method={m}
-                selected={sendMethod} disabled={false} onClick={onSend} />
-            ))
-          : recvMethods.map(m => (
-              <MobileMethodCard key={m.id} method={m}
-                selected={recvMethod}
-                disabled={sendMethod ? !isCompatible(sendMethod, m) : false}
-                onClick={onRecv} />
-            ))
-        }
+      {/* ── FlowDots separator ── */}
+      <div style={{ padding: "12px 0", display: "flex", justifyContent: "center" }}>
+        <FlowDots />
+      </div>
+
+      {/* ── RECV label + grid ── */}
+      {sectionLabel("تستلم · RECV", "var(--green)")}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        {recvMethods.map(m => (
+          <MobileMethodCard key={m.id} method={m}
+            selected={recvMethod}
+            disabled={sendMethod ? !isCompatible(sendMethod, m) : false}
+            onClick={onRecv} />
+        ))}
       </div>
 
       {/* ── مؤشر الانتقال ── */}
       {bothReady && (
         <div style={{
-          padding: "10px 16px 14px",
+          marginTop: 12,
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           animation: "n1FadeIn 0.3s ease",
         }}>
@@ -426,14 +406,12 @@ function ExchangeSelector() {
   const isMobile = useIsMobile()
   const [sendMethod, setSendMethod] = useState(null)
   const [recvMethod, setRecvMethod] = useState(null)
-  const [mobileTab, setMobileTab] = useState("send")
   const navigating = useRef(false)
 
   const handleSelectSend = (method) => {
     navigating.current = false
     setSendMethod(method)
     if (recvMethod && !isCompatible(method, recvMethod)) setRecvMethod(null)
-    if (isMobile) setTimeout(() => setMobileTab("recv"), 400)
   }
 
   const handleSelectRecv = (method) => {
@@ -492,8 +470,6 @@ function ExchangeSelector() {
           recvMethod={recvMethod}
           onSend={handleSelectSend}
           onRecv={handleSelectRecv}
-          tab={mobileTab}
-          setTab={setMobileTab}
           bothReady={bothReady}
           lang={lang}
         />
