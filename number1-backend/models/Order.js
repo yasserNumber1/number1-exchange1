@@ -162,11 +162,9 @@ const orderSchema = new mongoose.Schema({
 // ─── Auto-generate Order Number ──────────────
 orderSchema.pre('save', async function(next) {
   if (this.isNew && !this.orderNumber) {
-    const date = new Date();
-    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
     const count = await mongoose.model('Order').countDocuments() + 1;
-    const padded = String(count).padStart(4, '0');
-    this.orderNumber = `N1-${dateStr}-${padded}`;
+    const padded = String(count).padStart(5, '0');
+    this.orderNumber = `N1-${padded}`;
   }
   next();
 });
