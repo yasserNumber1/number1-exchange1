@@ -51,21 +51,22 @@ function genMath() {
 // ── تحويل اسم الوسيلة → enum للـ API ───────────────────
 function toPaymentMethod(sendId) {
   const map = {
-    'vodafone':   'VODAFONE_CASH',
-    'instapay':   'INSTAPAY',
-    'etisalat':   'VODAFONE_CASH',
-    'usdt-trc':   'USDT_TRC20',
-    'mgo-send':   'VODAFONE_CASH',
-    'wallet-usdt':'VODAFONE_CASH',
+    'vodafone':    'VODAFONE_CASH',
+    'instapay':    'INSTAPAY',
+    'etisalat':    'VODAFONE_CASH',
+    'usdt-trc':    'USDT_TRC20',
+    'mgo-send':    'VODAFONE_CASH',
+    'wallet-usdt': 'WALLET',
   }
   return map[sendId] || 'VODAFONE_CASH'
 }
 
 function toOrderType(sendId, recvId) {
-  if (sendId === 'wallet-usdt' && recvId === 'usdt-recv') return 'WALLET_TO_USDT'
-  if (sendId === 'wallet-usdt') return 'EGP_WALLET_TO_MONEYGO'
-  if (sendId === 'usdt-trc' && recvId === 'wallet-recv') return 'USDT_TO_WALLET'
-  if (sendId === 'usdt-trc')    return 'USDT_TO_MONEYGO'
+  if (sendId === 'usdt-trc'    && recvId === 'wallet-recv') return 'USDT_TO_WALLET'
+  if (sendId === 'usdt-trc')                                return 'USDT_TO_MONEYGO'
+  if (sendId === 'wallet-usdt' && recvId === 'usdt-recv')   return 'WALLET_TO_USDT'
+  if (sendId === 'wallet-usdt' && recvId === 'mgo-recv')    return 'WALLET_TO_MONEYGO'
+  if (sendId === 'wallet-usdt')                             return 'WALLET_TO_MONEYGO'
   return 'EGP_WALLET_TO_MONEYGO'
 }
 

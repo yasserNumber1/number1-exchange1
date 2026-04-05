@@ -148,7 +148,7 @@ router.post('/', optionalProtect, async (req, res) => {
     }
 
     // ── التحقق من معرّف الاستلام (ليس مطلوباً للحساب الداخلي) ──
-    const isInternalWallet = orderType === 'USDT_TO_WALLET' || orderType === 'WALLET_TO_USDT' || orderType === 'EGP_WALLET_TO_MONEYGO'
+    const isInternalWallet = ['USDT_TO_WALLET', 'WALLET_TO_USDT', 'WALLET_TO_MONEYGO', 'EGP_WALLET_TO_MONEYGO'].includes(orderType)
     if (!isInternalWallet && (!moneygo.recipientPhone || moneygo.recipientPhone.trim().length < 5)) {
       return res.status(400).json({ success: false, message: 'معرّف المستلم مطلوب.' })
     }

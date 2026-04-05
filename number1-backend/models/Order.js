@@ -45,7 +45,7 @@ const orderSchema = new mongoose.Schema({
   // EGP_WALLET → MoneyGo USD (محافظ مصرية)
   orderType: {
     type: String,
-    enum: ['USDT_TO_MONEYGO', 'EGP_WALLET_TO_MONEYGO'],
+    enum: ['USDT_TO_MONEYGO', 'EGP_WALLET_TO_MONEYGO', 'USDT_TO_WALLET', 'WALLET_TO_USDT', 'WALLET_TO_MONEYGO'],
     required: true
   },
 
@@ -53,7 +53,7 @@ const orderSchema = new mongoose.Schema({
   payment: {
     method: {
       type: String,
-      enum: ['USDT_TRC20', 'VODAFONE_CASH', 'ORANGE_CASH', 'FAWRY', 'WE_PAY', 'MEEZA', 'INSTAPAY'],
+      enum: ['USDT_TRC20', 'VODAFONE_CASH', 'ORANGE_CASH', 'FAWRY', 'WE_PAY', 'MEEZA', 'INSTAPAY', 'WALLET'],
       required: true
     },
 
