@@ -250,8 +250,9 @@ function useIsMobile(bp = 640) {
   return mobile
 }
 
-// ══ بطاقة موبايل — عرض كامل 1×1 ══
+// ══ بطاقة موبايل ══
 function MobileMethodCard({ method, selected, disabled, onClick }) {
+  const [hov, setHov] = useState(false)
   const isSelected = selected?.id === method.id
   const subtitle = method.type === "egp"
     ? `EGP · ${method.network || "محفظة"}`
@@ -262,49 +263,60 @@ function MobileMethodCard({ method, selected, disabled, onClick }) {
   return (
     <div
       onClick={() => !disabled && onClick(method)}
+      onMouseEnter={() => !disabled && setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onTouchStart={() => !disabled && setHov(true)}
+      onTouchEnd={() => setHov(false)}
       style={{
-        display: "flex", flexDirection: "row", alignItems: "center",
-        gap: 7, padding: "9px 8px", borderRadius: 11,
+        display: "flex", flexDirection: "column", alignItems: "center",
+        gap: 5, padding: "10px 6px", borderRadius: 12,
         cursor: disabled ? "not-allowed" : "pointer",
+        textAlign: "center",
         background: isSelected
-          ? "linear-gradient(135deg,rgba(0,210,255,0.12),rgba(124,92,252,0.10))"
+          ? "linear-gradient(135deg,rgba(0,210,255,0.13),rgba(124,92,252,0.09))"
+          : hov
+          ? "rgba(255,255,255,0.05)"
           : "transparent",
-        border: `1.5px solid ${isSelected ? "rgba(0,210,255,0.45)" : "rgba(255,255,255,0.06)"}`,
-        opacity: disabled ? 0.38 : 1,
-        transition: "all 0.2s",
+        border: `1.5px solid ${
+          isSelected ? "rgba(0,210,255,0.5)"
+          : hov ? "rgba(255,255,255,0.12)"
+          : "rgba(255,255,255,0.05)"
+        }`,
+        opacity: disabled ? 0.32 : 1,
+        transition: "all 0.18s ease",
         position: "relative", overflow: "hidden",
         width: "100%", boxSizing: "border-box",
+        userSelect: "none",
       }}
     >
       {isSelected && (
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, height: 2,
-          background: "linear-gradient(90deg,transparent,var(--cyan),transparent)"
+          background: "linear-gradient(90deg,transparent,var(--cyan),transparent)",
         }} />
       )}
-      <CurrencyIcon method={method} size={32} />
-      <div style={{ flex: 1, minWidth: 0, textAlign: "right" }}>
-        <div style={{
-          fontSize: "0.78rem", fontWeight: 800, lineHeight: 1.3,
-          color: isSelected ? "var(--cyan)" : "var(--text-1)",
-          whiteSpace: "normal", wordBreak: "break-word",
-        }}>
-          {method.name}
-        </div>
-        <div style={{
-          fontSize: "0.6rem", color: "var(--text-3)",
-          fontFamily: "'JetBrains Mono',monospace", marginTop: 1,
-        }}>
-          {subtitle}
-        </div>
+      <CurrencyIcon method={method} size={30} />
+      <div style={{
+        fontSize: "0.7rem", fontWeight: 800, lineHeight: 1.25,
+        color: isSelected ? "var(--cyan)" : "var(--text-1)",
+        whiteSpace: "normal", wordBreak: "break-word",
+      }}>
+        {method.name}
+      </div>
+      <div style={{
+        fontSize: "0.55rem", color: isSelected ? "rgba(0,210,255,0.6)" : "var(--text-3)",
+        fontFamily: "'JetBrains Mono',monospace",
+      }}>
+        {subtitle}
       </div>
       {isSelected && (
         <div style={{
-          width: 14, height: 14, borderRadius: "50%", flexShrink: 0,
+          position: "absolute", top: 5, right: 5,
+          width: 13, height: 13, borderRadius: "50%",
           background: "var(--cyan)", display: "flex",
           alignItems: "center", justifyContent: "center",
         }}>
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="none"
+          <svg width="7" height="7" viewBox="0 0 24 24" fill="none"
             stroke="#000" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
@@ -314,7 +326,7 @@ function MobileMethodCard({ method, selected, disabled, onClick }) {
   )
 }
 
-// ══ تخطيط الموبايل: كنتينران منفصلان + سهم في المنتصف ══
+// ══ تخطيط الموبايل: كنتينران جنباً إلى جنب + سهم واحد في المنتصف ══
 function MobileExchangeSelector({ sendMethod, recvMethod, onSend, onRecv, bothReady, lang }) {
   const sendMethods = [
     ...SEND_METHODS.filter(m => !m.walletOnly),
@@ -327,32 +339,36 @@ function MobileExchangeSelector({ sendMethod, recvMethod, onSend, onRecv, bothRe
 
   return (
     <>
+      {/* ══ الغلاف الرئيسي ══ */}
       <div style={{
         display: "flex", flexDirection: "row",
-        alignItems: "flex-start", gap: 0,
+        alignItems: "stretch", gap: 0,
+        position: "relative",
       }}>
 
-        {/* ══ كنتينر الإرسال ══ */}
+        {/* ══ SEND — يمين ══ */}
         <div style={{
           flex: 1, minWidth: 0,
           background: "var(--card)",
           border: "1px solid var(--border-1)",
           borderRadius: 16, overflow: "hidden",
+          display: "flex", flexDirection: "column",
         }}>
           <div style={{
-            padding: "9px 10px 7px",
+            padding: "8px 10px 6px",
             borderBottom: "1px solid var(--border-1)",
-            background: "linear-gradient(135deg,rgba(0,210,255,0.06),transparent)",
-            textAlign: "right",
+            background: "linear-gradient(135deg,rgba(0,210,255,0.07),transparent)",
+            textAlign: "center",
           }}>
-            <div style={{
-              fontSize: "0.63rem", fontWeight: 800, letterSpacing: 0.8,
+            <span style={{
+              fontSize: "0.6rem", fontWeight: 800, letterSpacing: 1,
               color: "var(--cyan)", fontFamily: "'JetBrains Mono',monospace",
-            }}>
-              ترسل · SEND
-            </div>
+            }}>SEND · ترسل</span>
           </div>
-          <div style={{ padding: "7px", display: "flex", flexDirection: "column", gap: 5 }}>
+          <div style={{
+            padding: "6px", display: "flex", flexDirection: "column",
+            gap: 4, flex: 1,
+          }}>
             {sendMethods.map(m => (
               <MobileMethodCard key={m.id} method={m}
                 selected={sendMethod} disabled={false} onClick={onSend} />
@@ -360,45 +376,52 @@ function MobileExchangeSelector({ sendMethod, recvMethod, onSend, onRecv, bothRe
           </div>
         </div>
 
-        {/* ══ الفاصل: سهمان في المنتصف ══ */}
+        {/* ══ سهم التبادل — مركز واحد فقط ══ */}
         <div style={{
           display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "flex-start",
-          gap: 5, padding: "48px 5px 0", flexShrink: 0,
+          alignItems: "center", justifyContent: "center",
+          flexShrink: 0, width: 32, zIndex: 1,
         }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="var(--cyan)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="17 1 21 5 17 9"/>
-            <path d="M3 11V9a4 4 0 014-4h14"/>
-          </svg>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="7 23 3 19 7 15"/>
-            <path d="M21 13v2a4 4 0 01-4 4H3"/>
-          </svg>
+          <div style={{
+            width: 26, height: 26, borderRadius: "50%",
+            background: "var(--bg)",
+            border: "1.5px solid var(--border-1)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+          }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              stroke="var(--cyan)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="17 1 21 5 17 9"/>
+              <path d="M3 11V9a4 4 0 014-4h14"/>
+              <polyline points="7 23 3 19 7 15"/>
+              <path d="M21 13v2a4 4 0 01-4 4H3"/>
+            </svg>
+          </div>
         </div>
 
-        {/* ══ كنتينر الاستلام ══ */}
+        {/* ══ RECV — يسار ══ */}
         <div style={{
           flex: 1, minWidth: 0,
           background: "var(--card)",
           border: "1px solid var(--border-1)",
           borderRadius: 16, overflow: "hidden",
+          display: "flex", flexDirection: "column",
         }}>
           <div style={{
-            padding: "9px 10px 7px",
+            padding: "8px 10px 6px",
             borderBottom: "1px solid var(--border-1)",
-            background: "linear-gradient(135deg,rgba(0,229,160,0.06),transparent)",
-            textAlign: "right",
+            background: "linear-gradient(135deg,rgba(0,229,160,0.07),transparent)",
+            textAlign: "center",
           }}>
-            <div style={{
-              fontSize: "0.63rem", fontWeight: 800, letterSpacing: 0.8,
+            <span style={{
+              fontSize: "0.6rem", fontWeight: 800, letterSpacing: 1,
               color: "var(--green)", fontFamily: "'JetBrains Mono',monospace",
-            }}>
-              تستلم · RECV
-            </div>
+            }}>RECV · تستلم</span>
           </div>
-          <div style={{ padding: "7px", display: "flex", flexDirection: "column", gap: 5 }}>
+          <div style={{
+            padding: "6px", display: "flex", flexDirection: "column",
+            gap: 4, flex: 1,
+          }}>
             {recvMethods.map(m => (
               <MobileMethodCard key={m.id} method={m}
                 selected={recvMethod}
@@ -413,18 +436,18 @@ function MobileExchangeSelector({ sendMethod, recvMethod, onSend, onRecv, bothRe
       {/* ══ مؤشر الانتقال ══ */}
       {bothReady && (
         <div style={{
-          marginTop: 12,
+          marginTop: 10,
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           animation: "n1FadeIn 0.3s ease",
         }}>
           <div style={{
-            width: 14, height: 14, borderRadius: "50%",
+            width: 13, height: 13, borderRadius: "50%",
             border: "2px solid rgba(0,210,255,0.2)",
             borderTopColor: "var(--cyan)",
             animation: "n1Spin 0.7s linear infinite",
           }} />
           <span style={{
-            fontSize: "0.78rem", color: "var(--cyan)",
+            fontSize: "0.75rem", color: "var(--cyan)",
             fontFamily: "'Tajawal',sans-serif", fontWeight: 700,
           }}>
             {lang === "ar" ? "جاري الانتقال..." : "Redirecting..."}
