@@ -79,7 +79,7 @@ export default function TabIntegrations({ settings, set }) {
             <SecretInput
               value={settings.moneygoApiKey}
               onChange={v => set('moneygoApiKey', v)}
-              placeholder="MGO-XXXXXXXXXXXXXXXXXXXX"
+              placeholder="U-XXXXXXXXXXXXXXXXXXXX"
             />
           </Field>
           <Field label="Crypto Provider API Key">

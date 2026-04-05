@@ -423,7 +423,7 @@ function SettingsModal({ isOpen, onClose }) {
               <WalletRow
                 icon="https://cdn-icons-png.flaticon.com/128/4108/4108814.png"
                 name="MoneyGo"
-                placeholder="MGO-XXXXXXXXX"
+                placeholder="U-XXXXXXXXX"
                 color="#e91e63"
               />
             </div>

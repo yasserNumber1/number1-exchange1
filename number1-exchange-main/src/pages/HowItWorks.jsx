@@ -1,5 +1,6 @@
 // src/pages/HowItWorks.jsx
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import useLang from '../context/useLang'
 
 const PHONE_MQ = '(max-width: 768px)'
 
@@ -27,36 +28,40 @@ const IcMobile    = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="
 const IcBank      = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
 const IcUSDT      = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10h8"/></svg>
 
-/* ─── Data (unchanged) ─── */
-const STEPS = [
-  { num: '01', icon: <IcCalculator />, title: 'اختر العملة والمبلغ',    desc: 'حدد العملة التي تريد إرسالها والعملة التي تريد استقبالها. سيظهر لك السعر الحالي والمبلغ الذي ستحصل عليه بشكل فوري.', color: '#00d2ff' },
-  { num: '02', icon: <IcClipHow />,   title: 'أدخل بيانات المستلم',     desc: 'أدخل رقم المحفظة أو العنوان الذي تريد إرسال المبلغ إليه. تأكد من صحة البيانات قبل المتابعة.',                          color: '#00e5a0' },
-  { num: '03', icon: <IcSend2 />,     title: 'أرسل الدفعة',             desc: 'أرسل المبلغ المطلوب إلى عنوان الدفع الظاهر. للـ USDT: انسخ عنوان TRC-20 وأرسل المبلغ مباشرة.',                         color: '#a78bfa' },
-  { num: '04', icon: <IcCamera />,    title: 'أرفع إيصال الدفع',        desc: 'بعد إتمام الدفع، ارفع صورة الإيصال أو أرسل رقم المعاملة. سيتم مراجعتها من قِبل فريقنا خلال دقائق.',                    color: '#f59e0b' },
-  { num: '05', icon: <IcCheckCirc />, title: 'استقبل أموالك',           desc: 'بعد التأكيد، يتم تحويل المبلغ فوراً إلى حسابك. ستصلك رسالة تأكيد برقم الطلب لمتابعته.',                               color: '#00e5a0' },
+/* ─── Static configs (icons + colors only, no translated text) ─── */
+const STEPS_CONFIG = [
+  { num: '01', icon: <IcCalculator />, color: '#00d2ff' },
+  { num: '02', icon: <IcClipHow />,   color: '#00e5a0' },
+  { num: '03', icon: <IcSend2 />,     color: '#a78bfa' },
+  { num: '04', icon: <IcCamera />,    color: '#f59e0b' },
+  { num: '05', icon: <IcCheckCirc />, color: '#00e5a0' },
 ]
 
-const METHODS = [
-  { icon: <IcUSDT />,       name: 'USDT TRC-20',  desc: 'تحويل آلي فوري',        badge: 'تلقائي',   color: '#26a17b' },
-  { icon: <IcCreditCard />, name: 'فودافون كاش',  desc: 'تحويل شبه فوري',        badge: 'يدوي',     color: '#e40613' },
-  { icon: <IcMobile />,     name: 'إنستاباي',     desc: 'تحويل سريع',            badge: 'يدوي',     color: '#6c35de' },
-  { icon: <IcBank />,       name: 'MoneyGo USD',  desc: 'الاستقبال الرئيسي',     badge: 'استقبال',  color: '#00b8d9' },
+const METHODS_CONFIG = [
+  { icon: <IcUSDT />,       nameKey: 'how_method1_name', descKey: 'how_method1_desc', badgeKey: 'how_method1_badge', color: '#26a17b' },
+  { icon: <IcCreditCard />, nameKey: 'how_method2_name', descKey: 'how_method2_desc', badgeKey: 'how_method2_badge', color: '#e40613' },
+  { icon: <IcMobile />,     nameKey: 'how_method3_name', descKey: 'how_method3_desc', badgeKey: 'how_method3_badge', color: '#6c35de' },
+  { icon: <IcBank />,       nameKey: 'how_method4_name', descKey: 'how_method4_desc', badgeKey: 'how_method4_badge', color: '#00b8d9' },
 ]
 
-const FAQS_MINI = [
-  { q: 'كم يستغرق التحويل؟',      a: 'من 5 دقائق إلى 30 دقيقة حسب طريقة الدفع.' },
-  { q: 'هل هناك رسوم خفية؟',      a: 'لا. السعر المعروض هو السعر النهائي شامل جميع الرسوم.' },
-  { q: 'ما الحد الأدنى للتحويل؟',  a: 'الحد الأدنى 10 USDT أو ما يعادلها.' },
-  { q: 'هل تحويلاتي آمنة؟',       a: 'نعم. نستخدم TronGrid API ونتحقق من كل معاملة يدوياً.' },
+const FAQS_KEYS = [
+  { qKey: 'how_faq1_q', aKey: 'how_faq1_a' },
+  { qKey: 'how_faq2_q', aKey: 'how_faq2_a' },
+  { qKey: 'how_faq3_q', aKey: 'how_faq3_a' },
+  { qKey: 'how_faq4_q', aKey: 'how_faq4_a' },
 ]
 
 /* ─── Animated Canvas ─── */
-function StepCanvas({ activeStep }) {
-  const canvasRef = useRef(null)
-  const rafRef    = useRef(null)
-  const stepRef   = useRef(activeStep)
+const DEFAULT_LABELS = ['اختر العملة', 'أدخل البيانات', 'أرسل الدفعة', 'ارفع الإيصال', 'استقبل أموالك']
 
-  useEffect(() => { stepRef.current = activeStep }, [activeStep])
+function StepCanvas({ activeStep, labels }) {
+  const canvasRef  = useRef(null)
+  const rafRef     = useRef(null)
+  const stepRef    = useRef(activeStep)
+  const labelsRef  = useRef(labels || DEFAULT_LABELS)
+
+  useEffect(() => { stepRef.current  = activeStep }, [activeStep])
+  useEffect(() => { labelsRef.current = labels || DEFAULT_LABELS }, [labels])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -76,7 +81,6 @@ function StepCanvas({ activeStep }) {
 
     const COLORS  = ['#00d2ff', '#00e5a0', '#a78bfa', '#f59e0b', '#00e5a0']
     const NUMS    = ['01', '02', '03', '04', '05']
-    const LABELS  = ['اختر العملة', 'أدخل البيانات', 'أرسل الدفعة', 'ارفع الإيصال', 'استقبل أموالك']
 
     let t = 0
     function draw() {
@@ -147,7 +151,7 @@ function StepCanvas({ activeStep }) {
       // label below circle — DARK in light mode (opposite of filter)
       ctx.fillStyle = isLight ? '#0d1b2a' : '#e8f4ff'
       ctx.font = `700 ${Math.max(11, Math.round(R * 0.21))}px "Tajawal", sans-serif`
-      ctx.fillText(LABELS[step], cx, cy + R * 1.52)
+      ctx.fillText((labelsRef.current || DEFAULT_LABELS)[step], cx, cy + R * 1.52)
 
       // progress dots
       const dotY = cy + R * 1.92
@@ -215,7 +219,27 @@ function useCountUp(target, suffix = '', go = false) {
 
 /* ─── Main ─── */
 export default function HowItWorks() {
+  const { t, dir } = useLang()
   const isPhone = useIsPhone()
+
+  // Build translated arrays from configs
+  const STEPS = useMemo(() => STEPS_CONFIG.map((s, i) => ({
+    ...s,
+    title: t(`how_step${i + 1}_title`),
+    desc:  t(`how_step${i + 1}_desc`),
+  })), [t])
+
+  const METHODS = useMemo(() => METHODS_CONFIG.map(m => ({
+    ...m,
+    name:  t(m.nameKey),
+    desc:  t(m.descKey),
+    badge: t(m.badgeKey),
+  })), [t])
+
+  const FAQS_MINI = useMemo(() => FAQS_KEYS.map(f => ({
+    q: t(f.qKey),
+    a: t(f.aKey),
+  })), [t])
   const [isLight, setIsLight] = useState(() =>
     typeof document !== 'undefined' && document.documentElement.classList.contains('light')
   )
@@ -364,7 +388,7 @@ export default function HowItWorks() {
   const acText = isLight ? (LIGHT_SHADES[ac] || ac) : ac
 
   return (
-    <div style={{ direction: 'rtl', position: 'relative' }}>
+    <div style={{ direction: dir, position: 'relative' }}>
 
       {/* scroll progress */}
       <div id="hiw-pbar" style={{
@@ -398,15 +422,15 @@ export default function HowItWorks() {
           </div>
 
           <h1 style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 'clamp(1.6rem,4.5vw,2.6rem)', fontWeight: 900, color: 'var(--text-1)', margin: '0 0 16px', lineHeight: 1.2 }}>
-            كيف تعمل المنصة؟
+            {t('how_hero_title')}
           </h1>
           <p style={{ fontSize: '1rem', color: 'var(--text-3)', maxWidth: 500, margin: '0 auto 42px', fontFamily: "'Tajawal',sans-serif", lineHeight: 1.85 }}>
-            5 خطوات بسيطة تفصلك عن إتمام عملية التحويل بأمان وسرعة
+            {t('how_hero_desc')}
           </p>
 
           {/* scroll hint */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, color: 'var(--text-3)', fontSize: '0.76rem', letterSpacing: 1 }}>
-            <span>{isPhone ? 'استخدم الأسهم أو اسحب يمين/يسار في الخطوات' : 'مرّر للأسفل لاستعراض الخطوات'}</span>
+            <span>{isPhone ? t('how_scroll_phone') : t('how_scroll_desktop')}</span>
             <div style={{ width: 17, height: 17, borderRight: '2px solid rgba(0,210,255,0.35)', borderBottom: '2px solid rgba(0,210,255,0.35)', transform: 'rotate(45deg)', animation: 'hiwBounce 1.6s ease-in-out infinite' }} />
           </div>
         </div>
@@ -469,7 +493,7 @@ export default function HowItWorks() {
                 height: isPhone ? 'min(260px, 72vw)' : 'clamp(180px,36vw,360px)',
               }}
             >
-              <StepCanvas activeStep={activeStep} />
+              <StepCanvas activeStep={activeStep} labels={STEPS.map(s => s.title)} />
             </div>
 
             {/* Step info */}
@@ -517,7 +541,7 @@ export default function HowItWorks() {
                       type="button"
                       onClick={() => setActiveStep(i)}
                       style={{ ...pillStyle, cursor: 'pointer', minHeight: 12, minWidth: i === activeStep ? 32 : 12 }}
-                      aria-label={`الخطوة ${i + 1}`}
+                      aria-label={`${t('how_prev_aria')} ${i + 1}`}
                       aria-current={i === activeStep ? 'step' : undefined}
                     />
                   ) : (
@@ -553,22 +577,22 @@ export default function HowItWorks() {
                 className="hiw-phone-nav__btn"
                 onClick={goPrev}
                 disabled={activeStep <= 0}
-                aria-label="الخطوة السابقة"
+                aria-label={t('how_prev_aria')}
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <polyline points="15 6 9 12 15 18" />
                 </svg>
-                <span>السابق</span>
+                <span>{t('how_prev')}</span>
               </button>
-              <p className="hiw-phone-nav__hint">اسحب لليمين أو لليسار</p>
+              <p className="hiw-phone-nav__hint">{t('how_swipe')}</p>
               <button
                 type="button"
                 className="hiw-phone-nav__btn"
                 onClick={goNext}
                 disabled={activeStep >= STEPS.length - 1}
-                aria-label="الخطوة التالية"
+                aria-label={t('how_next_aria')}
               >
-                <span>التالي</span>
+                <span>{t('how_next')}</span>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <polyline points="9 6 15 12 9 18" />
                 </svg>
@@ -582,14 +606,14 @@ export default function HowItWorks() {
       <section ref={specsRef} style={{ position: 'relative', zIndex: 1, padding: '96px 24px', background: 'linear-gradient(to bottom, transparent, rgba(0,210,255,0.022), transparent)' }}>
         <div style={{ textAlign: 'center', marginBottom: 52 }}>
           <div style={{ fontSize: '0.68rem', letterSpacing: 3, textTransform: 'uppercase', color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 12 }}>PLATFORM STATS</div>
-          <h2 style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 'clamp(1.2rem,3vw,1.8rem)', fontWeight: 900, color: 'var(--text-1)' }}>أرقام تُثير الثقة</h2>
+          <h2 style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 'clamp(1.2rem,3vw,1.8rem)', fontWeight: 900, color: 'var(--text-1)' }}>{t('how_stats_title')}</h2>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 28, maxWidth: 880, margin: '0 auto', textAlign: 'center' }}>
           {[
-            { val: v1, label: 'تاجر نشط على المنصة', color: 'var(--cyan)' },
-            { val: v2, label: 'وقت تشغيل مضمون',    color: 'var(--green)' },
-            { val: v3, label: 'تحويل ناجح شهرياً',   color: 'var(--purple)' },
+            { val: v1, label: t('how_stat1'), color: 'var(--cyan)' },
+            { val: v2, label: t('how_stat2'), color: 'var(--green)' },
+            { val: v3, label: t('how_stat3'), color: 'var(--purple)' },
             // country stat removed
           ].map((s, i) => (
             <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border-1)', borderRadius: 16, padding: '30px 18px', transition: 'border-color .25s, transform .25s', cursor: 'default' }}
@@ -608,7 +632,7 @@ export default function HowItWorks() {
       {/* ── PAYMENT METHODS ── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '0 24px 76px', maxWidth: 900, margin: '0 auto' }}>
         <h2 style={{ fontFamily: "'Orbitron',sans-serif", fontSize: '1rem', fontWeight: 700, color: 'var(--text-1)', margin: '0 0 22px', letterSpacing: 1 }}>
-          طرق الدفع المقبولة
+          {t('how_methods_title')}
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(175px,1fr))', gap: 14 }}>
           {METHODS.map(m => (
@@ -628,7 +652,7 @@ export default function HowItWorks() {
       {/* ── MINI FAQ ── */}
       <section style={{ position: 'relative', zIndex: 1, padding: '0 24px 96px', maxWidth: 900, margin: '0 auto' }}>
         <h2 style={{ fontFamily: "'Orbitron',sans-serif", fontSize: '1rem', fontWeight: 700, color: 'var(--text-1)', margin: '0 0 18px', letterSpacing: 1 }}>
-          أسئلة سريعة
+          {t('how_faq_title')}
         </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {FAQS_MINI.map(f => (

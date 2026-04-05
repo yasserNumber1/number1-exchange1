@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════
 import { useState, useEffect, useMemo } from 'react'
 import ConfirmModal from './ConfirmModal'
+import useAuth from '../../context/useAuth'
 
 const API = import.meta.env.VITE_API_URL
 
@@ -41,6 +42,8 @@ function resolveRate(rates, sendType, recvType, sendItem) {
 }
 
 function ExchangeForm() {
+  const { user } = useAuth()
+
   // ── بيانات من الـ API ──────────────────────────────
   const [methods,      setMethods]      = useState(null)
   const [rates,        setRates]        = useState(null)
@@ -58,7 +61,7 @@ function ExchangeForm() {
   const [sendAmount, setSendAmount] = useState('100')
 
   // ── بيانات المستخدم ────────────────────────────────
-  const [email,          setEmail]          = useState('')
+  const [email,          setEmail]          = useState(user?.email || '')
   const [userPhone,      setUserPhone]      = useState('')
   const [recipientId,    setRecipientId]    = useState('')
   const [moneygoWallet,  setMoneygoWallet]  = useState('') // عنوان MoneyGo للإرسال منه
@@ -122,6 +125,11 @@ function ExchangeForm() {
     }
     loadAll()
   }, [])
+
+  // ── ملء الإيميل تلقائياً إذا كان المستخدم مسجلاً ──
+  useEffect(() => {
+    if (user?.email) setEmail(user.email)
+  }, [user])
 
   // ── Rate fluctuation animation ─────────────────────
   useEffect(() => {
@@ -312,7 +320,12 @@ function ExchangeForm() {
 
           {/* ── سهم التبادل ─────────────────────── */}
           <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0' }}>
-            <div style={swapArrow}>↕</div>
+            <div style={swapArrow}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 16V4m0 0L3 8m4-4l4 4"/>
+                <path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+              </svg>
+            </div>
           </div>
 
           {/* ── قسم الاستلام ────────────────────── */}

@@ -338,7 +338,7 @@ export default function ExchangeFormPage() {
               <input
                 type="text" value={recipientId}
                 onChange={e => setRecipientId(e.target.value)}
-                placeholder="MGO-XXXXXXXX"
+                placeholder="U-XXXXXXXX"
                 className="ef-input ef-mono"
                 style={{ direction: 'ltr' }}
               />
