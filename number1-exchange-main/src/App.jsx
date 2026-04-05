@@ -84,6 +84,7 @@ import AdminPaymentMethods from './pages/admin/AdminPaymentMethods'
 import AdminUsers          from './pages/admin/AdminUsers'
 import AdminSettings       from './pages/admin/AdminSettings'
 import AdminDeposits from './pages/admin/AdminDeposits'
+import AdminLogin    from './pages/admin/AdminLogin'
 
 import useAuth from './context/useAuth'
 
@@ -133,7 +134,7 @@ function MaintenancePage() {
 function AdminRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return null
-  if (!user || user.role !== 'admin') return <Navigate to="/" replace />
+  if (!user || user.role !== 'admin') return <Navigate to="/admin/login" replace />
   return children
 }
 
@@ -192,6 +193,7 @@ function App() {
         <Route path="/admin/settings"        element={<AdminRoute><AdminSettings       /></AdminRoute>} />
         <Route path="/admin/wallets" element={<AdminRoute><AdminWallets /></AdminRoute>} />
         <Route path="/admin/deposits" element={<AdminDeposits />} />
+        <Route path="/admin/login"    element={<AdminLogin />} />
       </Routes>
     )
   }
