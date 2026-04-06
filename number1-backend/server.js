@@ -174,6 +174,11 @@ app.post('/api/telegram/webhook', async (req, res) => {
 
     await order.save();
 
+    const msgId = callback_query.message?.message_id
+if (msgId) {
+  await telegramService.editOrderMessage(msgId, order, action)
+}
+
     // ── الرد على الأدمن + تعديل الرسالة ────────
     await telegramService.answerCallbackQuery(callbackQueryId, action_data.msg);
     await telegramService.editOrderMessage(cbMessage?.message_id, order, action);

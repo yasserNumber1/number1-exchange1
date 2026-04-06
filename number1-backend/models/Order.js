@@ -144,10 +144,7 @@ const orderSchema = new mongoose.Schema({
   },
 
   // ─── Telegram Message ID ──────────────────
-  telegramMessageId: {
-    type: Number,
-    default: null
-  },
+telegramMessageId: { type: Number, default: null },
 
   // ─── IP العميل ────────────────────────────
   clientIp: {

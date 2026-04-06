@@ -108,25 +108,67 @@ router.post('/telegram-webhook-internal', async (req, res) => {
   try {
     const { callback_query } = req.body;
     if (!callback_query) return res.json({ success: true });
-    const { data, id: callbackQueryId } = callback_query;
-    const [action, orderId] = data.split('_');
+
+    const { data, id: callbackQueryId, message } = callback_query;
+
+    // ── استخرج الـ action والـ orderId ──────────────
+    const underscoreIdx = data.indexOf('_')
+    const action  = data.substring(0, underscoreIdx)
+    const orderId = data.substring(underscoreIdx + 1)
+
     const order = await Order.findById(orderId);
     if (!order) {
       await telegramService.answerCallbackQuery(callbackQueryId, '❌ الطلب غير موجود');
       return res.json({ success: true });
     }
-    let newStatus, message;
+
+    // ── التحقق من المنطق الإجباري ───────────────────
+    // approve → فقط من pending/verifying
+    // complete → فقط بعد approve (verified/processing)
+    // reject → فقط من pending/verifying
+    const allowedTransitions = {
+      approve:  ['pending', 'verifying'],
+      reject:   ['pending', 'verifying'],
+      complete: ['verified', 'processing'],
+    }
+
+    if (!allowedTransitions[action]?.includes(order.status)) {
+      await telegramService.answerCallbackQuery(
+        callbackQueryId,
+        `⚠️ لا يمكن تنفيذ هذا الإجراء — الحالة الحالية: ${order.status}`
+      )
+      return res.json({ success: true });
+    }
+
+    let newStatus, message_text;
     switch (action) {
-      case 'approve': newStatus = 'verified';  message = '✅ تم الموافقة على الطلب'; break;
-      case 'reject':  newStatus = 'rejected';  message = '❌ تم رفض الطلب';          break;
-      case 'complete':newStatus = 'completed'; message = '🎉 تم إكمال الطلب';        break;
+      case 'approve':  newStatus = 'verified';  message_text = '✅ تم الموافقة على الطلب'; break;
+      case 'reject':   newStatus = 'rejected';  message_text = '❌ تم رفض الطلب';          break;
+      case 'complete': newStatus = 'completed'; message_text = '🎉 تم إكمال الطلب';        break;
       default: return res.json({ success: true });
     }
+
     order.status = newStatus;
-    order.addTimeline(newStatus, `${message} via Telegram`, 'admin:telegram');
+    order.addTimeline(newStatus, `${message_text} via Telegram`, 'admin:telegram');
     await order.save();
-    await telegramService.answerCallbackQuery(callbackQueryId, message);
-    await telegramService.notifyOrderUpdate(order, newStatus);
+
+    // ── رد فوري على الأدمن ───────────────────────────
+    await telegramService.answerCallbackQuery(callbackQueryId, message_text);
+
+    // ── تحديث رسالة التليجرام بالأزرار الصحيحة ──────
+    const msgId = order.telegramMessageId || message?.message_id
+    if (msgId) {
+      await telegramService.editOrderMessage(msgId, order, action)
+    }
+
+    // ── بث التحديث عبر SSE للعميل ───────────────────
+    const sseService = require('../services/sse') // إذا عندك SSE service
+    sseService.broadcast(order._id.toString(), {
+      type: 'STATUS_UPDATE',
+      status: newStatus,
+      updatedAt: new Date()
+    })
+
     res.json({ success: true });
   } catch (error) {
     console.error('Telegram webhook error:', error);
