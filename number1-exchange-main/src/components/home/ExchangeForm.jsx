@@ -58,9 +58,13 @@ function resolveRate(rates, sendType, recvType, sendItem) {
 
   // MoneyGo → USDT
   // العميل يرسل MoneyGo ويستلم USDT → نضرب في السعر
-  if (sendType === 'moneygo') {
-    return { rate: rates.moneygoRate || 1, divide: false }
-  }
+if (sendType === 'moneygo') {
+  // moneygoRate = كم USDT يكافئ 1 MoneyGo
+  // مثال: moneygoRate=2 → 10 MoneyGo × 2 = 20 USDT
+  const mRate = parseFloat(rates.moneygoRate)
+  if (!mRate || mRate <= 0) return { rate: 1, divide: false } // fallback آمن
+  return { rate: mRate, divide: false }
+}
 
   // USDT → USDT
   if (sendType === 'crypto' && recvType === 'crypto') {
