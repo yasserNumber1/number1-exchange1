@@ -1,80 +1,36 @@
 // models/Rate.js
-// ═══════════════════════════════════════════════
-// نموذج الأسعار — يُخزّن كل أسعار الصرف
-// يكون دائماً سجل واحد فقط في قاعدة البيانات
-// ═══════════════════════════════════════════════
 const mongoose = require('mongoose');
 
 const rateSchema = new mongoose.Schema(
   {
-    // ── USDT ↔ جنيه مصري ─────────────────────
-    // سعر بيع USDT: العميل يدفع جنيه ويستلم USDT
-    // مثال: 50 يعني العميل يدفع 50 جنيه ليحصل على 1 USDT
-    usdtBuyRate:  { type: Number, default: 50.00 },
+    // ── USDT ↔ جنيه مصري ─────────────────────────────────
+    usdtBuyRate:  { type: Number, default: 50.00 }, // كم جنيه يدفع العميل ليحصل على 1 USDT
+    usdtSellRate: { type: Number, default: 49.00 }, // كم جنيه يحصل العميل مقابل 1 USDT
 
-    // سعر شراء USDT: العميل يرسل USDT ويستلم جنيه
-    // مثال: 49.5 يعني العميل يرسل 1 USDT ويحصل على 49.5 جنيه
-    usdtSellRate: { type: Number, default: 49.50 },
+    // ── MoneyGo ──────────────────────────────────────────
+    // سعر شراء MoneyGo — العميل يرسل MoneyGo ويستلم USDT
+    // مثال: 1.005 يعني 1 MoneyGo = 1.005 USDT
+    moneygoRate:     { type: Number, default: 1.00 },
 
-    // ── MoneyGo ↔ جنيه مصري ──────────────────
-    // سعر بيع MoneyGo: العميل يدفع جنيه ويستلم MoneyGo
-    // مثال: 52 يعني العميل يدفع 52 جنيه ليحصل على 1 MoneyGo
-    moneygoEgpBuyRate:  { type: Number, default: 52.00 },
+    // سعر بيع MoneyGo — العميل يرسل USDT ويستلم MoneyGo
+    // مثال: 0.995 يعني 1 USDT = 0.995 MoneyGo
+    moneygoSellRate: { type: Number, default: 1.00 },
 
-    // سعر شراء MoneyGo: العميل يرسل MoneyGo ويستلم جنيه
-    // مثال: 51 يعني العميل يرسل 1 MoneyGo ويحصل على 51 جنيه
-    moneygoEgpSellRate: { type: Number, default: 51.00 },
-
-    // ── MoneyGo ↔ USDT ────────────────────────
-    // كم USDT يساوي 1 MoneyGo
-    // مثال: 1.002 يعني 1 MoneyGo = 1.002 USDT
-    moneygoRate: { type: Number, default: 1.00 },
-
-    // ── المحفظة الداخلية (Internal USDT) ↔ USDT ─
-    // سعر بيع المحفظة الداخلية: العميل يرسل رصيد داخلي ويستلم USDT خارجي
-    // مثال: 0.99 يعني 1 رصيد داخلي → 0.99 USDT
-    internalUsdtSellRate: { type: Number, default: 1.00 },
-
-    // سعر شراء المحفظة الداخلية: العميل يرسل USDT خارجي ويستلم رصيد داخلي
-    // مثال: 1.01 يعني العميل يدفع 1.01 USDT ← يستلم 1 رصيد داخلي
-    internalUsdtBuyRate:  { type: Number, default: 1.00 },
-
-    // ── المحفظة الداخلية ↔ MoneyGo ────────────
-    // سعر تحويل المحفظة الداخلية إلى MoneyGo
-    // مثال: 1.00 يعني 1 رصيد داخلي → 1 MoneyGo
-    internalUsdtToMoneyGoRate: { type: Number, default: 1.00 },
-
-    // سعر تحويل MoneyGo إلى المحفظة الداخلية
-    // مثال: 1.00 يعني 1 MoneyGo → 1 رصيد داخلي
-    moneyGoToInternalUsdtRate: { type: Number, default: 1.00 },
-
-    // ── سعر الجنيه الموحد للمحافظ الإلكترونية ─
-    // يُطبق على: فودافون كاش / إنستا باي / فاوري / أورنج كاش
-    // مثال: 50 يعني العميل يدفع 50 جنيه ليحصل على 1 USDT
-    egpWalletBuyRate:  { type: Number, default: 50.00 },
-
-    // سعر بيع الجنيه للمحافظ
-    // مثال: 49.5 يعني العميل يرسل 1 USDT ويحصل على 49.5 جنيه
-    egpWalletSellRate: { type: Number, default: 49.50 },
-
-    // ── الحقول القديمة (للتوافق مع الكود القديم) ─
-    // سيتم تجاهلها تدريجياً
+    // ── محافظ إلكترونية مصرية ────────────────────────────
     vodafoneBuyRate: { type: Number, default: 50.00 },
     instaPayRate:    { type: Number, default: 50.10 },
     fawryRate:       { type: Number, default: 49.80 },
     orangeRate:      { type: Number, default: 49.90 },
 
-    // ── حدود المعاملات ────────────────────────
+    // ── حدود المعاملات ────────────────────────────────────
     minOrderUsdt: { type: Number, default: 10   },
     maxOrderUsdt: { type: Number, default: 5000 },
 
-    // آخر من عدّل
     updatedBy: { type: String, default: 'system' },
   },
   { timestamps: true }
 );
 
-// ── دالة مساعدة: جلب السجل الوحيد أو إنشاؤه ──
 rateSchema.statics.getSingleton = async function () {
   let doc = await this.findOne();
   if (!doc) doc = await this.create({});
