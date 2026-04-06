@@ -1,7 +1,8 @@
 // src/components/home/ExchangeForm.jsx
 // ═══════════════════════════════════════════════════════
 // نموذج التبادل — متصل بالـ API
-// الأسعار حقيقية من الأدمن
+// الأسعار حقيقية من الأدمن ✅
+// منطق الحساب مصحح: ÷ عند شراء USDT بجنيه، × عند بيع
 // ═══════════════════════════════════════════════════════
 import { useState, useEffect, useMemo } from 'react'
 import ConfirmModal from './ConfirmModal'
@@ -19,27 +20,60 @@ const MONEYGO_ITEM = {
 }
 
 // ══════════════════════════════════════════════
-// دالة مساعدة: حساب السعر الصحيح
+// دالة مساعدة: تحديد السعر والعملية (÷ أم ×)
+//
+// المنطق:
+//   wallet → crypto : العميل يرسل جنيه ويستلم USDT
+//                     → نقسم المبلغ على السعر
+//                     مثال: 100 جنيه ÷ 50 = 2 USDT
+//
+//   crypto → wallet : العميل يرسل USDT ويستلم جنيه
+//                     → نضرب المبلغ في السعر
+//                     مثال: 2 USDT × 49.5 = 99 جنيه
+//
+//   moneygo → crypto: العميل يرسل MoneyGo ويستلم USDT
+//                     → نضرب المبلغ في السعر
+//                     مثال: 100 MGO × 1.002 = 100.2 USDT
 // ══════════════════════════════════════════════
 function resolveRate(rates, sendType, recvType, sendItem) {
-  if (!rates) return 50
+  if (!rates) return { rate: 50, divide: true }
 
-  if (sendType === 'moneygo') return rates.moneygoRate || 1
-
+  // فودافون / إنستا / أورنج / فاوري → USDT
+  // العميل يرسل جنيه ويستلم USDT → نقسم على السعر
   if (sendType === 'wallet' && recvType === 'crypto') {
     const id = sendItem?.id || ''
-    if (id.includes('vodafone')) return rates.vodafoneBuyRate
-    if (id.includes('instapay')) return rates.instaPayRate
-    if (id.includes('fawry'))    return rates.fawryRate
-    if (id.includes('orange'))   return rates.orangeRate
-    return rates.usdtSellRate
+    let rate = rates.usdtBuyRate // افتراضي
+    if (id.includes('vodafone'))      rate = rates.vodafoneBuyRate
+    else if (id.includes('instapay')) rate = rates.instaPayRate
+    else if (id.includes('fawry'))    rate = rates.fawryRate
+    else if (id.includes('orange'))   rate = rates.orangeRate
+    return { rate, divide: true }
   }
 
-  if (sendType === 'crypto' && recvType === 'wallet') return rates.usdtBuyRate
-  if (sendType === 'crypto' && recvType === 'crypto') return 1
-  if (sendType === 'wallet' && recvType === 'wallet') return 1
+  // USDT → فودافون / إنستا / أورنج
+  // العميل يرسل USDT ويستلم جنيه → نضرب في السعر
+  if (sendType === 'crypto' && recvType === 'wallet') {
+    return { rate: rates.usdtSellRate, divide: false }
+  }
 
-  return rates.usdtBuyRate
+  // MoneyGo → USDT
+  // العميل يرسل MoneyGo ويستلم USDT → نضرب في السعر
+  if (sendType === 'moneygo') {
+    return { rate: rates.moneygoRate || 1, divide: false }
+  }
+
+  // USDT → USDT
+  if (sendType === 'crypto' && recvType === 'crypto') {
+    return { rate: 1, divide: false }
+  }
+
+  // محفظة → محفظة
+  if (sendType === 'wallet' && recvType === 'wallet') {
+    return { rate: 1, divide: false }
+  }
+
+  // افتراضي
+  return { rate: rates.usdtBuyRate, divide: true }
 }
 
 function ExchangeForm() {
@@ -65,8 +99,8 @@ function ExchangeForm() {
   const [email,          setEmail]          = useState(user?.email || '')
   const [userPhone,      setUserPhone]      = useState('')
   const [recipientId,    setRecipientId]    = useState('')
-  const [moneygoWallet,  setMoneygoWallet]  = useState('') // عنوان MoneyGo للإرسال منه
-  const [usdtAddress,    setUsdtAddress]    = useState('') // عنوان USDT للاستلام عليه (وضع MoneyGo)
+  const [moneygoWallet,  setMoneygoWallet]  = useState('')
+  const [usdtAddress,    setUsdtAddress]    = useState('')
   const [amlChecked,     setAmlChecked]     = useState(false)
   const [tosChecked,     setTosChecked]     = useState(false)
 
@@ -124,7 +158,7 @@ function ExchangeForm() {
           setMethods(FALLBACK)
         }
 
-        if (ratesRes.success)    setRates(ratesRes)
+        if (ratesRes.success)     setRates(ratesRes)
         if (settingsRes?.success) setContactInfo(settingsRes)
 
       } catch {
@@ -140,7 +174,7 @@ function ExchangeForm() {
   // ── ملء الإيميل تلقائياً إذا كان المستخدم مسجلاً ──
   useEffect(() => {
     if (user?.email && !email) setEmail(user.email)
-  }, [user]) // email intentionally omitted — one-time fill on user load
+  }, [user])
 
   // ── Rate fluctuation animation ─────────────────────
   useEffect(() => {
@@ -153,18 +187,41 @@ function ExchangeForm() {
     return () => clearInterval(t)
   }, [])
 
-  // ── السعر الحقيقي ──────────────────────────────────
-  const baseRate    = resolveRate(rates, sendType, recvType, sendItem)
+  // ══════════════════════════════════════════════════
+  // السعر الحقيقي — مصحح بالكامل
+  // ══════════════════════════════════════════════════
+  const { rate: baseRate, divide } = resolveRate(rates, sendType, recvType, sendItem)
   const currentRate = baseRate * rateFactor
   const rateColor   = rateDir === 'up' ? 'var(--green)' : rateDir === 'dn' ? 'var(--red)' : 'var(--gold)'
 
   const minOrder = rates?.minOrderUsdt || 10
   const maxOrder = rates?.maxOrderUsdt || 5000
 
+  // ── حساب المبلغ المستلم ────────────────────────────
+  // divide = true  → العميل يرسل جنيه ويستلم USDT → نقسم
+  // divide = false → العميل يرسل USDT ويستلم جنيه  → نضرب
   const receiveAmount = useMemo(() => {
     const amt = parseFloat(sendAmount) || 0
-    return amt > 0 ? (amt * currentRate).toFixed(2) : ''
-  }, [sendAmount, currentRate])
+    if (amt <= 0) return ''
+    const result = divide ? amt / currentRate : amt * currentRate
+    return result.toFixed(2)
+  }, [sendAmount, currentRate, divide])
+
+  // ── عرض السعر في الشريط بشكل منطقي ───────────────
+  const rateDisplay = useMemo(() => {
+    const sendName = sendType === 'moneygo'
+      ? 'MoneyGo USD'
+      : sendItem?.coin || sendItem?.name || '—'
+    const recvName = recvItem?.coin || recvItem?.label || recvItem?.name || '—'
+
+    if (divide) {
+      // 1 USDT = X جنيه (يعني العميل يدفع X جنيه ليحصل على 1 USDT)
+      return `1 ${recvName} = ${currentRate.toFixed(2)} ${sendName}`
+    } else {
+      // 1 وحدة = X وحدة
+      return `1 ${sendName} = ${currentRate.toFixed(4)} ${recvName}`
+    }
+  }, [sendType, recvType, sendItem, recvItem, currentRate, divide])
 
   const sendIsWallet  = sendType === 'wallet'
   const sendIsMoneygo = sendType === 'moneygo'
@@ -178,7 +235,6 @@ function ExchangeForm() {
     setMoneygoWallet('')
     setUsdtAddress('')
     if (type === 'moneygo') {
-      // قفل الاستلام على أول USDT متاح
       const firstCrypto = methods?.cryptos?.[0] || null
       setRecvType('crypto')
       setRecvItem(firstCrypto)
@@ -221,9 +277,9 @@ function ExchangeForm() {
 
     if (hasErr) return
 
-    const msg  = buildContactMessage()
-    const wa   = contactInfo?.contactWhatsapp
-    const tg   = contactInfo?.contactTelegram
+    const msg = buildContactMessage()
+    const wa  = contactInfo?.contactWhatsapp
+    const tg  = contactInfo?.contactTelegram
 
     if (wa) {
       const phone = wa.replace(/[^0-9]/g, '')
@@ -231,7 +287,6 @@ function ExchangeForm() {
     } else if (tg) {
       window.open(`https://t.me/${tg.replace('@', '')}?text=${msg}`, '_blank')
     } else {
-      // fallback: navigate to contact page
       window.location.href = '/contact'
     }
   }
@@ -268,11 +323,17 @@ function ExchangeForm() {
     if (!amlChecked) { setAmlErr('مطلوب'); hasErr = true } else { setAmlErr('') }
     if (!tosChecked) { setTosErr('مطلوب'); hasErr = true } else { setTosErr('') }
 
-    if (isNaN(amt) || amt < minOrder) {
-      setAmountErr(`الحد الادنى ${minOrder} وحدة`)
+    // ── التحقق من الحد الأدنى والأقصى ──────────────
+    // نحول المبلغ لـ USDT للمقارنة مع الحدود
+    const amtInUsdt = divide ? amt / currentRate : amt
+    if (isNaN(amt) || amt <= 0) {
+      setAmountErr('يرجى إدخال مبلغ صحيح')
       hasErr = true
-    } else if (amt > maxOrder) {
-      setAmountErr(`الحد الاقصى ${maxOrder} وحدة`)
+    } else if (amtInUsdt < minOrder) {
+      setAmountErr(`الحد الأدنى ${minOrder} USDT`)
+      hasErr = true
+    } else if (amtInUsdt > maxOrder) {
+      setAmountErr(`الحد الأقصى ${maxOrder} USDT`)
       hasErr = true
     } else { setAmountErr('') }
 
@@ -289,6 +350,7 @@ function ExchangeForm() {
       userPhone,
       recipientId,
       rate: currentRate,
+      divide,
     })
     setModalOpen(true)
   }
@@ -336,7 +398,9 @@ function ExchangeForm() {
           <div style={amountBox}>
             <div style={boxLabel}>
               <span>أنت ترسل · SEND</span>
-              <span>MIN: {minOrder} / MAX: {maxOrder}</span>
+              <span>
+                MIN: {minOrder} USDT / MAX: {maxOrder} USDT
+              </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
               <input
@@ -370,8 +434,8 @@ function ExchangeForm() {
           <div style={{ ...amountBox, marginBottom: 13 }}>
             <div style={boxLabel}>
               <span>أنت تستلم · RECEIVE</span>
-              <span style={{ color: rateColor, transition: 'color 0.4s' }}>
-                1 {sendIsMoneygo ? 'MoneyGo USD' : (sendItem?.coin || sendItem?.name || '—')} = {currentRate.toFixed(sendIsMoneygo ? 4 : 4)} {recvItem?.coin || recvItem?.label || recvItem?.name || '—'}
+              <span style={{ color: rateColor, transition: 'color 0.4s', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.68rem' }}>
+                {rateDisplay}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
@@ -409,7 +473,7 @@ function ExchangeForm() {
               EXCHANGE RATE {!rates && '(مؤقت)'}
             </span>
             <span style={{ color: rateColor, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, fontSize: '0.82rem', transition: 'color 0.4s' }}>
-              1 {sendIsMoneygo ? 'MoneyGo USD' : (sendItem?.coin || sendItem?.name || '—')} = {currentRate.toFixed(4)} {recvItem?.coin || recvItem?.label || recvItem?.name || '—'}
+              {rateDisplay}
             </span>
           </div>
 
@@ -423,7 +487,6 @@ function ExchangeForm() {
           ════════════════════════════════════ */}
           {sendIsMoneygo ? (
             <>
-              {/* تنبيه توضيحي */}
               <div style={moneygoInfoBox}>
                 <div style={{ fontSize: '0.72rem', color: '#00c17c', fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, marginBottom: 6 }}>
                   💚 كيف يعمل MoneyGo → USDT
@@ -434,7 +497,6 @@ function ExchangeForm() {
                 </div>
               </div>
 
-              {/* البريد الإلكتروني */}
               <Field label="EMAIL · البريد الإلكتروني" error={emailErr}>
                 <input type="email" value={email} onChange={e => { setEmail(e.target.value); setEmailErr('') }}
                   placeholder="example@email.com"
@@ -442,7 +504,6 @@ function ExchangeForm() {
                   onFocus={focusOn} onBlur={focusOff} />
               </Field>
 
-              {/* عنوان محفظة MoneyGo للإرسال منها */}
               <Field label="عنوان محفظة MoneyGo · للإرسال منها" error={moneygoWalletErr}>
                 <input type="text" value={moneygoWallet} onChange={e => { setMoneygoWallet(e.target.value); setMoneygoWalletErr('') }}
                   placeholder="أدخل عنوان أو ID محفظتك على MoneyGo"
@@ -451,7 +512,6 @@ function ExchangeForm() {
                 <Hint text="ℹ️ العنوان الذي ستحوّل منه — للتحقق من العملية" />
               </Field>
 
-              {/* عنوان USDT للاستلام */}
               <Field label={`عنوان محفظة ${recvItem?.coin || 'USDT'} ${recvItem?.network || ''} · للاستلام`} error={usdtAddressErr}>
                 <input type="text" value={usdtAddress} onChange={e => { setUsdtAddress(e.target.value); setUsdtAddressErr('') }}
                   placeholder={`T... أو 0x... — عنوان ${recvItem?.network || 'USDT'}`}
@@ -460,7 +520,6 @@ function ExchangeForm() {
                 <Hint text={`⚠️ تأكد من أن العنوان صحيح على شبكة ${recvItem?.network || 'USDT'} — العناوين الخاطئة تؤدي لخسارة الأموال`} />
               </Field>
 
-              {/* الموافقات */}
               <CheckRow id="aml" checked={amlChecked} onChange={v => { setAmlChecked(v); if (v) setAmlErr('') }}>
                 أقر بأن الأموال مشروعة وأوافق على <span style={{ color: 'var(--cyan)' }}>سياسة AML</span>
               </CheckRow>
@@ -470,14 +529,12 @@ function ExchangeForm() {
               </CheckRow>
               {tosErr && <div style={{ ...errText, marginTop: -4, marginBottom: 6 }}>{tosErr}</div>}
 
-              {/* زر تواصل معنا */}
               <button onClick={handleContactUs} style={contactBtn}
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 10px 34px rgba(0,193,124,0.4)' }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)';    e.currentTarget.style.boxShadow = '0 4px 22px rgba(0,193,124,0.22)' }}>
                 💬 تواصل معنا لإتمام الطلب
               </button>
 
-              {/* معلومة التواصل */}
               {(contactInfo?.contactWhatsapp || contactInfo?.contactTelegram) && (
                 <div style={{ marginTop: 10, textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>
                   {contactInfo.contactWhatsapp && <span>WhatsApp: {contactInfo.contactWhatsapp}</span>}
@@ -491,7 +548,6 @@ function ExchangeForm() {
                الوضع العادي: محافظ / USDT
             ════════════════════════════════════ */
             <>
-              {/* البريد الإلكتروني */}
               <Field label="EMAIL · البريد الإلكتروني" error={emailErr}>
                 <input type="email" value={email} onChange={e => { setEmail(e.target.value); setEmailErr('') }}
                   placeholder="example@email.com"
@@ -499,7 +555,6 @@ function ExchangeForm() {
                   onFocus={focusOn} onBlur={focusOff} />
               </Field>
 
-              {/* رقم هاتف المرسل */}
               {sendIsWallet && sendItem && (
                 <Field label={`رقم هاتفك على ${sendItem.name}`} error={phoneErr}>
                   <input type="tel" value={userPhone} onChange={e => { setUserPhone(e.target.value); setPhoneErr('') }}
@@ -510,7 +565,6 @@ function ExchangeForm() {
                 </Field>
               )}
 
-              {/* معلومة USDT */}
               {sendType === 'crypto' && sendItem && (
                 <div style={infoBanner}>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", display: 'block', marginBottom: 4 }}>
@@ -522,7 +576,6 @@ function ExchangeForm() {
                 </div>
               )}
 
-              {/* بيانات الاستلام */}
               <Field label={
                 recvType === 'crypto'
                   ? `عنوان محفظة ${recvItem?.coin || ''} ${recvItem?.network || ''} للاستلام`
@@ -538,7 +591,6 @@ function ExchangeForm() {
                   onFocus={focusOn} onBlur={focusOff} />
               </Field>
 
-              {/* الموافقات */}
               <CheckRow id="aml" checked={amlChecked} onChange={v => { setAmlChecked(v); if (v) setAmlErr('') }}>
                 أقر بأن الأموال مشروعة وأوافق على <span style={{ color: 'var(--cyan)' }}>سياسة AML</span>
               </CheckRow>
@@ -548,7 +600,6 @@ function ExchangeForm() {
               </CheckRow>
               {tosErr && <div style={{ ...errText, marginTop: -4, marginBottom: 6 }}>{tosErr}</div>}
 
-              {/* زر الإرسال */}
               <button onClick={handleSubmit} style={submitBtn}
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 10px 34px rgba(0,210,255,0.38)' }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)';    e.currentTarget.style.boxShadow = '0 4px 22px rgba(0,159,192,0.22)' }}>
@@ -596,7 +647,6 @@ function MethodPicker({ wallets, cryptos, selectedType, selectedItem, onSelect, 
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />
           <div style={pickerDropdown}>
 
-            {/* MoneyGo — يظهر فقط في جانب الإرسال */}
             {showMoneygo && (
               <>
                 <div style={pickerGroupLabel}>💚 MoneyGo</div>
