@@ -55,13 +55,11 @@ exports.notifyNewOrder = async (order) => {
   const method  = methodLabels[order.payment.method]  || order.payment.method.replace(/_/g, ' ')
   const isUSDT  = order.payment.method === 'USDT_TRC20'
 
-  // Format rate cleanly — avoid floating point garbage like 0.026500000000000003
   const rate    = parseFloat(order.exchangeRate.appliedRate)
   const rateStr = rate >= 1
-    ? rate.toFixed(4).replace(/\.?0+$/, '')       // e.g. 37.74
-    : rate.toPrecision(4).replace(/\.?0+$/, '')   // e.g. 0.02650
+    ? rate.toFixed(4).replace(/\.?0+$/, '')
+    : rate.toPrecision(4).replace(/\.?0+$/, '')
 
-  // الـ label يعتمد على نوع الطلب (receive method) وليس على طريقة الدفع
   const isReceiveMoneyGo = order.orderType === 'USDT_TO_MONEYGO' || order.orderType === 'EGP_WALLET_TO_MONEYGO'
   const recipientLabel = isReceiveMoneyGo ? '🎯 معرّف MoneyGo للاستلام' : '🔑 عنوان USDT للاستلام'
 
@@ -83,13 +81,11 @@ ${recipientLabel}: <code>${order.moneygo.recipientPhone || '—'}</code>
 ⏰ ${new Date(order.createdAt).toLocaleString('ar-EG')}
   `.trim()
 
+  // ─── الأزرار الأولية: موافقة أو رفض فقط ───
   const inline_keyboard = [
     [
-      { text: '✅ موافقة',      callback_data: `approve_${order._id}`  },
-      { text: '❌ رفض',         callback_data: `reject_${order._id}`   },
-    ],
-    [
-      { text: '🎉 إتمام الطلب', callback_data: `complete_${order._id}` },
+      { text: '✅ موافقة', callback_data: `approve_${order._id}` },
+      { text: '❌ رفض',    callback_data: `reject_${order._id}`  },
     ]
   ]
 
@@ -216,17 +212,39 @@ exports.editMessage = async (messageId, newText) => {
 // ─── تحديث رسالة الطلب بعد قرار الأدمن ──────
 exports.editOrderMessage = async (messageId, order, action) => {
   if (!messageId) return
+
   const stamps = {
-    approve:  '✅ <b>تمت الموافقة</b> — الطلب قيد المراجعة',
+    approve:  '✅ <b>تمت الموافقة</b> — بانتظار إتمام الطلب',
     reject:   '❌ <b>تم الرفض</b> — تم إخطار العميل',
     complete: '🎉 <b>تم إتمام الطلب</b> — اكتملت العملية بنجاح',
     cancel:   '🚫 <b>تم الإلغاء من العميل</b>',
   }
+
   const stamp  = stamps[action] || `🔄 ${action}`
   const method = (order.payment?.method || '').replace(/_/g, ' ')
+
+  // ─── المنطق الإجباري للأزرار ───────────────
+  // approve  → زر "إتمام الطلب" فقط
+  // reject   → لا أزرار (انتهى)
+  // complete → لا أزرار (انتهى)
+  // cancel   → لا أزرار (انتهى)
+  const remainingButtons = {
+    approve: [
+      [
+        { text: '🎉 إتمام الطلب', callback_data: `complete_${order._id}` },
+      ]
+    ],
+    reject:   [],
+    complete: [],
+    cancel:   [],
+  }
+
+  const inline_keyboard = remainingButtons[action] ?? []
+
   try {
     const { token, chatId } = await getConfig()
     if (!token || !chatId) return
+
     const newText = `
 📋 <b>طلب — Number1</b>
 ━━━━━━━━━━━━━━━━━━━
@@ -241,10 +259,13 @@ exports.editOrderMessage = async (messageId, order, action) => {
 ${stamp}
 ⏰ ${new Date().toLocaleString('ar-EG')}
     `.trim()
+
     await axios.post(`https://api.telegram.org/bot${token}/editMessageText`, {
-      chat_id: chatId, message_id: messageId,
-      text: newText, parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: [] }
+      chat_id:      chatId,
+      message_id:   messageId,
+      text:         newText,
+      parse_mode:   'HTML',
+      reply_markup: { inline_keyboard }
     })
   } catch (e) {
     if (!e.response?.data?.description?.includes('message is not modified'))
