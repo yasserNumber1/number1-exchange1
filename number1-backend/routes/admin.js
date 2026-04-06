@@ -287,7 +287,13 @@ router.get('/rates', async (req, res) => {
 // ─── PUT /api/admin/rates ─────────────────────
 router.put('/rates', async (req, res) => {
   try {
-    const allowed = ['usdtBuyRate', 'usdtSellRate', 'moneygoRate', 'vodafoneBuyRate', 'instaPayRate', 'fawryRate', 'orangeRate', 'minOrderUsdt', 'maxOrderUsdt'];
+    const allowed = [
+  'usdtBuyRate', 'usdtSellRate',
+  'moneygoRate', 'moneygoEgpBuyRate', 'moneygoEgpSellRate',
+  'egpWalletBuyRate', 'egpWalletSellRate',
+  'vodafoneBuyRate', 'instaPayRate', 'fawryRate', 'orangeRate',
+  'minOrderUsdt', 'maxOrderUsdt',
+];
     const updates = {};
     allowed.forEach(key => {
       if (req.body[key] !== undefined && req.body[key] !== '') updates[key] = parseFloat(req.body[key]);
