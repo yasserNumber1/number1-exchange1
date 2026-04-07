@@ -10,14 +10,13 @@ const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
     unique: true,
-    // مثال: N1-20240101-0001
   },
 
   // ─── المستخدم ─────────────────────────────
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    default: null // يمكن الطلب بدون تسجيل (Guest)
+    default: null
   },
 
   // ─── معلومات العميل ───────────────────────
@@ -41,11 +40,18 @@ const orderSchema = new mongoose.Schema({
   },
 
   // ─── نوع الطلب ────────────────────────────
-  // USDT → MoneyGo USD
-  // EGP_WALLET → MoneyGo USD (محافظ مصرية)
   orderType: {
     type: String,
-    enum: ['USDT_TO_MONEYGO', 'EGP_WALLET_TO_MONEYGO', 'USDT_TO_WALLET', 'WALLET_TO_USDT', 'WALLET_TO_MONEYGO'],
+    enum: [
+      'USDT_TO_MONEYGO',        // USDT → MoneyGo
+      'EGP_WALLET_TO_MONEYGO',  // EGP (محافظ) → MoneyGo (القديم)
+      'EGP_TO_MONEYGO',         // EGP (محافظ) → MoneyGo (الجديد)
+      'EGP_TO_USDT',            // EGP (محافظ) → USDT
+      'USDT_TO_WALLET',         // USDT → محفظة داخلية
+      'WALLET_TO_USDT',         // محفظة داخلية → USDT
+      'WALLET_TO_MONEYGO',      // محفظة داخلية → MoneyGo
+      'MONEYGO_TO_USDT',        // MoneyGo → USDT
+    ],
     required: true
   },
 
@@ -53,38 +59,33 @@ const orderSchema = new mongoose.Schema({
   payment: {
     method: {
       type: String,
-      enum: ['USDT_TRC20', 'VODAFONE_CASH', 'ORANGE_CASH', 'FAWRY', 'WE_PAY', 'MEEZA', 'INSTAPAY', 'WALLET'],
+      enum: ['USDT_TRC20', 'VODAFONE_CASH', 'ORANGE_CASH', 'FAWRY', 'WE_PAY', 'MEEZA', 'INSTAPAY', 'WALLET', 'MONEYGO'],
       required: true
     },
 
-    // للـ USDT
     senderWalletAddress: { type: String, default: null },
-    txHash: { type: String, default: null },          // رقم المعاملة على البلوكتشين
-    usdtAmount: { type: Number, default: null },
+    txHash:              { type: String, default: null },
+    usdtAmount:          { type: Number, default: null },
+    receiptImageUrl:     { type: String, default: null },
+    senderPhoneNumber:   { type: String, default: null },
 
-    // للمحافظ المصرية
-    receiptImageUrl: { type: String, default: null },  // صورة الإيصال
-    senderPhoneNumber: { type: String, default: null },
-
-    // المبلغ المُرسل (بالعملة المدفوعة)
-    amountSent: { type: Number, required: true },
+    amountSent: {
+      type: Number,
+      required: true
+    },
     currencySent: {
       type: String,
-      enum: ['USDT', 'EGP'],
+      enum: ['USDT', 'EGP', 'MGO'],  // أضفنا MGO
       required: true
     }
   },
 
-  // ─── بيانات الاستلام (MoneyGo) ────────────
+  // ─── بيانات الاستلام ──────────────────────
   moneygo: {
-    recipientName: { type: String, required: true },
-    recipientPhone: { type: String, required: true },
-
-    // المبلغ المطلوب استلامه بالـ USD
-    amountUSD: { type: Number, required: true },
-
-    // بعد التحويل
-    transferId: { type: String, default: null },       // رقم تحويل MoneyGo
+    recipientName:  { type: String, required: true },
+    recipientPhone: { type: String, default: '' },   // غير مطلوب للـ USDT_TO_WALLET
+    amountUSD:      { type: Number, required: true },
+    transferId:     { type: String, default: null },
     transferStatus: {
       type: String,
       enum: ['pending', 'processing', 'sent', 'failed'],
@@ -95,85 +96,58 @@ const orderSchema = new mongoose.Schema({
 
   // ─── سعر الصرف المُطبَّق ──────────────────
   exchangeRate: {
-    usdtToUSD: { type: Number, default: null },        // سعر USDT بالـ USD
-    egpToUSD: { type: Number, default: null },         // سعر الجنيه بالـ USD
-    appliedRate: { type: Number, required: true },     // السعر المُطبَّق فعلاً
-    fee: { type: Number, default: 0 },                 // العمولة
-    finalAmountUSD: { type: Number, required: true }   // المبلغ النهائي بعد العمولة
+    usdtToUSD:      { type: Number, default: null },
+    egpToUSD:       { type: Number, default: null },
+    appliedRate:    { type: Number, required: true },
+    fee:            { type: Number, default: 0 },
+    finalAmountUSD: { type: Number, required: true }
   },
 
   // ─── حالة الطلب ───────────────────────────
   status: {
     type: String,
-    enum: [
-      'pending',      // ← في الانتظار
-      'verifying',    // ← جاري التحقق من الدفع
-      'verified',     // ← تم التحقق
-      'processing',   // ← جاري معالجة MoneyGo
-      'completed',    // ← مكتمل
-      'rejected',     // ← مرفوض
-      'cancelled'     // ← ملغي
-    ],
+    enum: ['pending', 'verifying', 'verified', 'processing', 'completed', 'rejected', 'cancelled'],
     default: 'pending'
   },
 
-  // ─── التحقق من USDT (TronGrid) ────────────
+  // ─── التحقق من USDT ───────────────────────
   verification: {
-    isVerified: { type: Boolean, default: false },
-    verifiedAt: { type: Date, default: null },
-    verificationMethod: {
-      type: String,
-      enum: ['auto', 'manual'],
-      default: 'auto'
-    },
-    verificationNote: { type: String, default: null }
+    isVerified:          { type: Boolean, default: false },
+    verifiedAt:          { type: Date,    default: null },
+    verificationMethod:  { type: String,  enum: ['auto', 'manual'], default: 'auto' },
+    verificationNote:    { type: String,  default: null }
   },
 
-  // ─── سجل الأحداث (Timeline) ───────────────
+  // ─── سجل الأحداث ──────────────────────────
   timeline: [{
-    status: String,
-    message: String,
+    status:    String,
+    message:   String,
     timestamp: { type: Date, default: Date.now },
-    by: { type: String, default: 'system' } // 'system' أو 'admin'
+    by:        { type: String, default: 'system' }
   }],
 
-  // ─── ملاحظات الأدمن ───────────────────────
-  adminNote: {
-    type: String,
-    default: null
-  },
+  adminNote:         { type: String, default: null },
+  telegramMessageId: { type: Number, default: null },
+  clientIp:          { type: String, default: null },
 
-  // ─── Telegram Message ID ──────────────────
-telegramMessageId: { type: Number, default: null },
-
-  // ─── IP العميل ────────────────────────────
-  clientIp: {
-    type: String,
-    default: null
-  },
-
-  // ─── Session Token (للتتبع بدون تسجيل) ───
   sessionToken: {
-    type: String,
+    type:  String,
     default: null,
     index: true
   },
 
-  // ─── وقت انتهاء الطلب (30 دقيقة) ─────────
   expiresAt: {
-    type: Date,
+    type:  Date,
     default: null,
-    index: { expireAfterSeconds: 0 } // MongoDB TTL index
+    index: { expireAfterSeconds: 0 }
   }
 
-}, {
-  timestamps: true
-});
+}, { timestamps: true });
 
 // ─── Auto-generate Order Number ──────────────
 orderSchema.pre('save', async function(next) {
   if (this.isNew && !this.orderNumber) {
-    const count = await mongoose.model('Order').countDocuments() + 1;
+    const count  = await mongoose.model('Order').countDocuments() + 1;
     const padded = String(count).padStart(5, '0');
     this.orderNumber = `N1-${padded}`;
   }

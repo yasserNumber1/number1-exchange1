@@ -278,11 +278,18 @@ router.post('/', optionalProtect, async (req, res) => {
     }
 
     // ── التحقق من معرّف الاستلام (ليس مطلوباً للحساب الداخلي) ──
-    const isInternalWallet = ['USDT_TO_WALLET', 'WALLET_TO_USDT', 'WALLET_TO_MONEYGO', 'EGP_WALLET_TO_MONEYGO'].includes(orderType)
-    if (!isInternalWallet && (!moneygo.recipientPhone || moneygo.recipientPhone.trim().length < 5)) {
-      return res.status(400).json({ success: false, message: 'معرّف المستلم مطلوب.' })
-    }
-
+const NO_RECIPIENT_TYPES = [
+  'USDT_TO_WALLET',
+  'WALLET_TO_USDT',
+  'WALLET_TO_MONEYGO',
+  'EGP_WALLET_TO_MONEYGO', // القديم — يمكن إزالته لاحقاً
+]
+ 
+// ── التحقق من معرّف الاستلام ──
+const requiresRecipient = !NO_RECIPIENT_TYPES.includes(orderType)
+if (requiresRecipient && (!moneygo.recipientPhone || moneygo.recipientPhone.trim().length < 3)) {
+  return res.status(400).json({ success: false, message: 'معرّف المستلم مطلوب.' })
+}
     // ── التحقق من TXID إذا أرسله المستخدم ────
     if (payment.method === 'USDT_TRC20' && payment.txHash) {
       // منع استخدام نفس الـ TXID مرتين
