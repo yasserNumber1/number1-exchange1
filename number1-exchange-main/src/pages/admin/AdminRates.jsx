@@ -12,11 +12,13 @@ function calcMargin(buyRate, sellRate) {
 }
 
 export default function AdminRates() {
-  const [rates,   setRates]   = useState({
+  const [rates, setRates] = useState({
     egpBuyRate:       '',
     egpSellRate:      '',
     moneyGoBuyRate:   '',
     moneyGoSellRate:  '',
+    egpMgoBuyRate:    '', // EGP → MoneyGo (المستخدم يرسل EGP ويستلم MoneyGo)
+    egpMgoSellRate:   '', // MoneyGo → EGP (المستخدم يرسل MoneyGo ويستلم EGP)
     internalBuyRate:  '',
     internalSellRate: '',
     minOrderUsdt:     '',
@@ -33,19 +35,21 @@ export default function AdminRates() {
     setLoading(true); setError('');
     try {
       const { data } = await adminAPI.getRates();
-      // استخراج الأسعار من pairs array
       const pairs = data?.pairs || [];
       const find  = (from, to) => pairs.find(p => p.from === from && p.to === to);
 
       const egp      = find('EGP_VODAFONE', 'USDT') || find('EGP_INSTAPAY', 'USDT');
       const mgo      = find('USDT', 'MGO');
+      const egpMgo   = find('EGP_VODAFONE', 'MGO') || find('EGP', 'MGO');
       const internal = find('USDT', 'INTERNAL');
 
       setRates({
-        egpBuyRate:       egp?.buyRate       ?? data?.usdtBuyRate  ?? '',
-        egpSellRate:      egp?.sellRate      ?? data?.usdtSellRate ?? '',
-        moneyGoBuyRate:   mgo?.buyRate       ?? data?.moneygoRate  ?? '',
-        moneyGoSellRate:  mgo?.sellRate      ?? data?.moneygoSellRate ?? '',
+        egpBuyRate:       egp?.buyRate       ?? data?.usdtBuyRate      ?? '',
+        egpSellRate:      egp?.sellRate      ?? data?.usdtSellRate     ?? '',
+        moneyGoBuyRate:   mgo?.buyRate       ?? data?.moneygoRate      ?? '',
+        moneyGoSellRate:  mgo?.sellRate      ?? data?.moneygoSellRate  ?? '',
+        egpMgoBuyRate:    egpMgo?.buyRate    ?? '',
+        egpMgoSellRate:   egpMgo?.sellRate   ?? '',
         internalBuyRate:  internal?.buyRate  ?? '',
         internalSellRate: internal?.sellRate ?? '',
         minOrderUsdt:     data?.minOrderUsdt ?? '',
@@ -66,23 +70,32 @@ export default function AdminRates() {
   const handleSave = async () => {
     setSaving(true); setError('');
     try {
-      const egpBuy      = parseFloat(rates.egpBuyRate)       || 0;
-      const egpSell     = parseFloat(rates.egpSellRate)      || 0;
-      const mgoBuy      = parseFloat(rates.moneyGoBuyRate)   || 0;
-      const mgoSell     = parseFloat(rates.moneyGoSellRate)  || 0;
-      const intBuy      = parseFloat(rates.internalBuyRate)  || 0;
-      const intSell     = parseFloat(rates.internalSellRate) || 0;
+      const egpBuy    = parseFloat(rates.egpBuyRate)       || 0;
+      const egpSell   = parseFloat(rates.egpSellRate)      || 0;
+      const mgoBuy    = parseFloat(rates.moneyGoBuyRate)   || 0;
+      const mgoSell   = parseFloat(rates.moneyGoSellRate)  || 0;
+      const egpMgoBuy = parseFloat(rates.egpMgoBuyRate)    || 0;
+      const egpMgoSell= parseFloat(rates.egpMgoSellRate)   || 0;
+      const intBuy    = parseFloat(rates.internalBuyRate)  || 0;
+      const intSell   = parseFloat(rates.internalSellRate) || 0;
 
-      // تحويل الحقول إلى pairs array كما يتوقع الـ backend
       const pairs = [
-        { from: 'EGP_VODAFONE', to: 'USDT',     buyRate: egpBuy,  sellRate: egpSell,  label: 'فودافون كاش → USDT',     enabled: true },
-        { from: 'EGP_INSTAPAY', to: 'USDT',     buyRate: egpBuy,  sellRate: egpSell,  label: 'إنستا باي → USDT',       enabled: true },
-        { from: 'EGP_FAWRY',    to: 'USDT',     buyRate: egpBuy,  sellRate: egpSell,  label: 'فاوري → USDT',           enabled: true },
-        { from: 'EGP_ORANGE',   to: 'USDT',     buyRate: egpBuy,  sellRate: egpSell,  label: 'أورنج كاش → USDT',      enabled: true },
-        { from: 'USDT',         to: 'MGO',      buyRate: mgoBuy,  sellRate: mgoSell,  label: 'USDT ↔ MoneyGo',         enabled: true },
-        { from: 'USDT',         to: 'INTERNAL', buyRate: intBuy,  sellRate: intSell,  label: 'USDT → محفظة داخلية',   enabled: true },
-        { from: 'INTERNAL',     to: 'USDT',     buyRate: intBuy,  sellRate: intSell,  label: 'محفظة داخلية → USDT',   enabled: true },
-        { from: 'INTERNAL',     to: 'MGO',      buyRate: mgoBuy,  sellRate: mgoSell,  label: 'محفظة داخلية → MoneyGo', enabled: true },
+        // EGP ↔ USDT
+        { from: 'EGP_VODAFONE', to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'فودافون كاش ↔ USDT',     enabled: true },
+        { from: 'EGP_INSTAPAY', to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'إنستا باي ↔ USDT',       enabled: true },
+        { from: 'EGP_FAWRY',    to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'فاوري ↔ USDT',           enabled: true },
+        { from: 'EGP_ORANGE',   to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'أورنج كاش ↔ USDT',      enabled: true },
+        // USDT ↔ MoneyGo
+        { from: 'USDT',         to: 'MGO',      buyRate: mgoBuy,    sellRate: mgoSell,    label: 'USDT ↔ MoneyGo',          enabled: true },
+        // EGP ↔ MoneyGo
+        { from: 'EGP_VODAFONE', to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'فودافون كاش ↔ MoneyGo',  enabled: true },
+        { from: 'EGP_INSTAPAY', to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'إنستا باي ↔ MoneyGo',   enabled: true },
+        { from: 'EGP_FAWRY',    to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'فاوري ↔ MoneyGo',        enabled: true },
+        { from: 'EGP_ORANGE',   to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'أورنج كاش ↔ MoneyGo',   enabled: true },
+        // USDT ↔ Internal
+        { from: 'USDT',         to: 'INTERNAL', buyRate: intBuy,    sellRate: intSell,    label: 'USDT ↔ محفظة داخلية',   enabled: true },
+        { from: 'INTERNAL',     to: 'USDT',     buyRate: intBuy,    sellRate: intSell,    label: 'محفظة داخلية ↔ USDT',   enabled: true },
+        { from: 'INTERNAL',     to: 'MGO',      buyRate: mgoBuy,    sellRate: mgoSell,    label: 'محفظة داخلية ↔ MoneyGo', enabled: true },
       ];
 
       await adminAPI.saveRates({ pairs });
@@ -103,6 +116,7 @@ export default function AdminRates() {
 
   const egpMargin      = calcMargin(rates.egpBuyRate,      rates.egpSellRate);
   const moneyGoMargin  = calcMargin(rates.moneyGoBuyRate,  rates.moneyGoSellRate);
+  const egpMgoMargin   = calcMargin(rates.egpMgoBuyRate,   rates.egpMgoSellRate);
   const internalMargin = calcMargin(rates.internalBuyRate, rates.internalSellRate);
 
   return (
@@ -145,24 +159,24 @@ export default function AdminRates() {
       {error && <div style={{ ...S.alert, background: '#3d0a0a', color: '#f85149', marginBottom: 16 }}><AlertCircle size={15} /> {error}</div>}
       {saved && <div style={{ ...S.alert, background: '#064e3b', color: '#34d399', marginBottom: 16 }}><CheckCircle size={15} /> تم حفظ جميع الأسعار بنجاح ✅</div>}
 
-      {/* EGP */}
+      {/* ١. EGP ↔ USDT */}
       <RateSection
         icon="🇪🇬" iconBg="rgba(0,180,100,0.12)"
         title="USDT ↔ جنيه مصري (EGP)"
         subtitle="يُطبَّق على: فودافون كاش · إنستا باي · فاوري · أورنج كاش"
         margin={egpMargin}
-        buyLabel="سعر شراء USDT" buyHint="المستخدم يرسل EGP ← نعطيه USDT بهذا السعر"
+        buyLabel="سعر شراء USDT" buyHint="المستخدم يرسل EGP ← نعطيه USDT"
         buyValue={rates.egpBuyRate} onBuyChange={v => set('egpBuyRate', v)}
-        sellLabel="سعر بيع USDT" sellHint="المستخدم يرسل USDT ← نعطيه EGP بهذا السعر"
+        sellLabel="سعر بيع USDT" sellHint="المستخدم يرسل USDT ← نعطيه EGP"
         sellValue={rates.egpSellRate} onSellChange={v => set('egpSellRate', v)}
         unit="EGP"
       />
 
-      {/* MoneyGo */}
+      {/* ٢. USDT ↔ MoneyGo */}
       <RateSection
         icon="💚" iconBg="rgba(5,150,105,0.12)"
         title="USDT ↔ MoneyGo USD"
-        subtitle="كم USDT يكافئ 1 دولار MoneyGo"
+        subtitle="تحويل بين USDT و MoneyGo مباشرة"
         margin={moneyGoMargin}
         buyLabel="سعر شراء MoneyGo" buyHint="المستخدم يرسل MoneyGo ← نعطيه USDT"
         buyValue={rates.moneyGoBuyRate} onBuyChange={v => set('moneyGoBuyRate', v)}
@@ -171,7 +185,20 @@ export default function AdminRates() {
         unit="USDT"
       />
 
-      {/* Internal */}
+      {/* ٣. EGP ↔ MoneyGo (الجديد) */}
+      <RateSection
+        icon="🔄" iconBg="rgba(0,193,124,0.12)"
+        title="MoneyGo ↔ جنيه مصري (EGP)"
+        subtitle="يُطبَّق على: فودافون كاش · إنستا باي · فاوري · أورنج كاش → MoneyGo"
+        margin={egpMgoMargin}
+        buyLabel="سعر شراء MoneyGo بالجنيه" buyHint="المستخدم يرسل EGP ← نعطيه MoneyGo"
+        buyValue={rates.egpMgoBuyRate} onBuyChange={v => set('egpMgoBuyRate', v)}
+        sellLabel="سعر بيع MoneyGo بالجنيه" sellHint="المستخدم يرسل MoneyGo ← نعطيه EGP"
+        sellValue={rates.egpMgoSellRate} onSellChange={v => set('egpMgoSellRate', v)}
+        unit="EGP"
+      />
+
+      {/* ٤. USDT داخلي */}
       <RateSection
         icon="🏦" iconBg="rgba(37,99,235,0.12)"
         title="USDT داخلي (المحفظة الداخلية)"
@@ -184,7 +211,7 @@ export default function AdminRates() {
         unit="USDT"
       />
 
-      {/* Limits */}
+      {/* حدود المعاملات */}
       <div className="ar-card">
         <div className="ar-card-header">
           <div className="ar-card-title">
@@ -251,7 +278,7 @@ function RateSection({ icon, iconBg, title, subtitle, margin, buyLabel, buyHint,
         <div className="ar-field-wrap">
           <div className="ar-label" style={{ color: '#34d399' }}><span className="ar-dot" style={{ background: '#059669' }} />🟢 {buyLabel}</div>
           <div style={{ position: 'relative' }}>
-            <input type="number" step="0.001" min="0" className="ar-input buy" placeholder="0.00" value={buyValue} onChange={e => onBuyChange(e.target.value)} style={hasError ? {} : {}} />
+            <input type="number" step="0.001" min="0" className="ar-input buy" placeholder="0.00" value={buyValue} onChange={e => onBuyChange(e.target.value)} />
             <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#484f58', fontFamily: 'monospace', fontWeight: 700 }}>{unit}</span>
           </div>
           <div className="ar-sub">{buyHint}</div>
