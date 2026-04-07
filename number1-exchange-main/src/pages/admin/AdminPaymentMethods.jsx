@@ -527,8 +527,7 @@ const CSS = `
   .pm-input--center  { text-align: center; font-size: 16px; padding: 7px 4px; }
   .pm-color-row   { display: flex; gap: 6px; align-items: center; }
   .pm-color-swatch { width: 36px; height: 36px; flex-shrink: 0; border: 1px solid var(--al-border); border-radius: 7px; cursor: pointer; padding: 2px; background: transparent; }
-  .pm-suggest-menu { position: absolute; left: 0; top: calc(100% + 6px); z-index: 50; min-width: 220px; max-width: 90vw; max-height: 320px; overflow-y: auto; background: #1a2332; border: 1px solid #2d3f55; border-radius: 12px; box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
-  .pm-suggest-header { padding: 10px 14px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--al-text-muted); border-bottom: 1px solid var(--al-divider); }
+  .pm-suggest-menu { position: absolute; left: 0; top: calc(100% + 6px); z-index: 50; min-width: 220px; max-width: 90vw; max-height: 320px; overflow-y: auto; background: var(--al-sidebar-bg); border: 1px solid var(--al-border-md); border-radius: 12px; box-shadow: 0 16px 48px rgba(0,0,0,0.4); }  .pm-suggest-header { padding: 10px 14px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--al-text-muted); border-bottom: 1px solid var(--al-divider); }
   .pm-suggest-btn { width: 100%; padding: 10px 14px; background: transparent; border: none; text-align: right; cursor: pointer; font-family: 'Cairo',sans-serif; color: var(--al-text-primary); transition: background 0.1s; }
   .pm-suggest-btn:hover { background: var(--al-row-bg-hover); }
   .pm-suggest-btn--custom { color: #60a5fa !important; }
