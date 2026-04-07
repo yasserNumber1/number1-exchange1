@@ -1,44 +1,40 @@
 // routes/public.js
 // ═══════════════════════════════════════════════
 // Routes عامة — بدون authentication
-// للمستخدمين العاديين (ExchangeForm, etc.)
 // ═══════════════════════════════════════════════
-const express = require('express');
-const router  = express.Router();
-const Rate    = require('../models/Rate');
-const mongoose = require('mongoose')
+const express  = require('express');
+const router   = express.Router();
+const Rate     = require('../models/Rate');
+const mongoose = require('mongoose');
+
+// ─── ExchangeMethods Model ────────────────────
+const ExchangeMethods = mongoose.models.ExchangeMethods ||
+  mongoose.model('ExchangeMethods', new mongoose.Schema({
+    sendMethods:    { type: Array, default: [] },
+    receiveMethods: { type: Array, default: [] },
+  }, { timestamps: true }))
+
+const DEFAULT_SEND    = ['vodafone','instapay','fawry','orange','usdt-trc','mgo-send','wallet-usdt']
+const DEFAULT_RECEIVE = ['mgo-recv','usdt-recv','wallet-recv']
 
 // ─── GET /api/public/rates ────────────────────
-// جلب الأسعار الحالية للمستخدمين
 router.get('/rates', async (req, res) => {
   try {
-    const Rate = require('../models/Rate');
     const doc  = await Rate.getSingleton();
- 
-    // نرجع فقط الأزواج المفعّلة
     const pairs = doc.pairs
       .filter(p => p.enabled)
-      .map(p => ({
-        from:     p.from,
-        to:       p.to,
-        buyRate:  p.buyRate,
-        sellRate: p.sellRate,
-        label:    p.label,
-      }));
- 
-    // للتوافق مع الكود القديم — نرجع أيضاً الحقول الفردية
+      .map(p => ({ from: p.from, to: p.to, buyRate: p.buyRate, sellRate: p.sellRate, label: p.label }));
+
     const find = (from, to) => pairs.find(p => p.from === from && p.to === to);
- 
     const vodafone = find('EGP_VODAFONE', 'USDT');
     const instapay = find('EGP_INSTAPAY', 'USDT');
     const fawry    = find('EGP_FAWRY',    'USDT');
     const orange   = find('EGP_ORANGE',   'USDT');
     const mgo      = find('USDT',         'MGO');
- 
+
     res.json({
-      success:  true,
+      success: true,
       pairs,
-      // حقول للتوافق مع الكود القديم
       usdtBuyRate:     vodafone?.buyRate  || 50,
       usdtSellRate:    vodafone?.sellRate || 49,
       moneygoRate:     mgo?.sellRate      || 1,
@@ -54,18 +50,13 @@ router.get('/rates', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
- 
+
 // ─── GET /api/public/rates/convert ───────────
-// ?from=EGP_VODAFONE&to=USDT&type=buy&amount=100
 router.get('/rates/convert', async (req, res) => {
   try {
-    const Rate  = require('../models/Rate');
     const { from, to, type = 'buy', amount } = req.query;
- 
-    if (!from || !to || !amount) {
+    if (!from || !to || !amount)
       return res.status(400).json({ success: false, message: 'from, to, amount مطلوبة.' });
-    }
- 
     const { rate, result } = await Rate.convert(from, to, parseFloat(amount), type);
     res.json({ success: true, from, to, type, amount: parseFloat(amount), rate, result });
   } catch (error) {
@@ -79,11 +70,8 @@ router.get('/payment-methods', async (req, res) => {
     const PaymentMethod = mongoose.model('PaymentMethod')
     let doc = await PaymentMethod.findOne()
     if (!doc) return res.json({ success: true, cryptos: [], wallets: [] })
-
-    // فقط المفعّلة والمكتملة
     const cryptos = (doc.cryptos || []).filter(c => c.enabled && c.address)
     const wallets = (doc.wallets || []).filter(w => w.enabled && w.number)
-
     res.json({ success: true, cryptos, wallets })
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.' })
@@ -91,7 +79,6 @@ router.get('/payment-methods', async (req, res) => {
 })
 
 // ─── GET /api/public/wallet-deposit-addresses ─
-// عناوين إيداع المحفظة (منفصلة عن وسائل الدفع)
 router.get('/wallet-deposit-addresses', async (req, res) => {
   try {
     const WalletDeposit = mongoose.model('WalletDeposit')
@@ -105,7 +92,6 @@ router.get('/wallet-deposit-addresses', async (req, res) => {
 })
 
 // ─── GET /api/public/deposit-info ─────────────
-// معلومات الإيداع للمستخدمين
 router.get('/deposit-info', async (req, res) => {
   try {
     const Setting = require('../models/Setting')
@@ -117,10 +103,7 @@ router.get('/deposit-info', async (req, res) => {
         accountName:   s.depositAccountName   || '',
         accountNumber: s.depositAccountNumber || '',
       },
-      usdt: {
-        address: s.depositUsdtAddress || '',
-        network: s.depositUsdtNetwork || 'TRC20',
-      },
+      usdt: { address: s.depositUsdtAddress || '', network: s.depositUsdtNetwork || 'TRC20' },
       note: s.depositNote || '',
     })
   } catch {
@@ -129,46 +112,32 @@ router.get('/deposit-info', async (req, res) => {
 })
 
 // ─── GET /api/public/settings ─────────────────
-// إعدادات عامة للمستخدمين
 router.get('/settings', async (req, res) => {
   try {
     const Setting = require('../models/Setting')
     const s = await Setting.getSingleton()
     res.json({
-      success:          true,
-      platformName:     s.platformName,
-      platformActive:   s.platformActive,
-      maintenanceMode:  s.maintenanceMode,
-      contactTelegram:  s.contactTelegram,
-      contactWhatsapp:  s.contactWhatsapp,
-      contactEmail:     s.contactEmail,
-      contactWebsite:   s.contactWebsite,
+      success:         true,
+      platformName:    s.platformName,
+      platformActive:  s.platformActive,
+      maintenanceMode: s.maintenanceMode,
+      contactTelegram: s.contactTelegram,
+      contactWhatsapp: s.contactWhatsapp,
+      contactEmail:    s.contactEmail,
+      contactWebsite:  s.contactWebsite,
     })
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.' })
   }
 })
 
-const mongoose = require('mongoose')
- 
-// النموذج (نفس الذي في admin.js)
-const ExchangeMethods = mongoose.models.ExchangeMethods ||
-  mongoose.model('ExchangeMethods', new mongoose.Schema({
-    sendMethods:    { type: Array, default: [] },
-    receiveMethods: { type: Array, default: [] },
-  }, { timestamps: true }))
- 
-const DEFAULT_SEND    = ['vodafone','instapay','fawry','orange','usdt-trc','mgo-send','wallet-usdt']
-const DEFAULT_RECEIVE = ['mgo-recv','usdt-recv','wallet-recv']
- 
-// ─── GET /api/public/exchange-methods ─────────────────────────
+// ─── GET /api/public/exchange-methods ─────────
 router.get('/exchange-methods', async (req, res) => {
   try {
     let doc = await ExchangeMethods.findOne()
     if (!doc) {
-      // إذا لم تُحفظ إعدادات بعد → أرجع الكل مفعّل
       return res.json({
-        success: true,
+        success:        true,
         sendMethods:    DEFAULT_SEND.map(id    => ({ id, enabled: true })),
         receiveMethods: DEFAULT_RECEIVE.map(id => ({ id, enabled: true })),
       })
@@ -178,4 +147,5 @@ router.get('/exchange-methods', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error.' })
   }
 })
+
 module.exports = router;
