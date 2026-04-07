@@ -1,109 +1,130 @@
 // src/services/rateEngine.js
 // ═══════════════════════════════════════════════════════════════
-// محرك الأسعار — المصدر الوحيد لكل منطق الحساب
-//
-// الأسعار في DB:
-//   usdtBuyRate     — كم جنيه يدفع العميل ليحصل على 1 USDT
-//   usdtSellRate    — كم جنيه يحصل العميل مقابل 1 USDT
-//   moneygoRate     — سعر شراء MoneyGo: كم USDT يساوي 1 MoneyGo (العميل يبيع MGO)
-//   moneygoSellRate — سعر بيع MoneyGo:  كم USDT يدفع العميل ليحصل على 1 MoneyGo
-//   vodafoneBuyRate — كم جنيه فودافون = 1 USDT
-//   instaPayRate    — كم جنيه إنستا = 1 USDT
-//   fawryRate       — كم جنيه فاوري = 1 USDT
-//   orangeRate      — كم جنيه أورنج = 1 USDT
+// محرك الأسعار الديناميكي — يقرأ من API فقط، لا hardcode
 // ═══════════════════════════════════════════════════════════════
 
-const RATE_MAP = {
+// ── خريطة تحويل fromId → from key في DB ──────────────────────
+const FROM_KEY_MAP = {
+  'vodafone':    'EGP_VODAFONE',
+  'instapay':    'EGP_INSTAPAY',
+  'fawry':       'EGP_FAWRY',
+  'orange':      'EGP_ORANGE',
+  'usdt-trc':    'USDT',
+  'mgo-send':    'MGO',
+  'wallet-usdt': 'INTERNAL',
+};
 
-  // ── Vodafone Cash (EGP) → ────────────────────────────────
-  'vodafone': {
-    'mgo-recv':  (r) => ({ rate: r.vodafoneBuyRate, divide: true }),
-    'usdt-recv': (r) => ({ rate: r.vodafoneBuyRate, divide: true }),
-  },
+const TO_KEY_MAP = {
+  'usdt-recv':   'USDT',
+  'mgo-recv':    'MGO',
+  'wallet-recv': 'INTERNAL',
+};
 
-  // ── InstaPay (EGP) → ─────────────────────────────────────
-  'instapay': {
-    'mgo-recv':  (r) => ({ rate: r.instaPayRate, divide: true }),
-    'usdt-recv': (r) => ({ rate: r.instaPayRate, divide: true }),
-  },
+// ── هل المُرسِل يدفع جنيه مصري؟ ─────────────────────────────
+const EGP_SENDERS = ['vodafone', 'instapay', 'fawry', 'orange'];
 
-  // ── Fawry (EGP) → ────────────────────────────────────────
-  'fawry': {
-    'mgo-recv':  (r) => ({ rate: r.fawryRate, divide: true }),
-    'usdt-recv': (r) => ({ rate: r.fawryRate, divide: true }),
-  },
-
-  // ── Orange Cash (EGP) → ──────────────────────────────────
-  'orange': {
-    'mgo-recv':  (r) => ({ rate: r.orangeRate, divide: true }),
-    'usdt-recv': (r) => ({ rate: r.orangeRate, divide: true }),
-  },
-
-  // ── USDT TRC20 → ─────────────────────────────────────────
-  'usdt-trc': {
-    // USDT → MoneyGo: العميل يرسل USDT × moneygoSellRate = MoneyGo
-    // مثال: 10 USDT × 0.995 = 9.95 MoneyGo (نحن نبيع MoneyGo)
-    'mgo-recv':    (r) => ({ rate: r.moneygoSellRate || r.moneygoRate || 1, divide: false }),
-
-    // USDT → محفظة داخلية: 1:1
-    'wallet-recv': () => ({ rate: 1, divide: false }),
-  },
-
-  // ── MoneyGo USD → ────────────────────────────────────────
-  'mgo-send': {
-    // MoneyGo → USDT: العميل يرسل MoneyGo × moneygoRate = USDT
-    // مثال: 10 MoneyGo × 1.005 = 10.05 USDT (نحن نشتري MoneyGo)
-    'usdt-recv': (r) => ({ rate: r.moneygoRate, divide: false }),
-  },
-
-  // ── محفظة داخلية → ───────────────────────────────────────
-  'wallet-usdt': {
-    'usdt-recv': () => ({ rate: 1, divide: false }),
-    'mgo-recv':  (r) => ({ rate: r.moneygoSellRate || r.moneygoRate || 1, divide: false }),
-  },
+// ════════════════════════════════════════════════════════════
+// findPair — إيجاد الزوج في مصفوفة الأسعار
+// ════════════════════════════════════════════════════════════
+function findPair(pairs, fromKey, toKey) {
+  if (!pairs || !Array.isArray(pairs)) return null;
+  return pairs.find(p => p.from === fromKey && p.to === toKey) || null;
 }
 
 // ════════════════════════════════════════════════════════════
-// getRate
+// getRate — حساب السعر من مصفوفة الأزواج
+//
+// المنطق:
+//   EGP → USDT/MGO : العميل يدفع جنيه (from) ويستلم USDT/MGO (to)
+//                    → نستخدم buyRate ونقسم
+//                    مثال: 100 EGP ÷ 50 = 2 USDT
+//
+//   USDT → MGO     : العميل يدفع USDT ويستلم MGO
+//                    → نستخدم buyRate ونضرب
+//                    مثال: 10 USDT × 0.995 = 9.95 MGO
+//
+//   MGO → USDT     : العميل يدفع MGO ويستلم USDT
+//                    → نستخدم sellRate للزوج USDT/MGO ونضرب
+//                    مثال: 10 MGO × 1.005 = 10.05 USDT
 // ════════════════════════════════════════════════════════════
-export function getRate(fromId, toId, rates) {
-  const DEFAULT_RATE = { rate: 1, divide: false }
-  if (!fromId || !toId || !rates) return DEFAULT_RATE
+export function getRate(fromId, toId, ratesData) {
+  const DEFAULT = { rate: 1, divide: false, pair: null };
 
-  const fromMap  = RATE_MAP[fromId]
-  if (!fromMap)  { console.warn(`[rateEngine] Unknown fromId: "${fromId}"`); return DEFAULT_RATE }
+  if (!fromId || !toId || !ratesData) return DEFAULT;
 
-  const rateFunc = fromMap[toId]
-  if (!rateFunc) { console.warn(`[rateEngine] No rate for: "${fromId}" → "${toId}"`); return DEFAULT_RATE }
+  const pairs   = ratesData.pairs || [];
+  const fromKey = FROM_KEY_MAP[fromId];
+  const toKey   = TO_KEY_MAP[toId];
 
-  const result = rateFunc(rates)
-  if (!result.rate || result.rate <= 0) {
-    console.warn(`[rateEngine] Invalid rate for "${fromId}" → "${toId}":`, result.rate)
-    return DEFAULT_RATE
+  if (!fromKey || !toKey) {
+    console.warn(`[rateEngine] Unknown IDs: "${fromId}" → "${toId}"`);
+    return DEFAULT;
   }
-  return result
+
+  // ── حالة خاصة: MGO → USDT ────────────────────────────────
+  // نبحث عن زوج USDT/MGO ونستخدم sellRate (نحن نشتري MGO)
+  if (fromKey === 'MGO' && toKey === 'USDT') {
+    const pair = findPair(pairs, 'USDT', 'MGO');
+    if (!pair) return DEFAULT;
+    return { rate: pair.sellRate, divide: false, pair };
+  }
+
+  // ── حالة خاصة: INTERNAL → USDT ──────────────────────────
+  if (fromKey === 'INTERNAL' && toKey === 'USDT') {
+    const pair = findPair(pairs, 'INTERNAL', 'USDT');
+    if (!pair) return { rate: 1, divide: false, pair: null };
+    return { rate: pair.buyRate, divide: false, pair };
+  }
+
+  // ── الحالة العامة: بحث مباشر ─────────────────────────────
+  const pair = findPair(pairs, fromKey, toKey);
+
+  if (!pair) {
+    console.warn(`[rateEngine] No pair found: "${fromKey}" → "${toKey}"`);
+    return DEFAULT;
+  }
+
+  const isEgp = EGP_SENDERS.includes(fromId);
+
+  if (isEgp) {
+    // العميل يدفع جنيه → نقسم على buyRate
+    return { rate: pair.buyRate, divide: true, pair };
+  } else {
+    // العميل يدفع USDT/INTERNAL → نضرب في buyRate
+    return { rate: pair.buyRate, divide: false, pair };
+  }
 }
 
 // ════════════════════════════════════════════════════════════
 // calcReceiveAmount
 // ════════════════════════════════════════════════════════════
-export function calcReceiveAmount(sendAmount, fromId, toId, rates) {
-  const amt = parseFloat(sendAmount) || 0
-  if (amt <= 0) return ''
-  const { rate, divide } = getRate(fromId, toId, rates)
-  return (divide ? amt / rate : amt * rate).toFixed(4)
+export function calcReceiveAmount(sendAmount, fromId, toId, ratesData) {
+  const amt = parseFloat(sendAmount) || 0;
+  if (amt <= 0) return '';
+
+  const { rate, divide } = getRate(fromId, toId, ratesData);
+  if (!rate || rate <= 0) return '';
+
+  const result = divide ? amt / rate : amt * rate;
+  return result.toFixed(4);
 }
 
 // ════════════════════════════════════════════════════════════
-// getRateDisplay
+// getRateDisplay — نص السعر للواجهة
 // ════════════════════════════════════════════════════════════
-export function getRateDisplay(fromId, toId, rates, fromSymbol, toSymbol) {
-  if (!rates) return '...'
-  const { rate, divide } = getRate(fromId, toId, rates)
+export function getRateDisplay(fromId, toId, ratesData, fromSymbol, toSymbol) {
+  if (!ratesData) return '...';
+
+  const { rate, divide, pair } = getRate(fromId, toId, ratesData);
+  if (!rate) return '...';
+
+  const fs = fromSymbol || fromId;
+  const ts = toSymbol   || toId;
+
   if (divide) {
-    return `${rate.toFixed(2)} ${fromSymbol || 'EGP'} = 1 ${toSymbol || 'USDT'}`
+    return `${rate.toFixed(2)} ${fs} = 1 ${ts}`;
   }
-  return `1 ${fromSymbol || 'MGO'} = ${rate.toFixed(4)} ${toSymbol || 'USDT'}`
+  return `1 ${fs} = ${rate.toFixed(4)} ${ts}`;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -116,14 +137,13 @@ export function toOrderType(fromId, toId) {
     'wallet-usdt:usdt-recv': 'WALLET_TO_USDT',
     'wallet-usdt:mgo-recv':  'WALLET_TO_MONEYGO',
     'mgo-send:usdt-recv':    'MONEYGO_TO_USDT',
-  }
-  const result = MAP[`${fromId}:${toId}`]
+  };
+  const result = MAP[`${fromId}:${toId}`];
   if (!result) {
-    const egp = ['vodafone', 'instapay', 'fawry', 'orange']
-    if (egp.includes(fromId)) return 'EGP_WALLET_TO_MONEYGO'
-    return 'EGP_WALLET_TO_MONEYGO'
+    if (EGP_SENDERS.includes(fromId)) return 'EGP_WALLET_TO_MONEYGO';
+    return 'EGP_WALLET_TO_MONEYGO';
   }
-  return result
+  return result;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -138,15 +158,15 @@ export function toPaymentMethod(fromId) {
     'usdt-trc':    'USDT_TRC20',
     'mgo-send':    'MONEYGO',
     'wallet-usdt': 'WALLET',
-  }
-  return MAP[fromId] || 'VODAFONE_CASH'
+  };
+  return MAP[fromId] || 'VODAFONE_CASH';
 }
 
 // ════════════════════════════════════════════════════════════
 // getCurrencySent
 // ════════════════════════════════════════════════════════════
 export function getCurrencySent(fromId) {
-  if (['vodafone','instapay','fawry','orange'].includes(fromId)) return 'EGP'
-  if (fromId === 'mgo-send') return 'MGO'
-  return 'USDT'
+  if (EGP_SENDERS.includes(fromId)) return 'EGP';
+  if (fromId === 'mgo-send')        return 'MGO';
+  return 'USDT';
 }

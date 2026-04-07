@@ -277,42 +277,40 @@ router.post('/telegram-webhook-internal', async (req, res) => {
 // ─── GET /api/admin/rates ─────────────────────
 router.get('/rates', async (req, res) => {
   try {
-    const rates = await Rate.getSingleton();
-    res.json({ success: true, ...rates.toObject() });
+    const doc = await Rate.getSingleton();
+    res.json({ success: true, pairs: doc.pairs, updatedAt: doc.updatedAt });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
-
+ 
 // ─── PUT /api/admin/rates ─────────────────────
 router.put('/rates', async (req, res) => {
   try {
-    const allowed = [
-      // USDT ↔ EGP
-      'usdtBuyRate', 'usdtSellRate',
-      // MoneyGo ↔ EGP
-      'moneygoEgpBuyRate', 'moneygoEgpSellRate',
-      // MoneyGo ↔ USDT
-      'moneygoRate',
-      // EGP Wallets (unified)
-      'egpWalletBuyRate', 'egpWalletSellRate',
-      // Internal USDT Wallet ↔ USDT
-      'internalUsdtSellRate', 'internalUsdtBuyRate',
-      // Internal USDT Wallet ↔ MoneyGo
-      'internalUsdtToMoneyGoRate', 'moneyGoToInternalUsdtRate',
-      // Legacy per-wallet rates
-      'vodafoneBuyRate', 'instaPayRate', 'fawryRate', 'orangeRate',
-      // Limits
-      'minOrderUsdt', 'maxOrderUsdt',
-    ];
-    const updates = {};
-    allowed.forEach(key => {
-      if (req.body[key] !== undefined && req.body[key] !== '') updates[key] = parseFloat(req.body[key]);
-    });
-    updates.updatedBy = req.user.email;
-    const rates = await Rate.findOneAndUpdate({}, { $set: updates }, { new: true, upsert: true });
-    res.json({ success: true, message: 'Rates updated.', ...rates.toObject() });
+    const { pairs } = req.body;
+    if (!Array.isArray(pairs)) {
+      return res.status(400).json({ success: false, message: 'pairs must be an array.' });
+    }
+ 
+    // تحقق من صحة البيانات
+    for (const p of pairs) {
+      if (!p.from || !p.to) {
+        return res.status(400).json({ success: false, message: 'كل زوج يجب أن يحتوي على from و to.' });
+      }
+      if (p.buyRate < 0 || p.sellRate < 0) {
+        return res.status(400).json({ success: false, message: 'الأسعار لا يمكن أن تكون سالبة.' });
+      }
+    }
+ 
+    const doc = await Rate.findOneAndUpdate(
+      {},
+      { $set: { pairs, updatedBy: req.user.email } },
+      { new: true, upsert: true }
+    );
+ 
+    res.json({ success: true, message: 'تم حفظ الأسعار.', pairs: doc.pairs });
   } catch (error) {
+    console.error('Rates save error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });

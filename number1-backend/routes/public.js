@@ -12,41 +12,64 @@ const mongoose = require('mongoose')
 // جلب الأسعار الحالية للمستخدمين
 router.get('/rates', async (req, res) => {
   try {
-    const rates = await Rate.getSingleton();
-
-    // نرجع جميع الأسعار اللازمة للمستخدم
+    const Rate = require('../models/Rate');
+    const doc  = await Rate.getSingleton();
+ 
+    // نرجع فقط الأزواج المفعّلة
+    const pairs = doc.pairs
+      .filter(p => p.enabled)
+      .map(p => ({
+        from:     p.from,
+        to:       p.to,
+        buyRate:  p.buyRate,
+        sellRate: p.sellRate,
+        label:    p.label,
+      }));
+ 
+    // للتوافق مع الكود القديم — نرجع أيضاً الحقول الفردية
+    const find = (from, to) => pairs.find(p => p.from === from && p.to === to);
+ 
+    const vodafone = find('EGP_VODAFONE', 'USDT');
+    const instapay = find('EGP_INSTAPAY', 'USDT');
+    const fawry    = find('EGP_FAWRY',    'USDT');
+    const orange   = find('EGP_ORANGE',   'USDT');
+    const mgo      = find('USDT',         'MGO');
+ 
     res.json({
-      success: true,
-      // USDT ↔ EGP
-      usdtBuyRate:  rates.usdtBuyRate,
-      usdtSellRate: rates.usdtSellRate,
-      // MoneyGo ↔ EGP
-      moneygoEgpBuyRate:  rates.moneygoEgpBuyRate,
-      moneygoEgpSellRate: rates.moneygoEgpSellRate,
-      // MoneyGo ↔ USDT
-      moneygoRate: rates.moneygoRate,
-      // EGP Wallets (unified)
-      egpWalletBuyRate:  rates.egpWalletBuyRate,
-      egpWalletSellRate: rates.egpWalletSellRate,
-      // Internal USDT Wallet ↔ USDT
-      internalUsdtSellRate: rates.internalUsdtSellRate,
-      internalUsdtBuyRate:  rates.internalUsdtBuyRate,
-      // Internal USDT Wallet ↔ MoneyGo
-      internalUsdtToMoneyGoRate: rates.internalUsdtToMoneyGoRate,
-      moneyGoToInternalUsdtRate: rates.moneyGoToInternalUsdtRate,
-      // Legacy per-wallet rates (kept for backward compatibility)
-      vodafoneBuyRate: rates.vodafoneBuyRate,
-      instaPayRate:    rates.instaPayRate,
-      fawryRate:       rates.fawryRate,
-      orangeRate:      rates.orangeRate,
-      // Limits
-      minOrderUsdt: rates.minOrderUsdt,
-      maxOrderUsdt: rates.maxOrderUsdt,
-      updatedAt:    rates.updatedAt,
+      success:  true,
+      pairs,
+      // حقول للتوافق مع الكود القديم
+      usdtBuyRate:     vodafone?.buyRate  || 50,
+      usdtSellRate:    vodafone?.sellRate || 49,
+      moneygoRate:     mgo?.sellRate      || 1,
+      moneygoSellRate: mgo?.buyRate       || 1,
+      vodafoneBuyRate: vodafone?.buyRate  || 50,
+      instaPayRate:    instapay?.buyRate  || 50,
+      fawryRate:       fawry?.buyRate     || 50,
+      orangeRate:      orange?.buyRate    || 50,
+      updatedAt: doc.updatedAt,
     });
   } catch (error) {
     console.error('Public rates error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+ 
+// ─── GET /api/public/rates/convert ───────────
+// ?from=EGP_VODAFONE&to=USDT&type=buy&amount=100
+router.get('/rates/convert', async (req, res) => {
+  try {
+    const Rate  = require('../models/Rate');
+    const { from, to, type = 'buy', amount } = req.query;
+ 
+    if (!from || !to || !amount) {
+      return res.status(400).json({ success: false, message: 'from, to, amount مطلوبة.' });
+    }
+ 
+    const { rate, result } = await Rate.convert(from, to, parseFloat(amount), type);
+    res.json({ success: true, from, to, type, amount: parseFloat(amount), rate, result });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 
