@@ -91,3 +91,17 @@ export const RECEIVE_METHODS = [
     placeholder: '',
   },
 ]
+
+// ── RATES_DATA — بيانات أسعار العملات لصفحة Rates ──────────
+export const RATES_DATA = [
+  { symbol: 'USDT', name: 'Tether USD',    price: 1.000,    change: 0.01 },
+  { symbol: 'BTC',  name: 'Bitcoin',       price: 67420.00, change: 1.24 },
+  { symbol: 'ETH',  name: 'Ethereum',      price: 3512.50,  change: 0.87 },
+  { symbol: 'BNB',  name: 'BNB',           price: 598.30,   change: 0.54 },
+  { symbol: 'SOL',  name: 'Solana',        price: 172.40,   change: 2.11 },
+  { symbol: 'TON',  name: 'Toncoin',       price: 7.85,     change: 1.43 },
+  { symbol: 'XRP',  name: 'XRP',           price: 0.6210,   change: 0.33 },
+  { symbol: 'ADA',  name: 'Cardano',       price: 0.4530,   change: 0.72 },
+  { symbol: 'LTC',  name: 'Litecoin',      price: 84.20,    change: 0.45 },
+  { symbol: 'MGO',  name: 'MoneyGo USD',   price: 1.000,    change: 0.00 },
+]
