@@ -117,13 +117,18 @@ export default function ExchangeSelect() {
           const enabledSendIds = methodsData.sendMethods.filter(m => m.enabled).map(m => m.id)
           const enabledRecvIds = methodsData.receiveMethods.filter(m => m.enabled).map(m => m.id)
           setActiveSend(SEND_METHODS.filter(m => enabledSendIds.includes(m.id)))
-          setActiveRecv(RECEIVE_METHODS.filter(m => enabledRecvIds.includes(m.id)))
+setActiveRecv(
+  RECEIVE_METHODS.filter(m =>
+    enabledRecvIds.includes(m.id) &&
+    !(m.id === 'wallet-recv' && !user)
+  )
+)
         }
       } catch { /* نُظهر كل الوسائل */ }
       finally { setLoading(false) }
     }
     fetchAll()
-  }, [])
+}, [user])
 
   const handleSendSelect = (m) => {
     // المحفظة الداخلية تتطلب تسجيل دخول
