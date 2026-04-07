@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { SEND_METHODS, RECEIVE_METHODS } from '../data/currencies'
 import { getRate } from '../services/rateEngine'
 import FlowDots from '../components/shared/FlowDots'
+import useAuth from '../context/useAuth'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -37,10 +38,16 @@ function isCompatible(send, recv) {
   return (COMPATIBLE[send.id] || []).includes(recv.id)
 }
 
-function SendRow({ method, selected, onSelect, disabled }) {
+function SendRow({ method, selected, onSelect, disabled, locked, onLockedClick }) {
   const isSelected = selected?.id === method.id
   return (
-    <div onClick={() => !disabled && onSelect(method)} className={`es-row ${isSelected ? 'es-row--active' : ''} ${disabled ? 'es-row--disabled' : ''}`}>
+    <div
+      onClick={() => {
+        if (locked) { onLockedClick?.(); return }
+        if (!disabled) onSelect(method)
+      }}
+      className={`es-row ${isSelected ? 'es-row--active' : ''} ${disabled ? 'es-row--disabled' : ''} ${locked ? 'es-row--locked' : ''}`}
+    >
       <MethodIcon method={method} size={34} />
       <div className="es-row-info">
         <span className="es-row-name">{method.name}</span>
@@ -51,6 +58,12 @@ function SendRow({ method, selected, onSelect, disabled }) {
            : `${method.symbol} · رقمي`}
         </span>
       </div>
+      {locked && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', flexShrink: 0 }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span style={{ fontSize: '0.65rem', color: '#f59e0b', fontFamily: "'Cairo',sans-serif", fontWeight: 700 }}>تسجيل دخول</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -80,50 +93,48 @@ function RecvRow({ method, selected, onSelect, disabled, rates, sendId }) {
 
 export default function ExchangeSelect() {
   const navigate = useNavigate()
-  const [sendMethod,    setSendMethod]    = useState(null)
-  const [recvMethod,    setRecvMethod]    = useState(null)
-  const [rates,         setRates]         = useState(null)
-  const [loading,       setLoading]       = useState(true)
+  const { user } = useAuth()
 
-  // ── الوسائل المفعّلة من الأدمن ─────────────────
-  const [activeSend,    setActiveSend]    = useState(SEND_METHODS)
-  const [activeRecv,    setActiveRecv]    = useState(RECEIVE_METHODS)
+  const [sendMethod, setSendMethod] = useState(null)
+  const [recvMethod, setRecvMethod] = useState(null)
+  const [rates,      setRates]      = useState(null)
+  const [loading,    setLoading]    = useState(true)
+  const [loginAlert, setLoginAlert] = useState(false)
+
+  const [activeSend, setActiveSend] = useState(SEND_METHODS)
+  const [activeRecv, setActiveRecv] = useState(RECEIVE_METHODS)
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        // ١. جلب الأسعار
         const ratesRes = await fetch(`${API}/api/public/rates`)
         const ratesData = await ratesRes.json()
         if (ratesData.success) setRates(ratesData)
 
-        // ٢. جلب الوسائل المفعّلة من الأدمن
         const methodsRes = await fetch(`${API}/api/public/exchange-methods`)
         const methodsData = await methodsRes.json()
         if (methodsData.success) {
-          // فلترة وسائل الإرسال المفعّلة
-          const enabledSendIds = methodsData.sendMethods
-            .filter(m => m.enabled)
-            .map(m => m.id)
-          const enabledRecvIds = methodsData.receiveMethods
-            .filter(m => m.enabled)
-            .map(m => m.id)
-
+          const enabledSendIds = methodsData.sendMethods.filter(m => m.enabled).map(m => m.id)
+          const enabledRecvIds = methodsData.receiveMethods.filter(m => m.enabled).map(m => m.id)
           setActiveSend(SEND_METHODS.filter(m => enabledSendIds.includes(m.id)))
           setActiveRecv(RECEIVE_METHODS.filter(m => enabledRecvIds.includes(m.id)))
         }
-      } catch {
-        // في حالة فشل الاتصال نُظهر كل الوسائل
-      } finally {
-        setLoading(false)
-      }
+      } catch { /* نُظهر كل الوسائل */ }
+      finally { setLoading(false) }
     }
     fetchAll()
   }, [])
 
   const handleSendSelect = (m) => {
+    // المحفظة الداخلية تتطلب تسجيل دخول
+    if (m.id === 'wallet-usdt' && !user) {
+      setLoginAlert(true)
+      setTimeout(() => setLoginAlert(false), 3000)
+      return
+    }
     setSendMethod(m)
     if (recvMethod && !isCompatible(m, recvMethod)) setRecvMethod(null)
+    setLoginAlert(false)
   }
 
   const handleRecvSelect = (m) => {
@@ -154,6 +165,18 @@ export default function ExchangeSelect() {
       </div>
 
       <div className="es-main">
+
+        {/* تنبيه تسجيل الدخول */}
+        {loginAlert && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 12, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', marginBottom: 16, fontFamily: "'Cairo','Tajawal',sans-serif", fontSize: '0.88rem', color: '#f59e0b', animation: 'es-fadein 0.2s ease' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0 }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>المحفظة الداخلية تتطلب <strong>تسجيل الدخول</strong> أولاً</span>
+            <button onClick={() => navigate('/login')} style={{ marginRight: 'auto', padding: '4px 14px', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 7, background: 'transparent', color: '#f59e0b', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, fontFamily: "'Cairo',sans-serif" }}>
+              تسجيل الدخول
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="es-loader"><div className="es-spinner" /></div>
         ) : (
@@ -164,8 +187,15 @@ export default function ExchangeSelect() {
                 {activeSend.length === 0
                   ? <div className="es-empty">لا توجد وسائل إرسال متاحة حالياً</div>
                   : activeSend.map(m => (
-                    <SendRow key={m.id} method={m} selected={sendMethod} onSelect={handleSendSelect}
-                      disabled={recvMethod ? !isCompatible(m, recvMethod) : false} />
+                    <SendRow
+                      key={m.id}
+                      method={m}
+                      selected={sendMethod}
+                      onSelect={handleSendSelect}
+                      disabled={recvMethod ? !isCompatible(m, recvMethod) : false}
+                      locked={m.id === 'wallet-usdt' && !user}
+                      onLockedClick={() => { setLoginAlert(true); setTimeout(() => setLoginAlert(false), 3000) }}
+                    />
                   ))
                 }
               </div>
@@ -215,7 +245,9 @@ export default function ExchangeSelect() {
 }
 
 const CSS = `
-  @keyframes es-spin { to { transform: rotate(360deg) } }
+  @keyframes es-spin   { to { transform: rotate(360deg) } }
+  @keyframes es-fadein { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
+
   .es-page { min-height: 100vh; background: var(--bg); direction: rtl; font-family: 'Cairo','Tajawal',sans-serif; }
   .es-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; background: var(--card); border-bottom: 1px solid var(--border-1); position: sticky; top: 0; z-index: 40; }
   .es-back { display: flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 9px; border: 1px solid var(--border-1); background: transparent; color: var(--text-2); cursor: pointer; font-size: 0.84rem; font-weight: 600; font-family: 'Cairo',sans-serif; transition: all 0.15s; }
@@ -243,9 +275,11 @@ const CSS = `
   .es-empty { padding: 32px 16px; text-align: center; color: var(--text-3); font-size: 0.84rem; }
   .es-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-1); transition: background 0.12s; }
   .es-row:last-child { border-bottom: none; }
-  .es-row:hover:not(.es-row--disabled):not(.es-row--active) { background: rgba(255,255,255,0.03); }
+  .es-row:hover:not(.es-row--disabled):not(.es-row--active):not(.es-row--locked) { background: rgba(255,255,255,0.03); }
   .es-row--active { background: rgba(0,210,255,0.07); }
   .es-row--disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+  .es-row--locked { cursor: pointer; opacity: 0.75; }
+  .es-row--locked:hover { background: rgba(245,158,11,0.05); }
   .es-row--recv { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; }
   .es-row-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .es-row-name { font-size: 0.88rem; font-weight: 700; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

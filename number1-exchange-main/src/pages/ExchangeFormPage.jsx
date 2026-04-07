@@ -71,6 +71,9 @@ export default function ExchangeFormPage() {
 
   const isWalletRecv  = toId   === 'wallet-recv'
   const isWalletSend  = fromId === 'wallet-usdt'
+  useEffect(() => {
+  if (isWalletSend && !user) navigate('/exchange', { replace: true })
+}, [isWalletSend, user])
   const isMoneyGoRecv = toId   === 'mgo-recv'
   const isUsdtRecv    = toId   === 'usdt-recv'
   const isEgpSend     = sendMethod?.type === 'egp'
