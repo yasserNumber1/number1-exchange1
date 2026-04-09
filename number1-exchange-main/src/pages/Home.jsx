@@ -4,26 +4,27 @@ import { useNavigate } from "react-router-dom"
 import useLang from "../context/useLang"
 import useAuth from "../context/useAuth"
 import { GooeyText } from "../components/ui/gooey-text-morphing"
-import { SEND_METHODS, RECEIVE_METHODS } from "../data/currencies"
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
+// ── Fetch full dynamic method objects from API ──────────────
 function useActiveMethods() {
-  const [activeSend, setActiveSend] = useState(SEND_METHODS)
-  const [activeRecv, setActiveRecv] = useState(RECEIVE_METHODS)
+  const [activeSend, setActiveSend] = useState([])
+  const [activeRecv, setActiveRecv] = useState([])
+  const [loaded, setLoaded] = useState(false)
   useEffect(() => {
     fetch(`${API}/api/public/exchange-methods`)
       .then(r => r.json())
       .then(data => {
         if (!data.success) return
-        const enabledSend = data.sendMethods.filter(m => m.enabled).map(m => m.id)
-        const enabledRecv = data.receiveMethods.filter(m => m.enabled).map(m => m.id)
-        setActiveSend(SEND_METHODS.filter(m => enabledSend.includes(m.id)))
-        setActiveRecv(RECEIVE_METHODS.filter(m => enabledRecv.includes(m.id)))
+        // sendMethods/receiveMethods from public API are already filtered to enabled + sorted
+        setActiveSend(data.sendMethods || [])
+        setActiveRecv(data.receiveMethods || [])
       })
       .catch(() => {})
+      .finally(() => setLoaded(true))
   }, [])
-  return { activeSend, activeRecv }
+  return { activeSend, activeRecv, loaded }
 }
 
 function CurrencyIcon({ method, size = 36 }) {
@@ -67,12 +68,22 @@ function LockBadge() {
   )
 }
 
+// ── Dynamic compatibility using compatibleWith arrays from admin panel ──
 function isCompatible(send, recv) {
   if (!send || !recv) return true
-  if (send.id === 'mgo-send')    return recv.id === 'usdt-recv'
-  if (send.id === 'wallet-usdt') return recv.id === 'mgo-recv' || recv.id === 'usdt-recv'
-  if (send.id === 'usdt-trc' && recv.id === 'usdt-recv') return false
-  return true
+  // Same currency/symbol prevention
+  if (send.symbol === recv.symbol && send.symbol !== 'USDT') return false
+  // For USDT: prevent if both are same type (e.g. both crypto USDT)
+  if (send.symbol === recv.symbol && send.type === recv.type) return false
+  // Use compatibleWith arrays from database
+  if (send.compatibleWith && send.compatibleWith.length > 0) {
+    return send.compatibleWith.includes(recv.id)
+  }
+  if (recv.compatibleWith && recv.compatibleWith.length > 0) {
+    return recv.compatibleWith.includes(send.id)
+  }
+  // Fallback: allow if different symbols
+  return send.symbol !== recv.symbol
 }
 
 function MethodCard({ method, selected, disabled, onClick, locked, onLockedClick }) {
@@ -108,7 +119,7 @@ function MethodCard({ method, selected, disabled, onClick, locked, onLockedClick
           {method.name}
         </div>
         <div style={{ fontSize: "0.68rem", color: "var(--text-3)", fontFamily: "'JetBrains Mono',monospace", marginTop: 2 }}>
-          {method.type === 'egp' ? 'EGP · جنيه مصري' : method.type === 'wallet' ? 'محفظة داخلية' : `${method.symbol} · رقمي`}
+          {method.type === 'egp' ? 'EGP · جنيه مصري' : method.type === 'wallet' ? 'محفظة داخلية' : method.type === 'moneygo' ? 'MoneyGo USD' : `${method.symbol} · رقمي`}
         </div>
       </div>
       {locked ? <LockBadge /> : isSelected && (
@@ -122,8 +133,9 @@ function MethodCard({ method, selected, disabled, onClick, locked, onLockedClick
 
 function SendPanel({ sendMethod, recvMethod, onSelect, activeSend, user, onLockedClick }) {
   const { lang } = useLang()
-  const regularMethods = activeSend.filter(m => m.id !== 'wallet-usdt')
-  const walletMethod   = activeSend.find(m => m.id === 'wallet-usdt')
+  // Dynamically separate wallet-type methods from regular methods
+  const regularMethods = activeSend.filter(m => m.type !== 'wallet')
+  const walletMethods  = activeSend.filter(m => m.type === 'wallet')
   return (
     <div style={{ background: "var(--card)", border: "1px solid var(--border-1)", borderRadius: 22, overflow: "hidden", flex: 1 }}>
       <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid var(--border-1)", background: "linear-gradient(135deg,rgba(0,210,255,0.05),rgba(124,92,252,0.03))" }}>
@@ -141,7 +153,7 @@ function SendPanel({ sendMethod, recvMethod, onSelect, activeSend, user, onLocke
         {regularMethods.map(m => (
           <MethodCard key={m.id} method={m} selected={sendMethod} disabled={false} onClick={onSelect} />
         ))}
-        {walletMethod && (
+        {walletMethods.length > 0 && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 2px" }}>
               <div style={{ flex: 1, height: 1, background: "var(--border-1)" }} />
@@ -150,14 +162,17 @@ function SendPanel({ sendMethod, recvMethod, onSelect, activeSend, user, onLocke
               </span>
               <div style={{ flex: 1, height: 1, background: "var(--border-1)" }} />
             </div>
-            <MethodCard
-              method={walletMethod}
-              selected={sendMethod}
-              disabled={false}
-              onClick={onSelect}
-              locked={!user}
-              onLockedClick={onLockedClick}
-            />
+            {walletMethods.map(wm => (
+              <MethodCard
+                key={wm.id}
+                method={wm}
+                selected={sendMethod}
+                disabled={false}
+                onClick={onSelect}
+                locked={!user}
+                onLockedClick={onLockedClick}
+              />
+            ))}
           </>
         )}
       </div>
@@ -165,13 +180,13 @@ function SendPanel({ sendMethod, recvMethod, onSelect, activeSend, user, onLocke
   )
 }
 
-// ── ReceivePanel — يُخفي wallet-recv للمستخدم غير المسجل ──
+// ── ReceivePanel — dynamically hides wallet-type methods for guest users ──
 function ReceivePanel({ sendMethod, recvMethod, onSelect, activeRecv, user }) {
   const { lang } = useLang()
-  const regularMethods = activeRecv.filter(m => m.id !== 'wallet-recv')
-  const walletMethod   = activeRecv.find(m => m.id === 'wallet-recv')
-  // يظهر فقط إذا: الإرسال USDT + المستخدم مسجل
-  const showWallet = sendMethod?.id === 'usdt-trc' && !!user
+  const regularMethods = activeRecv.filter(m => m.type !== 'wallet')
+  // Wallet-type receive methods: only show if user is logged in AND send method is compatible
+  const walletMethods  = activeRecv.filter(m => m.type === 'wallet')
+  const showWallets = !!user && walletMethods.length > 0
   return (
     <div style={{ background: "var(--card)", border: "1px solid var(--border-1)", borderRadius: 22, overflow: "hidden", flex: 1 }}>
       <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid var(--border-1)", background: "linear-gradient(135deg,rgba(0,229,160,0.05),rgba(0,210,255,0.03))" }}>
@@ -189,7 +204,7 @@ function ReceivePanel({ sendMethod, recvMethod, onSelect, activeRecv, user }) {
         {regularMethods.map(m => (
           <MethodCard key={m.id} method={m} selected={recvMethod} disabled={sendMethod && !isCompatible(sendMethod, m)} onClick={onSelect} />
         ))}
-        {showWallet && walletMethod && (
+        {showWallets && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 2px" }}>
               <div style={{ flex: 1, height: 1, background: "var(--border-1)" }} />
@@ -198,7 +213,9 @@ function ReceivePanel({ sendMethod, recvMethod, onSelect, activeRecv, user }) {
               </span>
               <div style={{ flex: 1, height: 1, background: "var(--border-1)" }} />
             </div>
-            <MethodCard method={walletMethod} selected={recvMethod} disabled={false} onClick={onSelect} />
+            {walletMethods.map(wm => (
+              <MethodCard key={wm.id} method={wm} selected={recvMethod} disabled={sendMethod && !isCompatible(sendMethod, wm)} onClick={onSelect} />
+            ))}
           </>
         )}
       </div>
@@ -222,6 +239,7 @@ function MobileMethodCard({ method, selected, disabled, onClick, locked, onLocke
   const isSelected = selected?.id === method.id
   const subtitle = method.type === "egp" ? `EGP · ${method.network || "محفظة"}`
     : method.type === "wallet" ? "داخلي"
+    : method.type === "moneygo" ? "MoneyGo USD"
     : `${method.symbol}${method.network ? " · " + method.network : ""}`
 
   return (
@@ -272,11 +290,11 @@ function MobileMethodCard({ method, selected, disabled, onClick, locked, onLocke
   )
 }
 
-// ── MobileExchangeSelector — يُخفي wallet-recv للمستخدم غير المسجل ──
+// ── MobileExchangeSelector — dynamically hides wallet-type methods for guests ──
 function MobileExchangeSelector({ sendMethod, recvMethod, onSend, onRecv, bothReady, lang, activeSend, activeRecv, user, onLockedClick }) {
-  // wallet-recv يظهر فقط إذا: الإرسال USDT + المستخدم مسجل
+  // Wallet-type receive methods hidden for guests
   const recvMethods = activeRecv.filter(m =>
-    m.id !== 'wallet-recv' || (sendMethod?.id === 'usdt-trc' && !!user)
+    m.type !== 'wallet' || !!user
   )
   return (
     <>
@@ -291,7 +309,7 @@ function MobileExchangeSelector({ sendMethod, recvMethod, onSend, onRecv, bothRe
               <MobileMethodCard
                 key={m.id} method={m} selected={sendMethod} disabled={false}
                 onClick={onSend}
-                locked={m.id === 'wallet-usdt' && !user}
+                locked={m.type === 'wallet' && !user}
                 onLockedClick={onLockedClick}
               />
             ))}
@@ -338,7 +356,7 @@ function ExchangeSelector() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const { activeSend, activeRecv } = useActiveMethods()
+  const { activeSend, activeRecv, loaded } = useActiveMethods()
 
   const [sendMethod, setSendMethod] = useState(null)
   const [recvMethod, setRecvMethod] = useState(null)
@@ -346,15 +364,15 @@ function ExchangeSelector() {
   const navigating = useRef(false)
 
   useEffect(() => {
-    if (activeSend.length > 0 && !sendMethod) {
+    if (loaded && activeSend.length > 0 && !sendMethod) {
       const usdt = activeSend.find(m => m.id === 'usdt-trc')
       setSendMethod(usdt ?? activeSend[0])
     }
-  }, [activeSend])
+  }, [activeSend, loaded])
 
   // إذا تغيّر user وكان recvMethod محفظة وغير مسجل — امسحه
   useEffect(() => {
-    if (!user && recvMethod?.id === 'wallet-recv') setRecvMethod(null)
+    if (!user && recvMethod?.type === 'wallet') setRecvMethod(null)
   }, [user])
 
   const handleLockedClick = () => {
@@ -363,7 +381,7 @@ function ExchangeSelector() {
   }
 
   const handleSelectSend = (method) => {
-    if (method.id === 'wallet-usdt' && !user) { handleLockedClick(); return }
+    if (method.type === 'wallet' && !user) { handleLockedClick(); return }
     navigating.current = false
     setSendMethod(method)
     if (recvMethod && !isCompatible(method, recvMethod)) setRecvMethod(null)

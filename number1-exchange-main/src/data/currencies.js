@@ -1,6 +1,12 @@
 // src/data/currencies.js
 // المصدر الوحيد للعملات — IDs ثابتة لا تتغير أبداً
 // ═══════════════════════════════════════════════════════════════
+// ⚠️ DEPRECATED for exchange UI rendering:
+// Home.jsx and ExchangeSelect.jsx now fetch dynamic methods from
+// the /api/public/exchange-methods API. SEND_METHODS / RECEIVE_METHODS
+// below are kept as a reference only. New methods should be created
+// from the Admin Panel → Payment Methods page.
+// ═══════════════════════════════════════════════════════════════
 
 export const SEND_METHODS = [
   {
