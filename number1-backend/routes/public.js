@@ -2,56 +2,9 @@
 const express        = require("express");
 const router         = express.Router();
 const Rate           = require("../models/Rate");
-const Order          = require("../models/Order");
 const ExchangeMethod = require("../models/ExchangeMethod");
 const mongoose       = require("mongoose");
-
-// ══════════════════════════════════════════════════════════════════
-// ─── حساب السيولة من الطلبات المكتملة ───────────────────────────
-// ══════════════════════════════════════════════════════════════════
-const RECV_MAP = {
-  USDT_TO_MONEYGO:       'MGO',
-  EGP_TO_MONEYGO:        'MGO',
-  EGP_WALLET_TO_MONEYGO: 'MGO',
-  WALLET_TO_MONEYGO:     'MGO',
-  EGP_TO_USDT:           'USDT',
-  MONEYGO_TO_USDT:       'USDT',
-  WALLET_TO_USDT:        'USDT',
-  USDT_TO_WALLET:        null,
-  MONEYGO_TO_WALLET:     null,
-}
-
-async function calcLiquidity(doc) {
-  const orders = await Order.find(
-    { status: 'completed' },
-    { orderType: 1, 'payment.amountSent': 1, 'payment.currencySent': 1, 'moneygo.amountUSD': 1, 'exchangeRate.finalAmountUSD': 1 }
-  ).lean()
-
-  let deltaEgp = 0, deltaUsdt = 0, deltaMgo = 0
-
-  for (const o of orders) {
-    const sent  = parseFloat(o.payment?.amountSent) || 0
-    const recv  = parseFloat(o.moneygo?.amountUSD) || parseFloat(o.exchangeRate?.finalAmountUSD) || 0
-    const cSent = o.payment?.currencySent
-    const cRecv = RECV_MAP[o.orderType]
-
-    // ما أرسله العميل → رصيدنا يزيد
-    if (cSent === 'EGP')  deltaEgp  += sent
-    if (cSent === 'USDT') deltaUsdt += sent
-    if (cSent === 'MGO')  deltaMgo  += sent
-
-    // ما أرسلناه نحن للعميل → رصيدنا ينقص
-    if (cRecv === 'EGP')  deltaEgp  -= recv
-    if (cRecv === 'USDT') deltaUsdt -= recv
-    if (cRecv === 'MGO')  deltaMgo  -= recv
-  }
-
-  return {
-    availableEgp:  Math.max(0, (doc.maxEgp  || 0) + deltaEgp),
-    availableUsdt: Math.max(0, (doc.maxUsdt || 0) + deltaUsdt),
-    availableMgo:  Math.max(0, (doc.maxMgo  || 0) + deltaMgo),
-  }
-}
+const { calcLiquidity } = require("../services/liquidity");
 
 // ─── GET /api/public/rates ────────────────────
 router.get("/rates", async (req, res) => {

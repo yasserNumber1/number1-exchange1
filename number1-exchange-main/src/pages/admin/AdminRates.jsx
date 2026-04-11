@@ -120,12 +120,12 @@ export default function AdminRates() {
         { from: 'MGO',          to: 'INTERNAL', buyRate: wMgoBuy,   sellRate: wMgoSell,   label: 'MoneyGo → محفظة داخلية', enabled: true },
       ];
 
-      // ── الحقول التي يكتبها الأدمن في حقول السيولة = maxXxx ──
-      // هذه هي القيم الأصلية التي يضبطها الأدمن يدوياً
-      // السيولة الفعلية تُحسب تلقائياً من الطلبات المكتملة في backend
-      const maxEgp  = parseFloat(rates.availableEgp)  || 0;
-      const maxUsdt = parseFloat(rates.availableUsdt) || 0;
-      const maxMgo  = parseFloat(rates.availableMgo)  || 0;
+      // اجلب maxXxx الحالية من السيرفر — هي نقطة البداية التي تحسب منها السيولة
+      // لا نستخدم rates.availableEgp لأنها النتيجة المحسوبة وليست القيمة الأصلية
+      const { data: freshDoc } = await adminAPI.getRates();
+      const maxEgp  = parseFloat(freshDoc?.maxEgp)  || 0;
+      const maxUsdt = parseFloat(freshDoc?.maxUsdt) || 0;
+      const maxMgo  = parseFloat(freshDoc?.maxMgo)  || 0;
 
       await adminAPI.saveRates({
         pairs,
