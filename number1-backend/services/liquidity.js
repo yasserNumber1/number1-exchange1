@@ -1,62 +1,83 @@
 // services/liquidity.js
-// Single source of truth for liquidity updates after completed orders.
-//
-// Responsibilities:
-//   1. Map orderType → { currencySent, currencyRecv }
-//   2. Call Rate.applyLiquidity with correct values
-//
-// Rules:
-//   - currencySent  = what the CUSTOMER sent us   → our balance INCREASES
-//   - currencyRecv  = what we send the CUSTOMER    → our balance DECREASES
-//   - Called ONLY when an order transitions to "completed" (enforced by callers)
-
 const Rate = require('../models/Rate')
 
-// ── Lookup table: orderType → currencies ─────────────────────────────────────
-// Add new order types here; no other file needs to change.
 const ORDER_TYPE_CURRENCIES = {
-  EGP_TO_USDT:            { currencySent: 'EGP',  currencyRecv: 'USDT' },
-  EGP_TO_MONEYGO:         { currencySent: 'EGP',  currencyRecv: 'MGO'  },
-  USDT_TO_MONEYGO:        { currencySent: 'USDT', currencyRecv: 'MGO'  },
-  USDT_TO_WALLET:         { currencySent: 'USDT', currencyRecv: 'USDT' },
-  WALLET_TO_USDT:         { currencySent: 'USDT', currencyRecv: 'USDT' },
-  WALLET_TO_MONEYGO:      { currencySent: 'USDT', currencyRecv: 'MGO'  },
-  MONEYGO_TO_USDT:        { currencySent: 'MGO',  currencyRecv: 'USDT' },
-  MONEYGO_TO_WALLET:      { currencySent: 'MGO',  currencyRecv: 'USDT' },
-  EGP_WALLET_TO_MONEYGO:  { currencySent: 'EGP',  currencyRecv: 'MGO'  },
+  EGP_TO_USDT:           { currencySent: 'EGP',  currencyRecv: 'USDT' },
+  EGP_TO_MONEYGO:        { currencySent: 'EGP',  currencyRecv: 'MGO'  },
+  USDT_TO_MONEYGO:       { currencySent: 'USDT', currencyRecv: 'MGO'  },
+  USDT_TO_WALLET:        { currencySent: 'USDT', currencyRecv: null   }, // داخلي فقط — لا تغيير سيولة
+  WALLET_TO_USDT:        { currencySent: null,   currencyRecv: 'USDT' }, // نرسل USDT للعميل
+  WALLET_TO_MONEYGO:     { currencySent: null,   currencyRecv: 'MGO'  }, // نرسل MGO للعميل
+  MONEYGO_TO_USDT:       { currencySent: 'MGO',  currencyRecv: 'USDT' },
+  MONEYGO_TO_WALLET:     { currencySent: 'MGO',  currencyRecv: null   }, // داخلي فقط
+  EGP_WALLET_TO_MONEYGO: { currencySent: 'EGP',  currencyRecv: 'MGO'  },
 }
 
-// ── Derive currencies for an order ──────────────────────────────────────────
 function getCurrenciesForOrder(order) {
   const ot = order.orderType || ''
   const mapped = ORDER_TYPE_CURRENCIES[ot]
   if (mapped) return mapped
 
-  // Unknown type — fall back to what the order says; log a warning so it's visible
   const currencySent = order.payment?.currencySent || 'USDT'
-  console.warn(`[Liquidity] Unknown orderType "${ot}" for order ${order.orderNumber}. Falling back to currencySent=${currencySent}, currencyRecv=USDT. Add this type to ORDER_TYPE_CURRENCIES.`)
+  console.warn(
+    `[Liquidity] Unknown orderType "${ot}" for order ${order.orderNumber}. ` +
+    `Falling back to currencySent=${currencySent}, currencyRecv=USDT. ` +
+    `Add this type to ORDER_TYPE_CURRENCIES.`
+  )
   return { currencySent, currencyRecv: 'USDT' }
 }
 
-// ── Apply liquidity update for a completed order ─────────────────────────────
-// Returns true on success, false on failure (never throws — callers should not
-// block the order confirmation if liquidity tracking fails).
 async function applyLiquidity(order) {
   try {
     const { currencySent, currencyRecv } = getCurrenciesForOrder(order)
-    const amountSent = parseFloat(order.payment?.amountSent) || 0
-    const amountRecv = parseFloat(order.exchangeRate?.finalAmountUSD ?? order.moneygo?.amountUSD) || 0
 
-    if (amountSent <= 0 && amountRecv <= 0) {
-      console.warn(`[Liquidity] Order ${order.orderNumber} has zero amounts — skipping update.`)
-      return false
+    // amountSent = ما أرسله العميل لنا
+    const amountSent = parseFloat(order.payment?.amountSent) || 0
+
+    // amountRecv = ما أرسلناه نحن للعميل
+    // نحاول نقرأ من أكثر من حقل حسب نوع الطلب
+    const amountRecv =
+      parseFloat(order.moneygo?.amountUSD) ||
+      parseFloat(order.exchangeRate?.finalAmountUSD) ||
+      parseFloat(order.payment?.amountReceived) ||
+      0
+
+    // لو currencySent أو currencyRecv = null، معناه عملية داخلية لا تؤثر على السيولة الخارجية
+    const effectiveSent = currencySent ? amountSent : 0
+    const effectiveRecv = currencyRecv ? amountRecv : 0
+
+    if (effectiveSent <= 0 && effectiveRecv <= 0) {
+      console.log(`[Liquidity] Order ${order.orderNumber} (${order.orderType}): no external liquidity change needed.`)
+      return true
     }
 
-    await Rate.applyLiquidity(currencySent, currencyRecv, amountSent, amountRecv)
-    console.log(`[Liquidity] Order ${order.orderNumber}: +${amountSent} ${currencySent} | -${amountRecv} ${currencyRecv}`)
+    // نبني inc object يدوياً لدعم null
+    const inc = {}
+
+    if (currencySent === 'EGP'  && effectiveSent > 0) inc.availableEgp  = (inc.availableEgp  || 0) + effectiveSent
+    if (currencySent === 'USDT' && effectiveSent > 0) inc.availableUsdt = (inc.availableUsdt || 0) + effectiveSent
+    if (currencySent === 'MGO'  && effectiveSent > 0) inc.availableMgo  = (inc.availableMgo  || 0) + effectiveSent
+
+    if (currencyRecv === 'EGP'  && effectiveRecv > 0) inc.availableEgp  = (inc.availableEgp  || 0) - effectiveRecv
+    if (currencyRecv === 'USDT' && effectiveRecv > 0) inc.availableUsdt = (inc.availableUsdt || 0) - effectiveRecv
+    if (currencyRecv === 'MGO'  && effectiveRecv > 0) inc.availableMgo  = (inc.availableMgo  || 0) - effectiveRecv
+
+    if (Object.keys(inc).length === 0) {
+      console.log(`[Liquidity] Order ${order.orderNumber}: inc is empty, skipping DB update.`)
+      return true
+    }
+
+    await Rate.findOneAndUpdate({}, { $inc: inc }, { new: true })
+
+    console.log(
+      `[Liquidity] ✅ Order ${order.orderNumber} (${order.orderType}):`,
+      currencySent ? `+${effectiveSent} ${currencySent}` : '',
+      currencyRecv ? `-${effectiveRecv} ${currencyRecv}` : '',
+      '| DB inc:', inc
+    )
     return true
   } catch (err) {
-    console.error(`[Liquidity] Failed for order ${order.orderNumber}:`, err.message)
+    console.error(`[Liquidity] ❌ Failed for order ${order.orderNumber}:`, err.message)
     return false
   }
 }

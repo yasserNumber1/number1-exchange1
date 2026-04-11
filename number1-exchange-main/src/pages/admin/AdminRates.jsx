@@ -90,77 +90,92 @@ export default function AdminRates() {
   const set = (field, value) => { setRates(prev => ({ ...prev, [field]: value })); setSaved(false); };
 
   const handleSave = async () => {
-    setSaving(true); setError('');
+  setSaving(true); setError('');
+  try {
+    const egpBuy       = parseFloat(rates.egpBuyRate)        || 0;
+    const egpSell      = parseFloat(rates.egpSellRate)       || 0;
+    const mgoBuy       = parseFloat(rates.moneyGoBuyRate)    || 0;
+    const mgoSell      = parseFloat(rates.moneyGoSellRate)   || 0;
+    const egpMgoBuy    = parseFloat(rates.egpMgoBuyRate)     || 0;
+    const egpMgoSell   = parseFloat(rates.egpMgoSellRate)    || 0;
+    const intBuy       = parseFloat(rates.internalBuyRate)   || 0;
+    const intSell      = parseFloat(rates.internalSellRate)  || 0;
+    const wMgoBuy      = parseFloat(rates.walletMgoBuyRate)  || 0;
+    const wMgoSell     = parseFloat(rates.walletMgoSellRate) || 0;
+
+    const pairs = [
+      { from: 'EGP_VODAFONE', to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'فودافون كاش ↔ USDT',       enabled: true },
+      { from: 'EGP_INSTAPAY', to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'إنستا باي ↔ USDT',         enabled: true },
+      { from: 'EGP_FAWRY',    to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'فاوري ↔ USDT',             enabled: true },
+      { from: 'EGP_ORANGE',   to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'أورنج كاش ↔ USDT',        enabled: true },
+      { from: 'USDT',         to: 'MGO',      buyRate: mgoBuy,    sellRate: mgoSell,    label: 'USDT ↔ MoneyGo',           enabled: true },
+      { from: 'EGP_VODAFONE', to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'فودافون كاش ↔ MoneyGo',   enabled: true },
+      { from: 'EGP_INSTAPAY', to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'إنستا باي ↔ MoneyGo',     enabled: true },
+      { from: 'EGP_FAWRY',    to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'فاوري ↔ MoneyGo',         enabled: true },
+      { from: 'EGP_ORANGE',   to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'أورنج كاش ↔ MoneyGo',    enabled: true },
+      { from: 'USDT',         to: 'INTERNAL', buyRate: intBuy,    sellRate: intSell,    label: 'USDT ↔ محفظة داخلية',     enabled: true },
+      { from: 'INTERNAL',     to: 'USDT',     buyRate: intBuy,    sellRate: intSell,    label: 'محفظة داخلية ↔ USDT',     enabled: true },
+      { from: 'INTERNAL',     to: 'MGO',      buyRate: wMgoBuy,   sellRate: wMgoSell,   label: 'محفظة داخلية → MoneyGo',  enabled: true },
+      { from: 'MGO',          to: 'INTERNAL', buyRate: wMgoBuy,   sellRate: wMgoSell,   label: 'MoneyGo → محفظة داخلية', enabled: true },
+    ];
+
+    // ── جلب أحدث السيولة من السيرفر أولاً (لا نكتب فوق قيم محدثة) ──
+    let latestEgp, latestUsdt, latestMgo;
     try {
-      const egpBuy       = parseFloat(rates.egpBuyRate)        || 0;
-      const egpSell      = parseFloat(rates.egpSellRate)       || 0;
-      const mgoBuy       = parseFloat(rates.moneyGoBuyRate)    || 0;
-      const mgoSell      = parseFloat(rates.moneyGoSellRate)   || 0;
-      const egpMgoBuy    = parseFloat(rates.egpMgoBuyRate)     || 0;
-      const egpMgoSell   = parseFloat(rates.egpMgoSellRate)    || 0;
-      const intBuy       = parseFloat(rates.internalBuyRate)   || 0;
-      const intSell      = parseFloat(rates.internalSellRate)  || 0;
-      const wMgoBuy      = parseFloat(rates.walletMgoBuyRate)  || 0;
-      const wMgoSell     = parseFloat(rates.walletMgoSellRate) || 0;
+      const { data: fresh } = await adminAPI.getRates();
+      latestEgp  = fresh?.availableEgp  ?? 0;
+      latestUsdt = fresh?.availableUsdt ?? 0;
+      latestMgo  = fresh?.availableMgo  ?? 0;
+    } catch {
+      latestEgp  = parseFloat(rates.availableEgp)  || 0;
+      latestUsdt = parseFloat(rates.availableUsdt) || 0;
+      latestMgo  = parseFloat(rates.availableMgo)  || 0;
+    }
 
-      const pairs = [
-        { from: 'EGP_VODAFONE', to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'فودافون كاش ↔ USDT',         enabled: true },
-        { from: 'EGP_INSTAPAY', to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'إنستا باي ↔ USDT',           enabled: true },
-        { from: 'EGP_FAWRY',    to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'فاوري ↔ USDT',               enabled: true },
-        { from: 'EGP_ORANGE',   to: 'USDT',     buyRate: egpBuy,    sellRate: egpSell,    label: 'أورنج كاش ↔ USDT',          enabled: true },
-        { from: 'USDT',         to: 'MGO',      buyRate: mgoBuy,    sellRate: mgoSell,    label: 'USDT ↔ MoneyGo',              enabled: true },
-        { from: 'EGP_VODAFONE', to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'فودافون كاش ↔ MoneyGo',      enabled: true },
-        { from: 'EGP_INSTAPAY', to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'إنستا باي ↔ MoneyGo',       enabled: true },
-        { from: 'EGP_FAWRY',    to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'فاوري ↔ MoneyGo',            enabled: true },
-        { from: 'EGP_ORANGE',   to: 'MGO',      buyRate: egpMgoBuy, sellRate: egpMgoSell, label: 'أورنج كاش ↔ MoneyGo',       enabled: true },
-        { from: 'USDT',         to: 'INTERNAL', buyRate: intBuy,    sellRate: intSell,    label: 'USDT ↔ محفظة داخلية',       enabled: true },
-        { from: 'INTERNAL',     to: 'USDT',     buyRate: intBuy,    sellRate: intSell,    label: 'محفظة داخلية ↔ USDT',       enabled: true },
-        // wallet <-> MGO: أسعار مستقلة عن USDT <-> MGO
-        { from: 'INTERNAL',     to: 'MGO',      buyRate: wMgoBuy,   sellRate: wMgoSell,   label: 'محفظة داخلية → MoneyGo',    enabled: true },
-        { from: 'MGO',          to: 'INTERNAL', buyRate: wMgoBuy,   sellRate: wMgoSell,   label: 'MoneyGo → محفظة داخلية',   enabled: true },
-      ];
+    // ── إذا الأدمن غيّر القيمة يدوياً في الحقل، استخدم قيمته ──
+    // نقارن القيمة الحالية في state مع اللي جاءت من السيرفر
+    // لو مختلفة → الأدمن عدّلها يدوياً → نستخدم قيمة الأدمن
+    const stateEgp  = parseFloat(rates.availableEgp);
+    const stateUsdt = parseFloat(rates.availableUsdt);
+    const stateMgo  = parseFloat(rates.availableMgo);
 
-      // ── اجلب أحدث قيم السيولة من السيرفر قبل الحفظ ──
-      // يمنع الكتابة فوق قيم السيولة التي حُدِّثت تلقائياً بعد الطلبات
-      let latestEgp, latestUsdt, latestMgo;
-      try {
-        const { data: fresh } = await adminAPI.getRates();
-        latestEgp  = fresh?.availableEgp  ?? parseFloat(rates.availableEgp)  ?? 0;
-        latestUsdt = fresh?.availableUsdt ?? parseFloat(rates.availableUsdt) ?? 0;
-        latestMgo  = fresh?.availableMgo  ?? parseFloat(rates.availableMgo)  ?? 0;
-      } catch {
-        latestEgp  = parseFloat(rates.availableEgp)  || 0;
-        latestUsdt = parseFloat(rates.availableUsdt) || 0;
-        latestMgo  = parseFloat(rates.availableMgo)  || 0;
-      }
+    // نستخدم قيمة السيرفر دائماً ما لم يكن الأدمن عدّل يدوياً
+    // الطريقة: لو state != latest بفارق > 0.01 → الأدمن عدّل
+    const avEgp  = Math.abs(stateEgp  - latestEgp)  > 0.01 ? stateEgp  : latestEgp;
+    const avUsdt = Math.abs(stateUsdt - latestUsdt) > 0.01 ? stateUsdt : latestUsdt;
+    const avMgo  = Math.abs(stateMgo  - latestMgo)  > 0.01 ? stateMgo  : latestMgo;
 
-      // إذا عدّل الأدمن قيمة السيولة يدوياً في الحقل، استخدم قيمته
-      const userEditedEgp  = parseFloat(rates.availableEgp);
-      const userEditedUsdt = parseFloat(rates.availableUsdt);
-      const userEditedMgo  = parseFloat(rates.availableMgo);
-      const avEgp  = isNaN(userEditedEgp)  ? latestEgp  : userEditedEgp;
-      const avUsdt = isNaN(userEditedUsdt) ? latestUsdt : userEditedUsdt;
-      const avMgo  = isNaN(userEditedMgo)  ? latestMgo  : userEditedMgo;
+    await adminAPI.saveRates({
+      pairs,
+      minEgp:        parseFloat(rates.minEgp)  || 0,
+      minUsdt:       parseFloat(rates.minUsdt) || 0,
+      minMgo:        parseFloat(rates.minMgo)  || 0,
+      maxEgp:        avEgp,
+      maxUsdt:       avUsdt,
+      maxMgo:        avMgo,
+      availableEgp:  avEgp,
+      availableUsdt: avUsdt,
+      availableMgo:  avMgo,
+      minOrderUsdt:  parseFloat(rates.minUsdt) || 0,
+      maxOrderUsdt:  avUsdt,
+    });
 
-      await adminAPI.saveRates({
-        pairs,
-        minEgp:  parseFloat(rates.minEgp)  || 0,
-        minUsdt: parseFloat(rates.minUsdt) || 0,
-        minMgo:  parseFloat(rates.minMgo)  || 0,
-        maxEgp:  avEgp,
-        maxUsdt: avUsdt,
-        maxMgo:  avMgo,
-        availableEgp:  avEgp,
-        availableUsdt: avUsdt,
-        availableMgo:  avMgo,
-        minOrderUsdt: parseFloat(rates.minUsdt) || 0,
-        maxOrderUsdt: avUsdt,
-      });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 4000);
-    } catch (e) { setError(e.message || 'فشل الحفظ'); }
-    finally { setSaving(false); }
-  };
+    // ── بعد الحفظ، حدّث الـ state بالقيم الفعلية ──
+    setRates(prev => ({
+      ...prev,
+      availableEgp:  avEgp,
+      availableUsdt: avUsdt,
+      availableMgo:  avMgo,
+    }));
+
+    setSaved(true);
+    setTimeout(() => setSaved(false), 4000);
+  } catch (e) {
+    setError(e.message || 'فشل الحفظ');
+  } finally {
+    setSaving(false);
+  }
+};
 
   if (loading) return <AdminLayout><div style={{ padding: 80, textAlign: 'center', color: '#6e7681' }}>جاري التحميل...</div></AdminLayout>;
 
