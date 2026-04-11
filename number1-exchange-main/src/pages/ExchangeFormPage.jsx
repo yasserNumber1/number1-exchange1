@@ -332,6 +332,8 @@ export default function ExchangeFormPage({ onOpenAuth }) {
     return errs
   }
 
+
+  
   const handleContinueToStep2 = () => {
     setSubmitted(true)
     const errs = validateStep1()
