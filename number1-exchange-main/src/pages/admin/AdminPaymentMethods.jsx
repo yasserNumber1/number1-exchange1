@@ -18,7 +18,7 @@ const SEND_PRESETS = [
   { id: 'etisalat-send', name: 'Etisalat Cash', symbol: 'EGP', type: 'egp', color: '#059669', img: null, icon: '📱', rateKey: 'EGP_ETISALAT', paymentMethodKey: 'ETISALAT_CASH', _cat: 'محافظ مصرية' },
   { id: 'meeza-send', name: 'Meeza', symbol: 'EGP', type: 'egp', color: '#10b981', img: null, icon: '💳', rateKey: 'EGP_MEEZA', paymentMethodKey: 'MEEZA', _cat: 'محافظ مصرية' },
   // ── عملات رقمية ──
-  { id: 'usdt-trc-send', name: 'USDT TRC20', symbol: 'USDT', type: 'crypto', color: '#26a17b', img: '/images/usdt.png', rateKey: 'USDT', paymentMethodKey: 'USDT_TRC20', _cat: 'عملات رقمية' },
+  { id: 'usdt-trc-send', name: 'Tether TRC20 USDT', symbol: 'USDT', type: 'crypto', color: '#26a17b', img: '/images/usdt.png', rateKey: 'USDT', paymentMethodKey: 'USDT_TRC20', _cat: 'عملات رقمية' },
   { id: 'usdt-erc-send', name: 'USDT ERC20', symbol: 'USDT', type: 'crypto', color: '#26a17b', img: '/images/usdt.png', rateKey: 'USDT', paymentMethodKey: 'USDT_ERC20', _cat: 'عملات رقمية' },
   { id: 'btc-send', name: 'Bitcoin', symbol: 'BTC', type: 'crypto', color: '#f7931a', img: null, icon: '₿', rateKey: 'BTC', paymentMethodKey: 'BTC', _cat: 'عملات رقمية' },
   { id: 'eth-send', name: 'Ethereum', symbol: 'ETH', type: 'crypto', color: '#627eea', img: null, icon: 'Ξ', rateKey: 'ETH', paymentMethodKey: 'ETH', _cat: 'عملات رقمية' },
@@ -42,7 +42,7 @@ const RECV_PRESETS = [
   { id: 'etisalat-recv', name: 'Etisalat Cash', symbol: 'EGP', type: 'egp', color: '#059669', img: null, icon: '📱', rateKey: 'EGP_ETISALAT', placeholder: '01XXXXXXXXX', _cat: 'محافظ مصرية' },
   { id: 'meeza-recv', name: 'Meeza', symbol: 'EGP', type: 'egp', color: '#10b981', img: null, icon: '💳', rateKey: 'EGP_MEEZA', placeholder: 'رقم البطاقة', _cat: 'محافظ مصرية' },
   // ── عملات رقمية ──
-  { id: 'usdt-recv', name: 'USDT TRC20', symbol: 'USDT', type: 'crypto', color: '#26a17b', img: '/images/usdt.png', rateKey: 'USDT', placeholder: 'T...', _cat: 'عملات رقمية' },
+  { id: 'usdt-recv', name: 'Tether TRC20 USDT', symbol: 'USDT', type: 'crypto', color: '#26a17b', img: '/images/usdt.png', rateKey: 'USDT', placeholder: 'T...', _cat: 'عملات رقمية' },
   { id: 'usdt-erc-recv', name: 'USDT ERC20', symbol: 'USDT', type: 'crypto', color: '#26a17b', img: '/images/usdt.png', rateKey: 'USDT', placeholder: '0x...', _cat: 'عملات رقمية' },
   { id: 'btc-recv', name: 'Bitcoin', symbol: 'BTC', type: 'crypto', color: '#f7931a', img: null, icon: '₿', rateKey: 'BTC', placeholder: 'bc1... or 1...', _cat: 'عملات رقمية' },
   { id: 'eth-recv', name: 'Ethereum', symbol: 'ETH', type: 'crypto', color: '#627eea', img: null, icon: 'Ξ', rateKey: 'ETH', placeholder: '0x...', _cat: 'عملات رقمية' },
