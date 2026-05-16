@@ -344,7 +344,7 @@ function WithdrawModal({ isOpen, onClose, balance }) {
   const handleClose = () => { setAmount(''); setMethod('moneygo'); setUsdtAddress(''); onClose() }
 
   const buildMessage = () => {
-    const methodLabel = method === 'moneygo' ? 'MoneyGo USD' : `USDT TRC20 على العنوان: ${usdtAddress}`
+    const methodLabel = method === 'moneygo' ? 'MoneyGo USD' : `method على العنوان: ${usdtAddress}`
     return `مرحباً، أريد سحب ${amount || '...'} USDT من رصيد محفظتي إلى ${methodLabel}`
   }
 
