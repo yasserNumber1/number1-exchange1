@@ -451,7 +451,7 @@ function ExchangeSelector() {
     <div>
       {hint}
       {lockAlert}
-      <div style={{ display: "flex", flexDirection: "row", gap: 16, alignItems: "stretch" }}>
+      <div style={{ display: "flex", flexDirection: lang === "en" ? "row-reverse" : "row", gap: 16, alignItems: "stretch" }}>
         <SendPanel sendMethod={sendMethod} recvMethod={recvMethod} onSelect={handleSelectSend} activeSend={activeSend} user={user} onLockedClick={handleLockedClick} />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0, gap: 6, paddingTop: 60 }}>
           <div style={{ width: 46, height: 46, borderRadius: "50%", background: bothReady ? "linear-gradient(135deg,var(--cyan),var(--purple))" : "var(--card)", border: `1.5px solid ${bothReady ? "transparent" : "var(--border-1)"}`, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.35s", boxShadow: bothReady ? "0 0 28px rgba(0,210,255,0.45)" : "none" }}>
