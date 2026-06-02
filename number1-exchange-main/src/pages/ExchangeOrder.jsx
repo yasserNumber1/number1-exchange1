@@ -55,17 +55,21 @@ function StatusBadge({ status, isAr }) {
 
 function CopyBtn({ text }) {
   const [copied, setCopied] = useState(false)
+  const { lang } = useLang()
+  const isAr = lang === 'ar'
+  const tr = (ar, en) => (isAr ? ar : en)
   return (
     <button onClick={() => { navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }) }}
       style={{ padding:'4px 10px', borderRadius:7, border:'1px solid var(--border-1)', background:copied?'rgba(0,229,160,0.12)':'transparent', color:copied?'var(--green)':'var(--text-3)', cursor:'pointer', fontSize:'0.72rem', fontFamily:"'JetBrains Mono',monospace", display:'flex', alignItems:'center', gap:4 }}>
       {copied
-        ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> تم</>
-        : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> نسخ</>}
+        ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> {tr('تم', 'Copied')}</>
+        : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> {tr('نسخ', 'Copy')}</>}
     </button>
   )
 }
 
-function CompletedScreen({ orderId, sendMethod, recvMethod, sendAmount, receiveAmount, navigate }) {
+function CompletedScreen({ orderId, sendMethod, recvMethod, sendAmount, receiveAmount, navigate, isAr }) {
+  const tr = (ar, en) => (isAr ? ar : en)
   return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', padding:'48px 24px 32px', gap:20 }}>
       <style>{`
@@ -79,10 +83,10 @@ function CompletedScreen({ orderId, sendMethod, recvMethod, sendAmount, receiveA
       <div style={{ animation:'eo-rise 0.5s ease 0.3s both' }}>
         <div style={{ fontSize:'0.72rem', color:'var(--cyan)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:2, marginBottom:10 }}>TRANSFER COMPLETE</div>
         <h2 style={{ fontFamily:"'Orbitron',sans-serif", fontSize:'clamp(1.4rem,5vw,1.9rem)', fontWeight:900, color:'var(--text-1)', margin:'0 0 10px', lineHeight:1.2 }}>
-          مبروك! تم إتمام طلبك بنجاح 🎉
+          {tr('مبروك! تم إتمام طلبك بنجاح 🎉', 'Congratulations! Your order completed successfully 🎉')}
         </h2>
         <p style={{ color:'var(--text-3)', fontFamily:"'Tajawal',sans-serif", fontSize:'0.95rem', lineHeight:1.8, margin:0 }}>
-          تمت العملية وتم إرسال المبلغ إلى حسابك المحدد
+          {tr('تمت العملية وتم إرسال المبلغ إلى حسابك المحدد', 'The transfer is complete and funds have been sent to your specified account')}
         </p>
       </div>
       {(sendAmount || receiveAmount) && (
@@ -90,7 +94,7 @@ function CompletedScreen({ orderId, sendMethod, recvMethod, sendAmount, receiveA
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
             {sendMethod && sendAmount && (
               <div style={{ textAlign:'center' }}>
-                <div style={{ fontSize:'0.65rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:1, marginBottom:4 }}>أرسلت</div>
+                <div style={{ fontSize:'0.65rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:1, marginBottom:4 }}>{tr('أرسلت', 'SENT')}</div>
                 <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'1.05rem', fontWeight:700, color:'var(--text-1)' }}>{sendAmount}</div>
                 <div style={{ fontSize:'0.72rem', color:'var(--text-3)' }}>{sendMethod?.name}</div>
               </div>
@@ -98,7 +102,7 @@ function CompletedScreen({ orderId, sendMethod, recvMethod, sendAmount, receiveA
             <div style={{ color:'var(--cyan)', fontSize:'1.3rem' }}>→</div>
             {recvMethod && receiveAmount && (
               <div style={{ textAlign:'center' }}>
-                <div style={{ fontSize:'0.65rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:1, marginBottom:4 }}>استلمت</div>
+                <div style={{ fontSize:'0.65rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:1, marginBottom:4 }}>{tr('استلمت', 'RECEIVED')}</div>
                 <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'1.15rem', fontWeight:700, color:'#00e5a0' }}>{receiveAmount}</div>
                 <div style={{ fontSize:'0.72rem', color:'var(--text-3)' }}>{recvMethod?.name}</div>
               </div>
@@ -107,18 +111,18 @@ function CompletedScreen({ orderId, sendMethod, recvMethod, sendAmount, receiveA
         </div>
       )}
       <div style={{ animation:'eo-rise 0.5s ease 0.55s both', background:'rgba(0,212,255,0.05)', border:'1px solid rgba(0,212,255,0.2)', borderRadius:10, padding:'10px 20px' }}>
-        <span style={{ fontSize:'0.7rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace" }}>رقم الطلب: </span>
+        <span style={{ fontSize:'0.7rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace" }}>{tr('رقم الطلب:', 'Order No.:')} </span>
         <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700, color:'var(--cyan)' }}>{orderId}</span>
       </div>
       <div style={{ animation:'eo-rise 0.5s ease 0.65s both', display:'flex', gap:12, flexWrap:'wrap', justifyContent:'center' }}>
         <button onClick={() => { clearOrderSession(); navigate('/') }}
           style={{ padding:'12px 28px', background:'linear-gradient(135deg,#00e5a0,#009fc0)', border:'none', borderRadius:12, color:'#000', fontWeight:800, fontFamily:"'Cairo','Tajawal',sans-serif", fontSize:'0.95rem', cursor:'pointer' }}>
-          العودة للرئيسية
+          {tr('العودة للرئيسية', 'Back to Home')}
         </button>
         <a href="https://t.me/nimber1" target="_blank" rel="noopener noreferrer"
           style={{ padding:'12px 20px', background:'transparent', border:'1px solid rgba(0,212,255,0.3)', borderRadius:12, color:'var(--cyan)', fontWeight:700, fontFamily:"'Cairo',sans-serif", fontSize:'0.88rem', textDecoration:'none', display:'flex', alignItems:'center', gap:6 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-          تواصل معنا
+          {tr('تواصل معنا', 'Contact Us')}
         </a>
       </div>
     </div>
@@ -129,37 +133,40 @@ function CancelModal({ orderId, sessionToken, onClose, onCancelled }) {
   const [reason,  setReason]  = useState('')
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
+  const { lang } = useLang()
+  const isAr = lang === 'ar'
+  const tr = (ar, en) => (isAr ? ar : en)
 
   const doCancel = async () => {
     setLoading(true); setError('')
     try {
       const res  = await fetch(`${API}/api/orders/${orderId}/cancel`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken, reason: reason.trim() || 'لم يحدد العميل سبباً' })
+        body: JSON.stringify({ sessionToken, reason: reason.trim() || tr('لم يحدد العميل سبباً', 'No reason provided') })
       })
       const data = await res.json()
       if (data.success) { clearOrderSession(); onCancelled() }
-      else setError(data.message || 'حدث خطأ')
-    } catch { setError('خطأ في الاتصال') }
+      else setError(data.message || tr('حدث خطأ', 'An error occurred'))
+    } catch { setError(tr('خطأ في الاتصال', 'Connection error')) }
     finally { setLoading(false) }
   }
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(6px)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
-      <div style={{ background:'var(--card)', border:'1px solid rgba(239,68,68,0.35)', borderRadius:20, padding:'28px 24px', maxWidth:420, width:'100%', direction:'rtl' }}>
+      <div style={{ background:'var(--card)', border:'1px solid rgba(239,68,68,0.35)', borderRadius:20, padding:'28px 24px', maxWidth:420, width:'100%', direction: isAr ? 'rtl' : 'ltr' }}>
         <div style={{ fontSize:'1.4rem', marginBottom:6, textAlign:'center' }}>⚠️</div>
-        <h3 style={{ fontFamily:"'Tajawal',sans-serif", color:'#f87171', textAlign:'center', margin:'0 0 8px', fontSize:'1.05rem', fontWeight:800 }}>إلغاء الطلب</h3>
+        <h3 style={{ fontFamily:"'Tajawal',sans-serif", color:'#f87171', textAlign:'center', margin:'0 0 8px', fontSize:'1.05rem', fontWeight:800 }}>{tr('إلغاء الطلب', 'Cancel Order')}</h3>
         <p style={{ fontFamily:"'Tajawal',sans-serif", color:'var(--text-3)', fontSize:'0.85rem', textAlign:'center', margin:'0 0 20px', lineHeight:1.7 }}>
-          هل أنت متأكد؟ سيتم إلغاء الطلب <strong style={{ color:'var(--cyan)' }}>{orderId}</strong> وإرسال إشعار للإدارة.
+          {tr('هل أنت متأكد؟ سيتم إلغاء الطلب', 'Are you sure? Order')} <strong style={{ color:'var(--cyan)' }}>{orderId}</strong> {tr('وإرسال إشعار للإدارة.', 'will be cancelled and the admin will be notified.')}
         </p>
-        <label style={{ fontSize:'0.72rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:1, display:'block', marginBottom:6 }}>سبب الإلغاء (اختياري)</label>
-        <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="مثال: تغيير طريقة الدفع، خطأ في البيانات..." rows={3}
+        <label style={{ fontSize:'0.72rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:1, display:'block', marginBottom:6 }}>{tr('سبب الإلغاء (اختياري)', 'Cancellation reason (optional)')}</label>
+        <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder={tr("مثال: تغيير طريقة الدفع، خطأ في البيانات...", "e.g. Wrong payment method, incorrect details...")} rows={3}
           style={{ width:'100%', padding:'10px 12px', background:'rgba(255,255,255,0.03)', border:'1px solid var(--border-1)', borderRadius:10, color:'var(--text-1)', fontFamily:"'Tajawal',sans-serif", fontSize:'0.88rem', resize:'vertical', outline:'none', boxSizing:'border-box' }} />
         {error && <p style={{ color:'#f87171', fontSize:'0.8rem', fontFamily:"'Tajawal',sans-serif", margin:'8px 0 0' }}>{error}</p>}
         <div style={{ display:'flex', gap:10, marginTop:18 }}>
-          <button onClick={onClose} disabled={loading} style={{ flex:1, padding:'11px', background:'transparent', border:'1px solid var(--border-1)', borderRadius:10, color:'var(--text-2)', fontFamily:"'Tajawal',sans-serif", fontWeight:700, cursor:'pointer', fontSize:'0.9rem' }}>تراجع</button>
+          <button onClick={onClose} disabled={loading} style={{ flex:1, padding:'11px', background:'transparent', border:'1px solid var(--border-1)', borderRadius:10, color:'var(--text-2)', fontFamily:"'Tajawal',sans-serif", fontWeight:700, cursor:'pointer', fontSize:'0.9rem' }}>{tr('تراجع', 'Go Back')}</button>
           <button onClick={doCancel} disabled={loading} style={{ flex:1, padding:'11px', background:'rgba(239,68,68,0.15)', border:'1px solid rgba(239,68,68,0.4)', borderRadius:10, color:'#f87171', fontFamily:"'Tajawal',sans-serif", fontWeight:800, cursor:loading?'not-allowed':'pointer', fontSize:'0.9rem', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-            {loading ? <span style={{ width:16, height:16, border:'2px solid #f8717144', borderTopColor:'#f87171', borderRadius:'50%', display:'inline-block', animation:'eo-spin 0.8s linear infinite' }} /> : '🚫 تأكيد الإلغاء'}
+            {loading ? <span style={{ width:16, height:16, border:'2px solid #f8717144', borderTopColor:'#f87171', borderRadius:'50%', display:'inline-block', animation:'eo-spin 0.8s linear infinite' }} /> : tr('🚫 تأكيد الإلغاء', '🚫 Confirm Cancellation')}
           </button>
         </div>
       </div>
@@ -217,8 +224,8 @@ export default function ExchangeOrder() {
       if (data.success) {
         setOrder(data.order); setApiError('')
         if (['completed', 'rejected', 'cancelled'].includes(data.order.status)) clearOrderSession()
-      } else setApiError(data.message || 'لم يُعثر على الطلب')
-    } catch { setApiError('خطأ في الاتصال') }
+      } else setApiError(data.message || tr('لم يُعثر على الطلب', 'Order not found'))
+    } catch { setApiError(tr('خطأ في الاتصال', 'Connection error')) }
     finally  { setFetching(false); setLastRefresh(new Date()) }
   }, [orderId])
 
@@ -328,7 +335,7 @@ export default function ExchangeOrder() {
       {/* شاشة الاكتمال */}
       {isCompleted ? (
         <div className="eo-content">
-          <CompletedScreen orderId={orderId} sendMethod={sendMethod} recvMethod={recvMethod} sendAmount={displaySendAmt} receiveAmount={displayRecvAmt} navigate={navigate} />
+          <CompletedScreen orderId={orderId} sendMethod={sendMethod} recvMethod={recvMethod} sendAmount={displaySendAmt} receiveAmount={displayRecvAmt} navigate={navigate} isAr={isAr} />
         </div>
       ) : (
 
@@ -338,7 +345,7 @@ export default function ExchangeOrder() {
         <div className="eo-status-card">
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
             <div>
-              <div style={{ fontSize:'0.64rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:'0.8px', marginBottom:5 }}>رقم الطلب</div>
+              <div style={{ fontSize:'0.64rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:'0.8px', marginBottom:5 }}>{tr('رقم الطلب', 'Order No.')}</div>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'1rem', fontWeight:700, color:'var(--cyan)' }}>{orderId}</span>
                 <CopyBtn text={orderId} />
@@ -377,7 +384,7 @@ export default function ExchangeOrder() {
           {!isDone && !isApproved && (
             <div className={`eo-timer ${expired ? 'eo-timer--expired' : secondsLeft < 300 ? 'eo-timer--warning' : ''}`}>
               {expired
-                ? <><span>⏰</span> انتهت مهلة الطلب</>
+                ? <><span>⏰</span> {tr('انتهت مهلة الطلب', 'Order time has expired')}</>
                 : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     {tr('الوقت المتبقي', 'Time Left')}:&nbsp;<span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700 }}>{fmtTime(secondsLeft)}</span>
                   </>}
@@ -407,12 +414,12 @@ export default function ExchangeOrder() {
         {/* ملخص التبادل */}
         {(sendMethod || recvMethod) && (
           <div className="eo-card">
-            <div className="eo-section-label">ملخص التبادل</div>
+            <div className="eo-section-label">{tr('ملخص التبادل', 'Exchange Summary')}</div>
             <div className="eo-pair-row">
               <div className="eo-pair-side">
                 <MethodIcon method={sendMethod} size={38} />
                 <div>
-                  <div style={{ fontSize:'0.62rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:'0.7px', textTransform:'uppercase' }}>ترسل</div>
+                  <div style={{ fontSize:'0.62rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:'0.7px', textTransform:'uppercase' }}>{tr('ترسل', 'SEND')}</div>
                   <div style={{ fontSize:'0.9rem', fontWeight:800, color:'var(--text-1)', marginTop:2 }}>{sendMethod?.name}</div>
                   {displaySendAmt && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'1.05rem', fontWeight:700, color:'var(--text-1)', marginTop:3 }}>{displaySendAmt} <span style={{ fontSize:'0.75rem', color:'var(--text-3)' }}>{sendMethod?.symbol}</span></div>}
                 </div>
@@ -420,7 +427,7 @@ export default function ExchangeOrder() {
               <div className="eo-pair-arrow"><FlowDots /></div>
               <div className="eo-pair-side eo-pair-side--right">
                 <div style={{ textAlign:'right' }}>
-                  <div style={{ fontSize:'0.62rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:'0.7px', textTransform:'uppercase' }}>تستلم</div>
+                  <div style={{ fontSize:'0.62rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:'0.7px', textTransform:'uppercase' }}>{tr('تستلم', 'RECEIVE')}</div>
                   <div style={{ fontSize:'0.9rem', fontWeight:800, color:'var(--text-1)', marginTop:2 }}>{recvMethod?.name}</div>
                   {displayRecvAmt && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'1.05rem', fontWeight:700, color:'var(--green)', marginTop:3 }}>{displayRecvAmt} <span style={{ fontSize:'0.75rem', color:'var(--text-3)' }}>{recvMethod?.symbol}</span></div>}
                 </div>
@@ -429,7 +436,7 @@ export default function ExchangeOrder() {
             </div>
             {displayRecipient && (
               <div className="eo-info-row">
-                <span style={{ color:'var(--text-3)', fontSize:'0.78rem' }}>{recvMethod?.id === 'mgo-recv' ? 'معرّف MoneyGo' : 'عنوان المحفظة'}</span>
+                <span style={{ color:'var(--text-3)', fontSize:'0.78rem' }}>{recvMethod?.id === 'mgo-recv' ? tr('معرّف MoneyGo', 'MoneyGo ID') : tr('عنوان المحفظة', 'Wallet Address')}</span>
                 <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                   <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'0.78rem', color:'var(--text-2)', wordBreak:'break-all', textAlign:'left', direction:'ltr' }}>{displayRecipient}</span>
                   <CopyBtn text={displayRecipient} />
@@ -438,7 +445,7 @@ export default function ExchangeOrder() {
             )}
             {email && (
               <div className="eo-info-row">
-                <span style={{ color:'var(--text-3)', fontSize:'0.78rem' }}>البريد الإلكتروني</span>
+                <span style={{ color:'var(--text-3)', fontSize:'0.78rem' }}>{tr('البريد الإلكتروني', 'Email')}</span>
                 <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'0.78rem', color:'var(--text-2)', direction:'ltr' }}>{email}</span>
               </div>
             )}
@@ -448,18 +455,18 @@ export default function ExchangeOrder() {
         {/* تعليمات الدفع */}
         {isEgpSend && adminItem && !isApproved && (
           <div className="eo-card eo-instr-card">
-            <div className="eo-section-label">📲 تعليمات التحويل</div>
-            <p style={{ fontSize:'0.83rem', color:'var(--text-2)', margin:'0 0 14px', lineHeight:1.7 }}>يرجى تحويل المبلغ إلى الحساب التالي ثم الانتظار حتى يتم التحقق من الدفع:</p>
+            <div className="eo-section-label">📲 {tr('تعليمات التحويل', 'Transfer Instructions')}</div>
+            <p style={{ fontSize:'0.83rem', color:'var(--text-2)', margin:'0 0 14px', lineHeight:1.7 }}>{tr('يرجى تحويل المبلغ إلى الحساب التالي ثم الانتظار حتى يتم التحقق من الدفع:', 'Please transfer the amount to the account below and wait for payment verification:')}</p>
             <div className="eo-instr-box">
               <div className="eo-instr-row">
-                <span className="eo-instr-key">{adminItem.name || 'الوسيلة'}</span>
+                <span className="eo-instr-key">{adminItem.name || tr('الوسيلة', 'Method')}</span>
                 <div style={{ display:'flex', alignItems:'center', gap:6 }}><span className="eo-instr-val">{adminItem.number}</span><CopyBtn text={adminItem.number} /></div>
               </div>
-              {displaySendAmt && <div className="eo-instr-row"><span className="eo-instr-key">المبلغ المطلوب</span><span className="eo-instr-val" style={{ color:'var(--gold)' }}>{displaySendAmt} جنيه</span></div>}
+              {displaySendAmt && <div className="eo-instr-row"><span className="eo-instr-key">{tr('المبلغ المطلوب', 'Required Amount')}</span><span className="eo-instr-val" style={{ color:'var(--gold)' }}>{displaySendAmt} {tr('جنيه', 'EGP')}</span></div>}
             </div>
             <div className="eo-warning">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink:0, marginTop:1 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <span>تأكد من إرسال المبلغ بالضبط. احتفظ بصورة الإيصال للرجوع إليها.</span>
+              <span>{tr('تأكد من إرسال المبلغ بالضبط. احتفظ بصورة الإيصال للرجوع إليها.', 'Make sure to send the exact amount. Keep a screenshot of the receipt for your records.')}</span>
             </div>
           </div>
         )}
@@ -467,14 +474,14 @@ export default function ExchangeOrder() {
 
         {/* خطوات حالة الطلب */}
         <div className="eo-card">
-          <div className="eo-section-label">حالة الطلب</div>
+          <div className="eo-section-label">{tr('حالة الطلب', 'Order Status')}</div>
           <div className="eo-status-steps">
             {[
-              { key:'pending',    label:'تم استلام الطلب',       icon:'📥' },
-              { key:'verifying',  label:'جاري التحقق من الدفع',  icon:'🔍' },
-              { key:'verified',   label:'تم التحقق من الدفع',    icon:'✅' },
-              { key:'processing', label:'جاري إرسال MoneyGo',    icon:'⚡' },
-              { key:'completed',  label:'تم الإرسال بنجاح',      icon:'🎉' },
+              { key:'pending',    ar:'تم استلام الطلب',       en:'Order Received',         icon:'📥' },
+              { key:'verifying',  ar:'جاري التحقق من الدفع',  en:'Verifying Payment',      icon:'🔍' },
+              { key:'verified',   ar:'تم التحقق من الدفع',    en:'Payment Verified',       icon:'✅' },
+              { key:'processing', ar:'جاري إرسال MoneyGo',    en:'Sending via MoneyGo',    icon:'⚡' },
+              { key:'completed',  ar:'تم الإرسال بنجاح',      en:'Transfer Successful',    icon:'🎉' },
             ].map((step, i, arr) => {
               const order_ = ['pending','verifying','verified','processing','completed','rejected','cancelled']
               const curIdx  = order_.indexOf(currentStatus)
@@ -489,7 +496,7 @@ export default function ExchangeOrder() {
                       : <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--border-2)', display:'block' }} />}
                   </div>
                   {i < arr.length-1 && <div className={`eo-status-step-line ${isCompleted_ ? 'eo-status-step-line--done' : ''}`} />}
-                  <span className="eo-status-step-label">{step.icon} {step.label}</span>
+                  <span className="eo-status-step-label">{step.icon} {tr(step.ar, step.en)}</span>
                 </div>
               )
             })}
@@ -498,7 +505,7 @@ export default function ExchangeOrder() {
                 <div className="eo-status-step-dot" style={{ borderColor:'#f87171', color:'#f87171' }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </div>
-                <span className="eo-status-step-label" style={{ color:'#f87171' }}>❌ {isRejected ? 'تم رفض الطلب' : 'تم إلغاء الطلب'}</span>
+                <span className="eo-status-step-label" style={{ color:'#f87171' }}>❌ {isRejected ? tr('تم رفض الطلب', 'Order Rejected') : tr('تم إلغاء الطلب', 'Order Cancelled')}</span>
               </div>
             )}
           </div>
@@ -508,17 +515,17 @@ export default function ExchangeOrder() {
         <div style={{ display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
           <a href="https://t.me/nimber1" target="_blank" rel="noopener noreferrer" className="eo-help-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink:0 }}><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-            تواصل عبر Telegram
+            {tr('تواصل عبر Telegram', 'Contact via Telegram')}
           </a>
           <button onClick={() => navigate('/track')} className="eo-help-btn eo-help-btn--ghost">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink:0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            تتبع طلب آخر
+            {tr('تتبع طلب آخر', 'Track Another Order')}
           </button>
           {canCancel && !expired && (
             <button onClick={() => setShowCancel(true)}
               style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', background:'rgba(239,68,68,0.07)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:10, color:'#f87171', fontFamily:"'Tajawal',sans-serif", fontWeight:700, cursor:'pointer', fontSize:'0.82rem', marginRight:'auto' }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-              إلغاء العملية
+              {tr('إلغاء العملية', 'Cancel Order')}
             </button>
           )}
         </div>
