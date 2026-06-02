@@ -307,7 +307,7 @@ function MobileExchangeSelector({ sendMethod, recvMethod, onSend, onRecv, bothRe
   )
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "row", alignItems: "stretch", gap: 0, position: "relative" }}>
+      <div style={{ display: "flex", flexDirection: lang === "en" ? "row-reverse" : "row", alignItems: "stretch", gap: 0, position: "relative" }}>
         {/* SEND */}
         <div style={{ flex: 1, minWidth: 0, background: "var(--card)", border: "1px solid var(--border-1)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "8px 10px 6px", borderBottom: "1px solid var(--border-1)", background: "linear-gradient(135deg,rgba(0,210,255,0.07),transparent)", textAlign: "center" }}>
