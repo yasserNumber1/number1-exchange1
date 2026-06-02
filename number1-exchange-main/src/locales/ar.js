@@ -183,6 +183,16 @@ const ar = {
   // ── Currency Names ──
   curr_egp:    'جنيه مصري',
   curr_crypto: 'رقمي',
+
+  // ── Statuses & Actions ──
+  status_created:     'تم الإنشاء',
+  status_in_progress: 'جاري التنفيذ',
+  status_verified:    'تم التحقق',
+  status_processing:  'معالجة',
+  status_completed:   'مكتمل',
+  status_failed:      'مرفوض',
+  status_cancelled:   'ملغي',
+  status_expired:     'منتهي',
 }
 
 export default ar

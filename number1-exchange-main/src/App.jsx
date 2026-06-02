@@ -47,12 +47,47 @@ const PAGE_SEO = {
   },
 }
 
-function applyPageSEO(pathname) {
-  const seo = PAGE_SEO[pathname]
-  if (!seo) return
-  document.title = seo.title
-  let desc = document.querySelector('meta[name="description"]')
-  if (desc) desc.setAttribute('content', seo.description)
+const PAGE_SEO_EN = {
+  '/': {
+    title: 'Number1 Exchange | Buy & Sell USDT | Digital Currency Exchange',
+    description: 'Buy and sell USDT TRC20 at the best rates in Egypt. Exchange from Vodafone Cash, Instapay, and Etisalat Cash to USDT and MoneyGo USD quickly and securely.',
+  },
+  '/rates': {
+    title: 'Daily Exchange Rates | Number1 Exchange',
+    description: 'Check the latest USDT exchange rates against the Egyptian Pound and US Dollar in real-time on Number1 Exchange.',
+  },
+  '/how-it-works': {
+    title: 'How It Works | Number1 Exchange',
+    description: 'Step-by-step guide to buying and selling USDT and exchanging money via Number1 Exchange with ease.',
+  },
+  '/reviews': {
+    title: 'Customer Reviews | Number1 Exchange',
+    description: 'Read reviews and ratings from Number1 Exchange customers about their digital currency exchange experience.',
+  },
+  '/contact': {
+    title: 'Contact Us | Number1 Exchange',
+    description: 'Contact the Number1 Exchange support team for assistance with USDT exchanges.',
+  },
+  '/faq': {
+    title: 'FAQ | Number1 Exchange',
+    description: 'Answers to the most frequently asked questions about Number1 Exchange and USDT transactions.',
+  },
+  '/about': {
+    title: 'About Us | Number1 Exchange',
+    description: 'Learn about Number1 Exchange — the trusted platform for exchanging digital currencies and buying/selling USDT in Egypt.',
+  },
+  '/track': {
+    title: 'Track Your Order | Number1 Exchange',
+    description: 'Track the status of your exchange order on Number1 Exchange in real-time.',
+  },
+  '/my-orders': {
+    title: 'My Orders | Number1 Exchange',
+    description: 'View all your exchange orders on Number1 Exchange.',
+  },
+  '/wallet': {
+    title: 'Wallet | Number1 Exchange',
+    description: 'Manage your digital wallet on Number1 Exchange.',
+  },
 }
 
 import Navbar         from './components/common/Navbar'
@@ -89,6 +124,7 @@ import AdminLogin       from './pages/admin/AdminLogin'
 import AdminAuditLogs   from './pages/admin/AdminAuditLogs'
 
 import useAuth from './context/useAuth'
+import useLang from './context/useLang'
 
 import Terms   from './pages/legal/Terms'
 import Privacy from './pages/legal/Privacy'
@@ -102,6 +138,7 @@ function ReturnToOrderBanner() {
   const [session, setSession] = useState(null)
   const [visible, setVisible] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
+  const { lang } = useLang()
 
  useEffect(() => {
   const sess = readOrderSession()
@@ -145,6 +182,7 @@ function ReturnToOrderBanner() {
   const mins = Math.floor(timeLeft / 60)
   const secs = timeLeft % 60
   const fmt  = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`
+  const isAr = lang === 'ar'
 
   return (
     <div style={{
@@ -156,6 +194,7 @@ function ReturnToOrderBanner() {
       boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
       animation: 'bannerSlideUp 0.4s ease',
       maxWidth: 'calc(100vw - 40px)',
+      direction: isAr ? 'rtl' : 'ltr',
     }}>
       <style>{`
         @keyframes bannerSlideUp { from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
@@ -164,9 +203,9 @@ function ReturnToOrderBanner() {
       <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--cyan)', flexShrink:0,
         boxShadow:'0 0 8px var(--cyan)', animation:'bannerPulse 2s infinite' }} />
       <div>
-        <div style={{ fontSize:'0.68rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:1 }}>ACTIVE ORDER</div>
+        <div style={{ fontSize:'0.68rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:1 }}>{isAr ? 'طلب نشط' : 'ACTIVE ORDER'}</div>
         <div style={{ fontSize:'0.88rem', color:'var(--text-1)', fontFamily:"'Tajawal',sans-serif", fontWeight:600 }}>
-          طلبك <span style={{ color:'var(--cyan)', fontFamily:"'JetBrains Mono',monospace" }}>{session.orderNumber}</span>
+          {isAr ? 'طلبك' : 'Your order'} <span style={{ color:'var(--cyan)', fontFamily:"'JetBrains Mono',monospace" }}>{session.orderNumber}</span>
           &nbsp;— <span style={{ color: timeLeft < 120 ? '#f43f5e' : '#f59e0b', fontFamily:"'JetBrains Mono',monospace" }}>{fmt}</span>
         </div>
       </div>
@@ -174,7 +213,7 @@ function ReturnToOrderBanner() {
         padding:'7px 16px', background:'var(--cyan)', borderRadius:10,
         color:'#000', fontWeight:700, fontFamily:"'Tajawal',sans-serif",
         fontSize:'0.82rem', textDecoration:'none', flexShrink:0, whiteSpace:'nowrap'
-      }}>تتبع الطلب</a>
+      }}>{isAr ? 'تتبع الطلب' : 'Track Order'}</a>
       <button onClick={() => setVisible(false)} style={{
         background:'transparent', border:'none', color:'var(--text-3)',
         cursor:'pointer', padding:'2px 4px', fontSize:'1rem', lineHeight:1, flexShrink:0
@@ -185,11 +224,13 @@ function ReturnToOrderBanner() {
 
 // ── Maintenance Page ───────────────────────────────────────
 function MaintenancePage() {
+  const { lang } = useLang()
+  const isAr = lang === 'ar'
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg)', direction: 'rtl', padding: 24,
+      background: 'var(--bg)', direction: isAr ? 'rtl' : 'ltr', padding: 24,
       textAlign: 'center', gap: 20,
     }}>
       <div style={{ fontSize: 64 }}>🔧</div>
@@ -197,14 +238,13 @@ function MaintenancePage() {
         fontFamily: "'Orbitron',sans-serif", fontSize: 'clamp(1.4rem,4vw,2rem)',
         fontWeight: 900, color: 'var(--cyan)', margin: 0,
       }}>
-        المنصة تحت الصيانة
+        {isAr ? 'المنصة تحت الصيانة' : 'Platform Under Maintenance'}
       </h1>
       <p style={{
         fontSize: '1rem', color: 'var(--text-3)', maxWidth: 400,
         fontFamily: "'Tajawal',sans-serif", lineHeight: 1.8, margin: 0,
       }}>
-        نعمل على تحسين المنصة لخدمتك بشكل أفضل.
-        يرجى المراجعة لاحقاً.
+        {isAr ? 'نعمل على تحسين المنصة لخدمتك بشكل أفضل. يرجى المراجعة لاحقاً.' : 'We are improving the platform to serve you better. Please check back later.'}
       </p>
       <div style={{
         background: 'var(--card)', border: '1px solid var(--border-1)',
@@ -231,9 +271,17 @@ function App() {
   const location    = useLocation()
   const isAdminPage = location.pathname.startsWith('/admin')
   const { user }    = useAuth()
+  const { lang }    = useLang()
 
   // ── Update title + meta description on every route change ──
-  useEffect(() => { applyPageSEO(location.pathname) }, [location.pathname])
+  useEffect(() => {
+    const seo = lang === 'ar' ? PAGE_SEO[location.pathname] : PAGE_SEO_EN[location.pathname]
+    if (seo) {
+      document.title = seo.title
+      let desc = document.querySelector('meta[name="description"]')
+      if (desc) desc.setAttribute('content', seo.description)
+    }
+  }, [location.pathname, lang])
 
   const [authOpen,     setAuthOpen]     = useState(false)
   const [authTab,      setAuthTab]      = useState('login')
@@ -272,7 +320,7 @@ function App() {
   // ══════════════════════════════════════════
   if (isAdminPage) {
     return (
-      <Routes>
+      <Routes key={`admin-${lang}`}>
         <Route path="/admin"                 element={<AdminRoute><AdminDashboard      /></AdminRoute>} />
         <Route path="/admin/orders"          element={<AdminRoute><AdminOrders         /></AdminRoute>} />
         <Route path="/admin/rates"           element={<AdminRoute><AdminRates          /></AdminRoute>} />
@@ -298,7 +346,7 @@ function App() {
         setMobileMenuOpen={setMobileMenuOpen}
       />
       <main className="n1-main-pad" style={{ flex: 1 }}>
-        <Routes>
+        <Routes key={`public-${lang}`}>
           <Route path="/"             element={<Home onOpenAuth={openAuth} />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/rates"        element={<Rates />}      />

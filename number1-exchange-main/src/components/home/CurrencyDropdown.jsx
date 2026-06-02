@@ -1,9 +1,12 @@
 // src/components/home/CurrencyDropdown.jsx
 import { useState, useEffect, useRef } from 'react'
+import useLang from '../../context/useLang'
 
 function CurrencyDropdown({ options, selected, onSelect }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const { lang } = useLang()
+  const isAr = lang === 'ar'
 
   useEffect(() => {
     if (!open) return undefined
@@ -50,7 +53,7 @@ function CurrencyDropdown({ options, selected, onSelect }) {
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-1)' }}>{selected.name}</div>
           <div style={{ fontSize: '0.6rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>
-            {selected.type === 'egp' ? 'جنيه مصري' : 'رقمي'}
+            {selected.type === 'egp' ? (isAr ? 'جنيه مصري' : 'EGP') : (isAr ? 'رقمي' : 'Crypto')}
           </div>
         </div>
         <svg width="10" height="6" viewBox="0 0 10 6" fill="none"

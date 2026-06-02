@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate }         from 'react-router-dom'
 import useAuth                 from '../context/useAuth'
+import useLang                 from '../context/useLang'
 import { walletAPI }           from '../services/api'
 
 const API      = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -13,18 +14,18 @@ const getToken = () => localStorage.getItem('n1_token')
 
 // ─── أنواع المعاملات ──────────────────────────
 const TX_CONFIG = {
-  deposit:       { label: 'إيداع USDT',    color: '#00e5a0', icon: '↓', bg: '#064e3b' },
-  withdraw:      { label: 'سحب USDT',      color: '#f85149', icon: '↑', bg: '#3d0a0a' },
-  exchange_debit:{ label: 'صرافة',         color: '#60a5fa', icon: '⇄', bg: '#1e3a5f' },
-  admin_adjust:  { label: 'تعديل يدوي',    color: '#f59e0b', icon: '✎', bg: '#3d2800' },
+  deposit:       { ar: 'إيداع USDT',  en: 'USDT Deposit',     color: '#00e5a0', icon: '↓', bg: '#064e3b' },
+  withdraw:      { ar: 'سحب USDT',    en: 'USDT Withdrawal',  color: '#f85149', icon: '↑', bg: '#3d0a0a' },
+  exchange_debit:{ ar: 'صرافة',       en: 'Exchange',         color: '#60a5fa', icon: '⇄', bg: '#1e3a5f' },
+  admin_adjust:  { ar: 'تعديل يدوي',  en: 'Manual Adjust',    color: '#f59e0b', icon: '✎', bg: '#3d2800' },
 }
 
 // ─── بادج الحالة ─────────────────────────────
-function StatusBadge({ status }) {
+function StatusBadge({ status, isAr = true }) {
   const map = {
-    pending:  { ar: 'قيد المراجعة', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-    approved: { ar: 'موافق عليه',   color: '#00e5a0', bg: 'rgba(0,229,160,0.12)'  },
-    rejected: { ar: 'مرفوض',        color: '#f85149', bg: 'rgba(248,81,73,0.12)'  },
+    pending:  { ar: 'قيد المراجعة', en: 'Pending',   color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+    approved: { ar: 'موافق عليه',   en: 'Approved',  color: '#00e5a0', bg: 'rgba(0,229,160,0.12)'  },
+    rejected: { ar: 'مرفوض',        en: 'Rejected',  color: '#f85149', bg: 'rgba(248,81,73,0.12)'  },
   }
   const s = map[status] || map.pending
   return (
@@ -33,7 +34,7 @@ function StatusBadge({ status }) {
       background: s.bg, color: s.color,
       fontFamily: "'JetBrains Mono',monospace",
       border: `1px solid ${s.color}33`, whiteSpace: 'nowrap'
-    }}>{s.ar}</span>
+    }}>{isAr ? s.ar : s.en}</span>
   )
 }
 
@@ -458,7 +459,10 @@ function WithdrawModal({ isOpen, onClose, balance }) {
 // ══════════════════════════════════════════════
 export default function WalletPage() {
   const { user, loading: authLoading }   = useAuth()
+  const { lang } = useLang()
   const navigate   = useNavigate()
+  const isAr = lang === 'ar'
+  const tr = (ar, en) => (isAr ? ar : en)
   const [wallet,       setWallet]       = useState(null)
   const [transactions, setTransactions] = useState([])
   const [deposits,     setDeposits]     = useState([])
@@ -482,7 +486,7 @@ export default function WalletPage() {
       const { data } = await walletAPI.getWallet()
       setWallet(data.wallet)
       setTransactions(data.transactions || [])
-    } catch { setError('تعذر تحميل المحفظة') }
+    } catch { setError(tr('تعذر تحميل المحفظة', 'Failed to load wallet')) }
     finally  { setLoading(false) }
     fetchDeposits()
   }
@@ -496,7 +500,7 @@ export default function WalletPage() {
   }
 
   const handleDepositSuccess = () => {
-    setSuccessMsg('✅ تم إرسال طلبك! سيتم مراجعته خلال 24 ساعة.')
+    setSuccessMsg(tr('✅ تم إرسال طلبك! سيتم مراجعته خلال 24 ساعة.', '✅ Your request was submitted! It will be reviewed within 24 hours.'))
     fetchAll()
     setTimeout(() => setSuccessMsg(''), 5000)
   }
@@ -504,7 +508,7 @@ export default function WalletPage() {
   if (loading) return (
     <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
       <div style={{ width: 36, height: 36, border: '3px solid var(--border-1)', borderTopColor: 'var(--cyan)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      <div style={{ color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif" }}>جاري تحميل المحفظة...</div>
+      <div style={{ color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif" }}>{tr('جاري تحميل المحفظة...', 'Loading wallet...')}</div>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
@@ -516,13 +520,13 @@ export default function WalletPage() {
   )
 
   return (
-    <div style={{ minHeight: '80vh', padding: '50px 24px 80px', maxWidth: 720, margin: '0 auto', direction: 'rtl' }}>
+    <div style={{ minHeight: '80vh', padding: '50px 24px 80px', maxWidth: 720, margin: '0 auto', direction: isAr ? 'rtl' : 'ltr' }}>
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.06)', marginBottom: 14 }}>
           <span style={{ fontSize: '0.65rem', color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 2 }}>VIRTUAL WALLET</span>
         </div>
-        <h1 style={{ fontFamily: "'Tajawal',sans-serif", fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>محفظتي</h1>
-        {wallet?.walletId && <div style={{ marginTop: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8rem', color: 'var(--text-3)' }}>رقم المحفظة: <span style={{ color: 'var(--cyan)', fontWeight: 700 }}>{wallet.walletId}</span></div>}
+        <h1 style={{ fontFamily: "'Tajawal',sans-serif", fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>{tr('محفظتي', 'My Wallet')}</h1>
+        {wallet?.walletId && <div style={{ marginTop: 6, fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8rem', color: 'var(--text-3)' }}>{tr('رقم المحفظة', 'Wallet ID')}: <span style={{ color: 'var(--cyan)', fontWeight: 700 }}>{wallet.walletId}</span></div>}
       </div>
 
       {successMsg && <div style={{ marginBottom: 20, padding: '12px 16px', background: 'rgba(0,229,160,0.08)', border: '1px solid rgba(0,229,160,0.25)', borderRadius: 12, color: '#00e5a0', fontSize: '0.88rem', fontFamily: "'Tajawal',sans-serif" }}>{successMsg}</div>}
@@ -537,7 +541,7 @@ export default function WalletPage() {
           <span style={{ fontSize: '1.1rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>USDT</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-          {[{ label: 'إجمالي الإيداع', value: `${wallet?.totalDeposited?.toFixed(2) || '0.00'} USDT`, color: '#00e5a0' }, { label: 'إجمالي السحب', value: `${wallet?.totalWithdrawn?.toFixed(2) || '0.00'} USDT`, color: '#f85149' }].map(s => (
+          {[{ label: tr('إجمالي الإيداع', 'Total Deposits'), value: `${wallet?.totalDeposited?.toFixed(2) || '0.00'} USDT`, color: '#00e5a0' }, { label: tr('إجمالي السحب', 'Total Withdrawals'), value: `${wallet?.totalWithdrawn?.toFixed(2) || '0.00'} USDT`, color: '#f85149' }].map(s => (
             <div key={s.label} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '11px 14px' }}>
               <div style={{ fontSize: '0.62rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 4 }}>{s.label}</div>
               <div style={{ fontSize: '0.88rem', fontWeight: 700, color: s.color, fontFamily: "'JetBrains Mono',monospace" }}>{s.value}</div>
@@ -545,16 +549,16 @@ export default function WalletPage() {
           ))}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <button onClick={() => setShowDeposit(true)} disabled={!wallet?.isActive} style={{ padding: 13, background: 'linear-gradient(135deg,#26a17b,#1a7a5e)', border: 'none', borderRadius: 12, color: '#fff', fontFamily: "'Tajawal',sans-serif", fontSize: '0.95rem', fontWeight: 800, cursor: wallet?.isActive ? 'pointer' : 'not-allowed', opacity: wallet?.isActive ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>₮ إيداع USDT ↓</button>
-          <button onClick={() => setShowWithdraw(true)} disabled={!wallet?.isActive || !wallet?.balance || wallet?.balance <= 0} style={{ padding: 13, background: wallet?.balance > 0 ? 'linear-gradient(135deg,#009fc0,#006e9e)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 12, color: wallet?.balance > 0 ? '#fff' : 'var(--text-3)', fontFamily: "'Tajawal',sans-serif", fontSize: '0.95rem', fontWeight: 800, cursor: wallet?.balance > 0 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>سحب ↑</button>
+          <button onClick={() => setShowDeposit(true)} disabled={!wallet?.isActive} style={{ padding: 13, background: 'linear-gradient(135deg,#26a17b,#1a7a5e)', border: 'none', borderRadius: 12, color: '#fff', fontFamily: "'Tajawal',sans-serif", fontSize: '0.95rem', fontWeight: 800, cursor: wallet?.isActive ? 'pointer' : 'not-allowed', opacity: wallet?.isActive ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>₮ {tr('إيداع USDT', 'Deposit USDT')} ↓</button>
+          <button onClick={() => setShowWithdraw(true)} disabled={!wallet?.isActive || !wallet?.balance || wallet?.balance <= 0} style={{ padding: 13, background: wallet?.balance > 0 ? 'linear-gradient(135deg,#009fc0,#006e9e)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 12, color: wallet?.balance > 0 ? '#fff' : 'var(--text-3)', fontFamily: "'Tajawal',sans-serif", fontSize: '0.95rem', fontWeight: 800, cursor: wallet?.balance > 0 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>{tr('سحب', 'Withdraw')} ↑</button>
         </div>
-        {!wallet?.isActive && <div style={{ marginTop: 12, textAlign: 'center', fontSize: '0.78rem', color: '#f85149', fontFamily: "'Tajawal',sans-serif" }}>⚠️ المحفظة معطلة — تواصل مع الدعم</div>}
+        {!wallet?.isActive && <div style={{ marginTop: 12, textAlign: 'center', fontSize: '0.78rem', color: '#f85149', fontFamily: "'Tajawal',sans-serif" }}>{tr('⚠️ المحفظة معطلة — تواصل مع الدعم', '⚠️ Wallet is disabled — contact support')}</div>}
       </div>
 
       {/* Tabs */}
       <div style={{ background: 'var(--card)', border: '1px solid var(--border-1)', borderRadius: 18, overflow: 'hidden' }}>
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border-1)' }}>
-          {[{ id: 'deposits', label: 'طلبات الإيداع' }, { id: 'transactions', label: 'المعاملات' }].map(tab => (
+          {[{ id: 'deposits', label: tr('طلبات الإيداع', 'Deposit Requests') }, { id: 'transactions', label: tr('المعاملات', 'Transactions') }].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: 1, padding: '13px 16px', background: 'transparent', border: 'none', borderBottom: activeTab === tab.id ? '2px solid var(--cyan)' : '2px solid transparent', color: activeTab === tab.id ? 'var(--cyan)' : 'var(--text-3)', fontFamily: "'Tajawal',sans-serif", fontSize: '0.88rem', fontWeight: activeTab === tab.id ? 700 : 400, cursor: 'pointer' }}>{tab.label}</button>
           ))}
         </div>
@@ -563,20 +567,20 @@ export default function WalletPage() {
           deposits.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center' }}>
               <div style={{ fontSize: '2rem', marginBottom: 10 }}>📭</div>
-              <div style={{ color: 'var(--text-2)', fontFamily: "'Tajawal',sans-serif", fontSize: '0.9rem' }}>لا يوجد طلبات إيداع حتى الآن</div>
-              <div style={{ color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif", fontSize: '0.78rem', marginTop: 4 }}>اضغط "إيداع USDT" لإنشاء أول طلب</div>
+              <div style={{ color: 'var(--text-2)', fontFamily: "'Tajawal',sans-serif", fontSize: '0.9rem' }}>{tr('لا يوجد طلبات إيداع حتى الآن', 'No deposit requests yet')}</div>
+              <div style={{ color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif", fontSize: '0.78rem', marginTop: 4 }}>{tr('اضغط "إيداع USDT" لإنشاء أول طلب', 'Click "Deposit USDT" to create your first request')}</div>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr style={{ borderBottom: '1px solid var(--border-1)' }}>{['المبلغ', 'TXID', 'الحالة', 'التاريخ'].map(h => (<th key={h} style={{ padding: '10px 14px', textAlign: 'right', fontSize: '0.68rem', color: 'var(--text-3)', fontWeight: 700, fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1, whiteSpace: 'nowrap' }}>{h}</th>))}</tr></thead>
+                <thead><tr style={{ borderBottom: '1px solid var(--border-1)' }}>{[tr('المبلغ', 'Amount'), 'TXID', tr('الحالة', 'Status'), tr('التاريخ', 'Date')].map(h => (<th key={h} style={{ padding: '10px 14px', textAlign: isAr ? 'right' : 'left', fontSize: '0.68rem', color: 'var(--text-3)', fontWeight: 700, fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1, whiteSpace: 'nowrap' }}>{h}</th>))}</tr></thead>
                 <tbody>
                   {deposits.map((d, i) => (
                     <tr key={d._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
                       <td style={{ padding: '12px 14px', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.9rem', fontWeight: 700, color: '#26a17b' }}>{Number(d.amount).toFixed(2)} USDT</td>
                       <td style={{ padding: '12px 14px', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.68rem', color: 'var(--text-3)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.txid || '—'}</td>
-                      <td style={{ padding: '12px 14px' }}><StatusBadge status={d.status} /></td>
-                      <td style={{ padding: '12px 14px', fontSize: '0.72rem', color: 'var(--text-3)', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono',monospace" }}>{new Date(d.createdAt).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                      <td style={{ padding: '12px 14px' }}><StatusBadge status={d.status} isAr={isAr} /></td>
+                      <td style={{ padding: '12px 14px', fontSize: '0.72rem', color: 'var(--text-3)', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono',monospace" }}>{new Date(d.createdAt).toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -587,17 +591,17 @@ export default function WalletPage() {
 
         {activeTab === 'transactions' && (
           transactions.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif" }}>لا يوجد معاملات بعد</div>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif" }}>{tr('لا يوجد معاملات بعد', 'No transactions yet')}</div>
           ) : (
             transactions.map(tx => {
-              const cfg = TX_CONFIG[tx.type] || { label: tx.type, color: '#8b949e', icon: '•', bg: '#21262d' }
+              const cfg = TX_CONFIG[tx.type] || { ar: tx.type, en: tx.type, color: '#8b949e', icon: '•', bg: '#21262d' }
               return (
                 <div key={tx._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid var(--border-1)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: cfg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', color: cfg.color, fontWeight: 700 }}>{cfg.icon}</div>
                     <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-1)', fontFamily: "'Tajawal',sans-serif" }}>{cfg.label}</div>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>{new Date(tx.createdAt).toLocaleString('ar-EG')}</div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-1)', fontFamily: "'Tajawal',sans-serif" }}>{isAr ? cfg.ar : cfg.en}</div>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>{new Date(tx.createdAt).toLocaleString(isAr ? 'ar-EG' : 'en-US')}</div>
                       {tx.note && <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif", marginTop: 2 }}>{tx.note}</div>}
                     </div>
                   </div>

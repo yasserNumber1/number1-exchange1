@@ -7,6 +7,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import ConfirmModal from './ConfirmModal'
 import useAuth from '../../context/useAuth'
+import useLang from '../../context/useLang'
 import FlowDots from '../shared/FlowDots'
 
 const API = import.meta.env.VITE_API_URL
@@ -70,6 +71,8 @@ function resolveRate(rates, sendType, recvType, sendItem, recvItem) {
 
 function ExchangeForm() {
   const { user } = useAuth()
+  const { t, lang } = useLang()
+  const isAr = lang === 'ar'
 
   // ── بيانات من الـ API ──────────────────────────────
   const [methods,      setMethods]      = useState(null)
@@ -235,14 +238,25 @@ function ExchangeForm() {
 
   // ── زر تواصل معنا (وضع MoneyGo) ──────────────────
   const buildContactMessage = () => {
-    return encodeURIComponent(
-      `مرحباً، أريد تبادل MoneyGo → USDT\n` +
-      `المبلغ: ${sendAmount} MoneyGo USD\n` +
-      `أستلم: ${receiveAmount} USDT\n` +
-      `عنوان MoneyGo: ${moneygoWallet || '—'}\n` +
-      `عنوان USDT للاستلام: ${usdtAddress || '—'}\n` +
-      `البريد: ${email || '—'}`
-    )
+    if (isAr) {
+      return encodeURIComponent(
+        `مرحباً، أريد تبادل MoneyGo → USDT\n` +
+        `المبلغ: ${sendAmount} MoneyGo USD\n` +
+        `أستلم: ${receiveAmount} USDT\n` +
+        `عنوان MoneyGo: ${moneygoWallet || '—'}\n` +
+        `عنوان USDT للاستلام: ${usdtAddress || '—'}\n` +
+        `البريد: ${email || '—'}`
+      )
+    } else {
+      return encodeURIComponent(
+        `Hello, I want to exchange MoneyGo → USDT\n` +
+        `Amount: ${sendAmount} MoneyGo USD\n` +
+        `Receive: ${receiveAmount} USDT\n` +
+        `MoneyGo Wallet: ${moneygoWallet || '—'}\n` +
+        `USDT Address: ${usdtAddress || '—'}\n` +
+        `Email: ${email || '—'}`
+      )
+    }
   }
 
   const handleContactUs = () => {
@@ -250,22 +264,22 @@ function ExchangeForm() {
     let hasErr = false
 
     if (!email || !emailRx.test(email)) {
-      setEmailErr('يرجى إدخال بريد إلكتروني صحيح (مثال: name@example.com)')
+      setEmailErr(isAr ? 'يرجى إدخال بريد إلكتروني صحيح (مثال: name@example.com)' : 'Please enter a valid email address (e.g. name@example.com)')
       hasErr = true
     } else { setEmailErr('') }
 
     if (!moneygoWallet || moneygoWallet.trim().length < 5) {
-      setMoneygoWalletErr('يرجى إدخال عنوان محفظة MoneyGo الخاصة بك')
+      setMoneygoWalletErr(isAr ? 'يرجى إدخال عنوان محفظة MoneyGo الخاصة بك' : 'Please enter your MoneyGo wallet address')
       hasErr = true
     } else { setMoneygoWalletErr('') }
 
     if (!usdtAddress || usdtAddress.trim().length < 10) {
-      setUsdtAddressErr('يرجى إدخال عنوان محفظة USDT للاستلام')
+      setUsdtAddressErr(isAr ? 'يرجى إدخال عنوان محفظة USDT للاستلام' : 'Please enter your USDT receiving address')
       hasErr = true
     } else { setUsdtAddressErr('') }
 
-    if (!amlChecked) { setAmlErr('مطلوب'); hasErr = true } else { setAmlErr('') }
-    if (!tosChecked) { setTosErr('مطلوب'); hasErr = true } else { setTosErr('') }
+    if (!amlChecked) { setAmlErr(isAr ? 'مطلوب' : 'Required'); hasErr = true } else { setAmlErr('') }
+    if (!tosChecked) { setTosErr(isAr ? 'مطلوب' : 'Required'); hasErr = true } else { setTosErr('') }
 
     if (hasErr) return
 
@@ -293,39 +307,39 @@ function ExchangeForm() {
     let hasErr = false
 
     if (!email || !emailRx.test(email)) {
-      setEmailErr('يرجى إدخال بريد إلكتروني صحيح (مثال: name@example.com)')
+      setEmailErr(isAr ? 'يرجى إدخال بريد إلكتروني صحيح (مثال: name@example.com)' : 'Please enter a valid email address (e.g. name@example.com)')
       hasErr = true
     } else { setEmailErr('') }
 
     if (sendIsWallet) {
       if (!userPhone) {
-        setPhoneErr(`يرجى إدخال رقم هاتفك على ${sendItem?.name}`)
+        setPhoneErr(isAr ? `يرجى إدخال رقم هاتفك على ${sendItem?.name}` : `Please enter your phone number on ${sendItem?.name}`)
         hasErr = true
       } else if (!phoneRx.test(userPhone.trim())) {
-        setPhoneErr('رقم الهاتف غير صحيح — أدخل رقمك مع كود الدولة (مثال: 01012345678 أو +966501234567)')
+        setPhoneErr(isAr ? 'رقم الهاتف غير صحيح — أدخل رقمك مع كود الدولة (مثال: 01012345678 أو +966501234567)' : 'Invalid phone number — enter with country code (e.g. 01012345678 or +966501234567)')
         hasErr = true
       } else { setPhoneErr('') }
     }
 
     if (!recipientId || recipientId.trim().length < 5) {
-      setRecipientErr('يرجى إدخال بيانات الاستلام بشكل صحيح (5 أحرف على الأقل)')
+      setRecipientErr(isAr ? 'يرجى إدخال بيانات الاستلام بشكل صحيح (5 أحرف على الأقل)' : 'Please enter correct receiving details (at least 5 characters)')
       hasErr = true
     } else { setRecipientErr('') }
 
-    if (!amlChecked) { setAmlErr('مطلوب'); hasErr = true } else { setAmlErr('') }
-    if (!tosChecked) { setTosErr('مطلوب'); hasErr = true } else { setTosErr('') }
+    if (!amlChecked) { setAmlErr(isAr ? 'مطلوب' : 'Required'); hasErr = true } else { setAmlErr('') }
+    if (!tosChecked) { setTosErr(isAr ? 'مطلوب' : 'Required'); hasErr = true } else { setTosErr('') }
 
     // ── التحقق من الحد الأدنى والأقصى ──────────────
     // نحول المبلغ لـ USDT للمقارنة مع الحدود
     const amtInUsdt = divide ? amt / currentRate : amt
     if (isNaN(amt) || amt <= 0) {
-      setAmountErr('يرجى إدخال مبلغ صحيح')
+      setAmountErr(isAr ? 'يرجى إدخال مبلغ صحيح' : 'Please enter a valid amount')
       hasErr = true
     } else if (amtInUsdt < minOrder) {
-      setAmountErr(`الحد الأدنى ${minOrder} USDT`)
+      setAmountErr(isAr ? `الحد الأدنى ${minOrder} USDT` : `Minimum limit is ${minOrder} USDT`)
       hasErr = true
     } else if (amtInUsdt > maxOrder) {
-      setAmountErr(`الحد الأقصى ${maxOrder} USDT`)
+      setAmountErr(isAr ? `الحد الأقصى ${maxOrder} USDT` : `Maximum limit is ${maxOrder} USDT`)
       hasErr = true
     } else { setAmountErr('') }
 
@@ -353,7 +367,7 @@ function ExchangeForm() {
       <div style={{ textAlign: 'center' }}>
         <div style={spinner} />
         <div style={{ color: 'var(--text-3)', fontSize: '0.8rem', marginTop: 12, fontFamily: "'JetBrains Mono',monospace" }}>
-          جاري تحميل وسائل الدفع...
+          {isAr ? 'جاري تحميل وسائل الدفع...' : 'Loading payment methods...'}
         </div>
       </div>
     </div>
@@ -364,7 +378,7 @@ function ExchangeForm() {
     <div style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 260, flexDirection: 'column', gap: 12 }}>
       <span style={{ fontSize: 32 }}>🔧</span>
       <div style={{ color: 'var(--text-3)', fontSize: '0.85rem', textAlign: 'center' }}>
-        المنصة تحت الإعداد — يرجى المراجعة لاحقاً
+        {isAr ? 'المنصة تحت الإعداد — يرجى المراجعة لاحقاً' : 'Platform under setup — please check back later'}
       </div>
     </div>
   )
@@ -376,22 +390,22 @@ function ExchangeForm() {
         {/* ── رأس البطاقة ───────────────────────── */}
         <div style={cardHeader}>
           <div style={cardHeaderIcon}>💱</div>
-          <h3 style={{ fontSize: '0.92rem', fontWeight: 700, flex: 1 }}>تبادل العملات</h3>
+          <h3 style={{ fontSize: '0.92rem', fontWeight: 700, flex: 1 }}>{t('exchange_title')}</h3>
           <LiveBadge />
         </div>
 
         <div style={{ padding: 22 }}>
 
           {apiError && (
-            <div style={errorBanner}>⚠ تعذّر الاتصال — يُعرض الوضع المؤقت</div>
+            <div style={errorBanner}>{isAr ? '⚠ تعذّر الاتصال — يُعرض الوضع المؤقت' : '⚠ Connection failed — temporary mode'}</div>
           )}
 
           {/* ── قسم الإرسال ─────────────────────── */}
           <div style={amountBox}>
             <div style={boxLabel}>
-              <span>أنت ترسل · SEND</span>
+              <span>{t('exchange_send')}</span>
               <span>
-                MIN: {minOrder} USDT / MAX: {maxOrder} USDT
+                {isAr ? 'الأقل' : 'MIN'}: {minOrder} USDT / {isAr ? 'الأقصى' : 'MAX'}: {maxOrder} USDT
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
@@ -425,7 +439,7 @@ function ExchangeForm() {
           {/* ── قسم الاستلام ────────────────────── */}
           <div style={{ ...amountBox, marginBottom: 13 }}>
             <div style={boxLabel}>
-              <span>أنت تستلم · RECEIVE</span>
+              <span>{t('exchange_receive')}</span>
               <span style={{ color: rateColor, transition: 'color 0.4s', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.68rem' }}>
                 {rateDisplay}
               </span>
@@ -462,7 +476,7 @@ function ExchangeForm() {
           {/* ── شريط السعر ─────────────────────── */}
           <div style={rateBar}>
             <span style={{ color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.68rem' }}>
-              EXCHANGE RATE {!rates && '(مؤقت)'}
+              {t('exchange_rate')} {!rates && (isAr ? '(مؤقت)' : '(temp)')}
             </span>
             <span style={{ color: rateColor, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, fontSize: '0.82rem', transition: 'color 0.4s' }}>
               {rateDisplay}
@@ -471,7 +485,7 @@ function ExchangeForm() {
 
           <div style={{ borderTop: '1px solid var(--border-1)', margin: '18px 0' }} />
           <p style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1, marginBottom: 13 }}>
-            {sendIsMoneygo ? 'MONEYGO → USDT · تفاصيل الطلب' : 'RECIPIENT · بيانات الطلب'}
+            {sendIsMoneygo ? (isAr ? 'MONEYGO → USDT · تفاصيل الطلب' : 'MONEYGO → USDT · Order Details') : t('exchange_recipient')}
           </p>
 
           {/* ════════════════════════════════════
@@ -481,50 +495,49 @@ function ExchangeForm() {
             <>
               <div style={moneygoInfoBox}>
                 <div style={{ fontSize: '0.72rem', color: '#00c17c', fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, marginBottom: 6 }}>
-                  💚 كيف يعمل MoneyGo → USDT
+                  {isAr ? '💚 كيف يعمل MoneyGo → USDT' : '💚 How MoneyGo → USDT works'}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-2)', lineHeight: 1.7 }}>
-                  أرسل مبلغك من محفظة MoneyGo الخاصة بك إلى محفظتنا، وسنحول لك USDT على الشبكة التي اخترتها.
-                  أدخل بياناتك أدناه ثم اضغط <b>تواصل معنا</b> لإتمام الطلب.
+                  {isAr ? 'أرسل مبلغك من محفظة MoneyGo الخاصة بك إلى محفظتنا، وسنحول لك USDT على الشبكة التي اخترتها. أدخل بياناتك أدناه ثم اضغط تواصل معنا لإتمام الطلب.' : 'Send your funds from your MoneyGo wallet to ours, and we will transfer USDT to your selected network. Enter your details below, then click Contact Us to complete.'}
                 </div>
               </div>
 
-              <Field label="EMAIL · البريد الإلكتروني" error={emailErr}>
+              <Field label={t('exchange_email')} error={emailErr}>
                 <input type="email" value={email} onChange={e => { setEmail(e.target.value); setEmailErr('') }}
                   placeholder="example@email.com"
-                  style={{ ...inp, ...(emailErr ? inpErr : {}) }}
+                  style={{ ...inp, textAlign: isAr ? 'right' : 'left', ...(emailErr ? inpErr : {}) }}
                   onFocus={focusOn} onBlur={focusOff} />
               </Field>
 
-              <Field label="عنوان محفظة MoneyGo · للإرسال منها" error={moneygoWalletErr}>
+              <Field label={isAr ? 'عنوان محفظة MoneyGo · للإرسال منها' : 'MoneyGo Wallet Address · For sending from'} error={moneygoWalletErr}>
                 <input type="text" value={moneygoWallet} onChange={e => { setMoneygoWallet(e.target.value); setMoneygoWalletErr('') }}
-                  placeholder="أدخل عنوان أو ID محفظتك على MoneyGo"
+                  placeholder={isAr ? 'أدخل عنوان أو ID محفظتك على MoneyGo' : 'Enter your MoneyGo wallet address or ID'}
                   style={{ ...inp, direction: 'ltr', textAlign: 'left', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8rem', ...(moneygoWalletErr ? inpErr : {}) }}
                   onFocus={focusOn} onBlur={focusOff} />
-                <Hint text="ℹ️ العنوان الذي ستحوّل منه — للتحقق من العملية" />
+                <Hint text={isAr ? 'ℹ️ العنوان الذي ستحوّل منه — للتحقق من العملية' : 'ℹ️ The address you will transfer from — for verification'} />
               </Field>
 
-              <Field label={`عنوان محفظة ${recvItem?.coin || 'USDT'} ${recvItem?.network || ''} · للاستلام`} error={usdtAddressErr}>
+              <Field label={isAr ? `عنوان محفظة ${recvItem?.coin || 'USDT'} ${recvItem?.network || ''} · للاستلام` : `${recvItem?.coin || 'USDT'} ${recvItem?.network || ''} Wallet Address · For receiving`} error={usdtAddressErr}>
                 <input type="text" value={usdtAddress} onChange={e => { setUsdtAddress(e.target.value); setUsdtAddressErr('') }}
-                  placeholder={`T... أو 0x... — عنوان ${recvItem?.network || 'USDT'}`}
+                  placeholder={isAr ? `T... أو 0x... — عنوان ${recvItem?.network || 'USDT'}` : `T... or 0x... — ${recvItem?.network || 'USDT'} address`}
                   style={{ ...inp, direction: 'ltr', textAlign: 'left', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8rem', ...(usdtAddressErr ? inpErr : {}) }}
                   onFocus={focusOn} onBlur={focusOff} />
-                <Hint text={`⚠️ تأكد من أن العنوان صحيح على شبكة ${recvItem?.network || 'USDT'} — العناوين الخاطئة تؤدي لخسارة الأموال`} />
+                <Hint text={isAr ? `⚠️ تأكد من أن العنوان صحيح على شبكة ${recvItem?.network || 'USDT'} — العناوين الخاطئة تؤدي لخسارة الأموال` : `⚠️ Make sure the address is correct on ${recvItem?.network || 'USDT'} network — incorrect addresses lead to loss of funds`} />
               </Field>
 
               <CheckRow id="aml" checked={amlChecked} onChange={v => { setAmlChecked(v); if (v) setAmlErr('') }}>
-                أقر بأن الأموال مشروعة وأوافق على <span style={{ color: 'var(--cyan)' }}>سياسة AML</span>
+                {t('exchange_aml')} <span style={{ color: 'var(--cyan)' }}>{t('exchange_aml_link')}</span>
               </CheckRow>
               {amlErr && <div style={{ ...errText, marginTop: -4, marginBottom: 6 }}>{amlErr}</div>}
               <CheckRow id="tos" checked={tosChecked} onChange={v => { setTosChecked(v); if (v) setTosErr('') }}>
-                أوافق على <span style={{ color: 'var(--cyan)' }}>شروط الخدمة</span> و<span style={{ color: 'var(--cyan)' }}>سياسة الخصوصية</span>
+                {t('exchange_tos')} <span style={{ color: 'var(--cyan)' }}>{t('exchange_tos_link')}</span> {t('exchange_tos_and')} <span style={{ color: 'var(--cyan)' }}>{t('exchange_tos_link2')}</span>
               </CheckRow>
               {tosErr && <div style={{ ...errText, marginTop: -4, marginBottom: 6 }}>{tosErr}</div>}
 
               <button onClick={handleContactUs} style={contactBtn}
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 10px 34px rgba(0,193,124,0.4)' }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)';    e.currentTarget.style.boxShadow = '0 4px 22px rgba(0,193,124,0.22)' }}>
-                💬 تواصل معنا لإتمام الطلب
+                {isAr ? '💬 تواصل معنا لإتمام الطلب' : '💬 Contact us to complete order'}
               </button>
 
               {(contactInfo?.contactWhatsapp || contactInfo?.contactTelegram) && (
@@ -540,62 +553,62 @@ function ExchangeForm() {
                الوضع العادي: محافظ / USDT
             ════════════════════════════════════ */
             <>
-              <Field label="EMAIL · البريد الإلكتروني" error={emailErr}>
+              <Field label={t('exchange_email')} error={emailErr}>
                 <input type="email" value={email} onChange={e => { setEmail(e.target.value); setEmailErr('') }}
                   placeholder="example@email.com"
-                  style={{ ...inp, ...(emailErr ? inpErr : {}) }}
+                  style={{ ...inp, textAlign: isAr ? 'right' : 'left', ...(emailErr ? inpErr : {}) }}
                   onFocus={focusOn} onBlur={focusOff} />
               </Field>
 
               {sendIsWallet && sendItem && (
-                <Field label={`رقم هاتفك على ${sendItem.name}`} error={phoneErr}>
+                <Field label={isAr ? `رقم هاتفك على ${sendItem.name}` : `Your phone number on ${sendItem.name}`} error={phoneErr}>
                   <input type="tel" value={userPhone} onChange={e => { setUserPhone(e.target.value); setPhoneErr('') }}
                     placeholder="01XXXXXXXXX"
                     style={{ ...inp, direction: 'ltr', textAlign: 'left', ...(phoneErr ? inpErr : {}) }}
                     onFocus={focusOn} onBlur={focusOff} />
-                  <Hint text="ℹ️ هذا الرقم للتحقق من هويتك فقط" />
+                  <Hint text={isAr ? 'ℹ️ هذا الرقم للتحقق من هويتك فقط' : 'ℹ️ This number is for identity verification only'} />
                 </Field>
               )}
 
               {sendType === 'crypto' && sendItem && (
                 <div style={infoBanner}>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", display: 'block', marginBottom: 4 }}>
-                    {sendItem.coin} {sendItem.network} · معلومة
+                    {sendItem.coin} {sendItem.network} · {isAr ? 'معلومة' : 'Info'}
                   </span>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-2)', lineHeight: 1.6 }}>
-                    ستظهر لك عنوان محفظتنا لإرسال {sendItem.coin} بعد الضغط على إرسال الطلب
+                    {isAr ? `ستظهر لك عنوان محفظتنا لإرسال ${sendItem.coin} بعد الضغط على إرسال الطلب` : `Our wallet address to send ${sendItem.coin} to will be shown after submitting the order`}
                   </span>
                 </div>
               )}
 
               <Field label={
                 recvType === 'crypto'
-                  ? `عنوان محفظة ${recvItem?.coin || ''} ${recvItem?.network || ''} للاستلام`
-                  : `معرّف ${recvItem?.name || ''} للاستلام`
+                  ? (isAr ? `عنوان محفظة ${recvItem?.coin || ''} ${recvItem?.network || ''} للاستلام` : `${recvItem?.coin || ''} ${recvItem?.network || ''} Receiving Wallet Address`)
+                  : (isAr ? `معرّف ${recvItem?.name || ''} للاستلام` : `Receiving ${recvItem?.name || ''} ID`)
               } error={recipientErr}>
                 <input type="text" value={recipientId} onChange={e => { setRecipientId(e.target.value); setRecipientErr('') }}
                   placeholder={
                     recvType === 'crypto'
-                      ? `T... أو 0x... — عنوان ${recvItem?.network || ''}`
-                      : recvItem?.placeholder || 'رقم أو معرّف الاستلام'
+                      ? `T... or 0x... — ${recvItem?.network || ''} address`
+                      : recvItem?.placeholder || (isAr ? 'رقم أو معرّف الاستلام' : 'Recipient ID or Number')
                   }
                   style={{ ...inp, direction: 'ltr', textAlign: 'left', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.8rem', ...(recipientErr ? inpErr : {}) }}
                   onFocus={focusOn} onBlur={focusOff} />
               </Field>
 
               <CheckRow id="aml" checked={amlChecked} onChange={v => { setAmlChecked(v); if (v) setAmlErr('') }}>
-                أقر بأن الأموال مشروعة وأوافق على <span style={{ color: 'var(--cyan)' }}>سياسة AML</span>
+                {t('exchange_aml')} <span style={{ color: 'var(--cyan)' }}>{t('exchange_aml_link')}</span>
               </CheckRow>
               {amlErr && <div style={{ ...errText, marginTop: -4, marginBottom: 6 }}>{amlErr}</div>}
               <CheckRow id="tos" checked={tosChecked} onChange={v => { setTosChecked(v); if (v) setTosErr('') }}>
-                أوافق على <span style={{ color: 'var(--cyan)' }}>شروط الخدمة</span> و<span style={{ color: 'var(--cyan)' }}>سياسة الخصوصية</span>
+                {t('exchange_tos')} <span style={{ color: 'var(--cyan)' }}>{t('exchange_tos_link')}</span> {t('exchange_tos_and')} <span style={{ color: 'var(--cyan)' }}>{t('exchange_tos_link2')}</span>
               </CheckRow>
               {tosErr && <div style={{ ...errText, marginTop: -4, marginBottom: 6 }}>{tosErr}</div>}
 
               <button onClick={handleSubmit} style={submitBtn}
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 10px 34px rgba(0,210,255,0.38)' }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)';    e.currentTarget.style.boxShadow = '0 4px 22px rgba(0,159,192,0.22)' }}>
-                إرسال طلب التبادل ←
+                {t('exchange_submit')}
               </button>
             </>
           )}
@@ -613,6 +626,8 @@ function ExchangeForm() {
 // ══════════════════════════════════════════════════════════
 function MethodPicker({ wallets, cryptos, selectedType, selectedItem, onSelect, showMoneygo }) {
   const [open, setOpen] = useState(false)
+  const { lang } = useLang()
+  const isAr = lang === 'ar'
 
   const isMoneygo = selectedType === 'moneygo'
 
@@ -622,7 +637,7 @@ function MethodPicker({ wallets, cryptos, selectedType, selectedItem, onSelect, 
       ? selectedType === 'crypto'
         ? `${selectedItem.icon || '₮'} ${selectedItem.coin} ${selectedItem.network}`
         : `${selectedItem.icon || '📱'} ${selectedItem.name}`
-      : '— اختر —'
+      : (isAr ? '— اختر —' : '— Select —')
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -643,12 +658,12 @@ function MethodPicker({ wallets, cryptos, selectedType, selectedItem, onSelect, 
               <>
                 <div style={pickerGroupLabel}>💚 MoneyGo</div>
                 <button
-                  style={{ ...pickerItem, background: isMoneygo ? 'rgba(0,193,124,0.12)' : 'transparent' }}
+                  style={{ ...pickerItem, background: isMoneygo ? 'rgba(0,193,124,0.12)' : 'transparent', textAlign: isAr ? 'right' : 'left' }}
                   onClick={() => { onSelect('moneygo', MONEYGO_ITEM); setOpen(false) }}>
                   <span style={{ fontSize: 16 }}>💚</span>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>MoneyGo USD</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>تحويل MoneyGo → USDT</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{isAr ? 'تحويل MoneyGo → USDT' : 'Exchange MoneyGo → USDT'}</div>
                   </div>
                 </button>
               </>
@@ -656,9 +671,9 @@ function MethodPicker({ wallets, cryptos, selectedType, selectedItem, onSelect, 
 
             {wallets.length > 0 && (
               <>
-                <div style={{ ...pickerGroupLabel, marginTop: showMoneygo ? 8 : 0 }}>📱 محافظ إلكترونية</div>
+                <div style={{ ...pickerGroupLabel, marginTop: showMoneygo ? 8 : 0 }}>{isAr ? '📱 محافظ إلكترونية' : '📱 E-Wallets'}</div>
                 {wallets.map(w => (
-                  <button key={w.id} style={{ ...pickerItem, background: selectedType === 'wallet' && selectedItem?.id === w.id ? 'var(--cyan-dim)' : 'transparent' }}
+                  <button key={w.id} style={{ ...pickerItem, background: selectedType === 'wallet' && selectedItem?.id === w.id ? 'var(--cyan-dim)' : 'transparent', textAlign: isAr ? 'right' : 'left' }}
                     onClick={() => { onSelect('wallet', w); setOpen(false) }}>
                     <span style={{ fontSize: 16 }}>{w.icon}</span>
                     <div>
@@ -672,9 +687,9 @@ function MethodPicker({ wallets, cryptos, selectedType, selectedItem, onSelect, 
 
             {cryptos.length > 0 && (
               <>
-                <div style={{ ...pickerGroupLabel, marginTop: wallets.length || showMoneygo ? 8 : 0 }}>🔗 عملات رقمية</div>
+                <div style={{ ...pickerGroupLabel, marginTop: wallets.length || showMoneygo ? 8 : 0 }}>{isAr ? '🔗 عملات رقمية' : '🔗 Cryptocurrencies'}</div>
                 {cryptos.map(c => (
-                  <button key={c.id} style={{ ...pickerItem, background: selectedType === 'crypto' && selectedItem?.id === c.id ? 'var(--cyan-dim)' : 'transparent' }}
+                  <button key={c.id} style={{ ...pickerItem, background: selectedType === 'crypto' && selectedItem?.id === c.id ? 'var(--cyan-dim)' : 'transparent', textAlign: isAr ? 'right' : 'left' }}
                     onClick={() => { onSelect('crypto', c); setOpen(false) }}>
                     <span style={{ fontSize: 16, color: c.color, fontWeight: 800 }}>{c.icon}</span>
                     <div>

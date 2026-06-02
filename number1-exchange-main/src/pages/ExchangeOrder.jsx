@@ -5,6 +5,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import FlowDots from '../components/shared/FlowDots'
 import { readOrderSession, clearOrderSession } from '../services/orderSession'
 import { ReviewModal } from '../components/shared/ReviewPrompt'
+import useLang from '../context/useLang'
 
 const API            = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const ORDER_LIFETIME = 30 * 60
@@ -13,13 +14,13 @@ const DONE_STATUSES     = ['completed', 'rejected', 'cancelled']
 const APPROVED_STATUSES = ['verified', 'processing', 'completed']
 
 const STATUS_MAP = {
-  pending:    { ar: 'في انتظار التأكيد', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  dot: '#f59e0b' },
-  verifying:  { ar: 'جاري التحقق',       color: '#60a5fa', bg: 'rgba(96,165,250,0.1)',  dot: '#60a5fa' },
-  verified:   { ar: 'تم التحقق ✓',       color: '#34d399', bg: 'rgba(52,211,153,0.1)',  dot: '#34d399' },
-  processing: { ar: 'جاري المعالجة',     color: '#00d4ff', bg: 'rgba(0,210,255,0.08)',  dot: '#00d4ff' },
-  completed:  { ar: 'مكتمل 🎉',          color: '#00e5a0', bg: 'rgba(0,229,160,0.1)',   dot: '#00e5a0' },
-  rejected:   { ar: 'مرفوض',             color: '#f87171', bg: 'rgba(239,68,68,0.1)',   dot: '#f87171' },
-  cancelled:  { ar: 'ملغي',              color: '#9ca3af', bg: 'rgba(156,163,175,0.1)', dot: '#9ca3af' },
+  pending:    { ar: 'في انتظار التأكيد', en: 'Pending Confirmation', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  dot: '#f59e0b' },
+  verifying:  { ar: 'جاري التحقق',       en: 'Verifying',            color: '#60a5fa', bg: 'rgba(96,165,250,0.1)',  dot: '#60a5fa' },
+  verified:   { ar: 'تم التحقق ✓',       en: 'Verified ✓',           color: '#34d399', bg: 'rgba(52,211,153,0.1)',  dot: '#34d399' },
+  processing: { ar: 'جاري المعالجة',     en: 'Processing',           color: '#00d4ff', bg: 'rgba(0,210,255,0.08)',  dot: '#00d4ff' },
+  completed:  { ar: 'مكتمل 🎉',          en: 'Completed 🎉',          color: '#00e5a0', bg: 'rgba(0,229,160,0.1)',   dot: '#00e5a0' },
+  rejected:   { ar: 'مرفوض',             en: 'Rejected',             color: '#f87171', bg: 'rgba(239,68,68,0.1)',   dot: '#f87171' },
+  cancelled:  { ar: 'ملغي',              en: 'Cancelled',            color: '#9ca3af', bg: 'rgba(156,163,175,0.1)', dot: '#9ca3af' },
 }
 
 function fmtTime(s) {
@@ -42,12 +43,12 @@ function MethodIcon({ method, size = 34 }) {
   )
 }
 
-function StatusBadge({ status }) {
+function StatusBadge({ status, isAr }) {
   const cfg = STATUS_MAP[status] || STATUS_MAP.pending
   return (
     <div style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'6px 14px', borderRadius:50, background:cfg.bg, border:`1px solid ${cfg.color}33` }}>
       <span style={{ width:8, height:8, borderRadius:'50%', background:cfg.dot, flexShrink:0, boxShadow:`0 0 6px ${cfg.dot}` }} />
-      <span style={{ fontSize:'0.82rem', fontWeight:700, color:cfg.color, fontFamily:"'Cairo','Tajawal',sans-serif" }}>{cfg.ar}</span>
+      <span style={{ fontSize:'0.82rem', fontWeight:700, color:cfg.color, fontFamily:"'Cairo','Tajawal',sans-serif" }}>{isAr ? cfg.ar : cfg.en}</span>
     </div>
   )
 }
@@ -170,6 +171,9 @@ export default function ExchangeOrder() {
   const { orderId }  = useParams()
   const location     = useLocation()
   const navigate     = useNavigate()
+  const { lang }     = useLang()
+  const isAr = lang === 'ar'
+  const tr = (ar, en) => (isAr ? ar : en)
 
   const stateData = location.state || {}
   const { sendMethod, recvMethod, sendAmount, receiveAmount, recipientId, adminItem, email } = stateData
@@ -272,7 +276,7 @@ export default function ExchangeOrder() {
   const isEgpSend        = sendMethod?.type === 'egp'
 
   return (
-    <div style={{ minHeight:'100vh', background:'var(--bg)', direction:'rtl', fontFamily:"'Cairo','Tajawal',sans-serif" }}>
+    <div style={{ minHeight:'100vh', background:'var(--bg)', direction:isAr ? 'rtl' : 'ltr', fontFamily:"'Cairo','Tajawal',sans-serif" }}>
       <style>{CSS}</style>
 
       {showCancel && (
@@ -288,9 +292,9 @@ export default function ExchangeOrder() {
       <div className="eo-header">
         <button onClick={() => navigate('/')} className="eo-back">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-          الرئيسية
+          {tr('الرئيسية', 'Home')}
         </button>
-        <div className="eo-header-title">{isCompleted ? '🎉 اكتمل الطلب' : 'تفاصيل الطلب'}</div>
+        <div className="eo-header-title">{isCompleted ? tr('🎉 اكتمل الطلب', '🎉 Order Completed') : tr('تفاصيل الطلب', 'Order Details')}</div>
         <div style={{ width:80 }} />
       </div>
 
@@ -298,26 +302,26 @@ export default function ExchangeOrder() {
       <div className="eo-steps">
         <div className="eo-step eo-step--done">
           <span className="eo-dot eo-dot--done"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-          <span>الطريقة</span>
+          <span>{tr('الطريقة', 'Method')}</span>
         </div>
         <div className="eo-line eo-line--done" />
         <div className="eo-step eo-step--done">
           <span className="eo-dot eo-dot--done"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-          <span>تفاصيل الطلب</span>
+          <span>{tr('تفاصيل الطلب', 'Order Details')}</span>
         </div>
         <div className={`eo-line ${wizardStep >= 3 ? 'eo-line--done' : ''}`} />
         <div className={`eo-step ${wizardStep === 3 ? 'eo-step--active' : wizardStep > 3 ? 'eo-step--done' : ''}`}>
           <span className={`eo-dot ${wizardStep > 3 ? 'eo-dot--done' : ''}`}>
             {wizardStep > 3 ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> : '3'}
           </span>
-          <span>تتبع الطلب</span>
+          <span>{tr('تتبع الطلب', 'Track Order')}</span>
         </div>
         <div className={`eo-line ${wizardStep >= 4 ? 'eo-line--done' : ''}`} />
         <div className={`eo-step ${wizardStep === 4 ? 'eo-step--done' : ''}`} style={{ opacity: wizardStep < 4 ? 0.45 : 1 }}>
           <span className={`eo-dot ${wizardStep === 4 ? 'eo-dot--done' : ''}`} style={{ borderColor: wizardStep === 4 ? 'var(--green)' : undefined }}>
             {wizardStep === 4 ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> : '4'}
           </span>
-          <span>مكتمل</span>
+          <span>{tr('مكتمل', 'Completed')}</span>
         </div>
       </div>
 
@@ -341,7 +345,7 @@ export default function ExchangeOrder() {
               </div>
             </div>
             <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6 }}>
-              <StatusBadge status={currentStatus} />
+              <StatusBadge status={currentStatus} isAr={isAr} />
               <div style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 9px', borderRadius:20, background: sseConnected ? 'rgba(0,229,160,0.07)' : 'rgba(100,100,100,0.08)', border:`1px solid ${sseConnected ? 'rgba(0,229,160,0.25)' : 'rgba(100,100,100,0.18)'}` }}>
                 <div style={{ width:6, height:6, borderRadius:'50%', background: sseConnected ? '#00e5a0' : '#888', boxShadow: sseConnected ? '0 0 5px #00e5a0' : 'none', animation: sseConnected ? 'eo-blink 2s infinite' : 'none' }} />
                 <span style={{ fontSize:'0.6rem', color: sseConnected ? '#00e5a0' : '#888', fontFamily:"'JetBrains Mono',monospace", letterSpacing:1 }}>{sseConnected ? 'LIVE' : 'POLLING'}</span>
@@ -363,8 +367,8 @@ export default function ExchangeOrder() {
                 </svg>
               </div>
               <div>
-                <div style={{ fontSize:'0.9rem', fontWeight:800, color:'#f59e0b' }}>جاري معالجة طلبك ⏳</div>
-                <div style={{ fontSize:'0.72rem', color:'var(--text-3)', marginTop:2 }}>سيتم إرسال المبلغ قريباً، ستنتقل لشاشة الاكتمال تلقائياً</div>
+                <div style={{ fontSize:'0.9rem', fontWeight:800, color:'#f59e0b' }}>{tr('جاري معالجة طلبك ⏳', 'Your order is being processed ⏳')}</div>
+                <div style={{ fontSize:'0.72rem', color:'var(--text-3)', marginTop:2 }}>{tr('سيتم إرسال المبلغ قريباً، ستنتقل لشاشة الاكتمال تلقائياً', 'Your payout will be sent shortly, you will be moved to completion screen automatically')}</div>
               </div>
             </div>
           )}
@@ -375,7 +379,7 @@ export default function ExchangeOrder() {
               {expired
                 ? <><span>⏰</span> انتهت مهلة الطلب</>
                 : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    الوقت المتبقي:&nbsp;<span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700 }}>{fmtTime(secondsLeft)}</span>
+                    {tr('الوقت المتبقي', 'Time Left')}:&nbsp;<span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700 }}>{fmtTime(secondsLeft)}</span>
                   </>}
             </div>
           )}
@@ -383,17 +387,17 @@ export default function ExchangeOrder() {
           {/* حالة رفض / إلغاء */}
           {(isRejected || isCancelled) && (
             <div style={{ padding:'12px 16px', borderRadius:10, background:'rgba(239,68,68,0.07)', border:'1px solid rgba(239,68,68,0.2)', color:'#f87171', fontFamily:"'Tajawal',sans-serif", fontSize:'0.85rem' }}>
-              {isRejected ? '❌ تم رفض الطلب. للاستفسار تواصل مع الدعم.' : '🚫 تم إلغاء الطلب.'}
+              {isRejected ? tr('❌ تم رفض الطلب. للاستفسار تواصل مع الدعم.', '❌ Order was rejected. Contact support for details.') : tr('🚫 تم إلغاء الطلب.', '🚫 Order has been cancelled.')}
             </div>
           )}
 
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-            {lastRefresh && <span style={{ fontSize:'0.68rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace" }}>آخر تحديث: {lastRefresh.toLocaleTimeString('ar-EG')}</span>}
+            {lastRefresh && <span style={{ fontSize:'0.68rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace" }}>{tr('آخر تحديث', 'Last update')}: {lastRefresh.toLocaleTimeString(isAr ? 'ar-EG' : 'en-US')}</span>}
             <button onClick={fetchOrder} disabled={fetching} className="eo-refresh-btn">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ animation: fetching ? 'eo-spin 0.8s linear infinite' : 'none' }}>
                 <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
               </svg>
-              {fetching ? 'جاري التحديث...' : 'تحديث'}
+              {fetching ? tr('جاري التحديث...', 'Refreshing...') : tr('تحديث', 'Refresh')}
             </button>
           </div>
 

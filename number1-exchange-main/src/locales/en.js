@@ -183,6 +183,16 @@ const en = {
   // ── Currency Names ──
   curr_egp:    'Egyptian Pound',
   curr_crypto: 'Crypto',
+
+  // ── Statuses & Actions ──
+  status_created:     'Created',
+  status_in_progress: 'In Progress',
+  status_verified:    'Verified',
+  status_processing:  'Processing',
+  status_completed:   'Completed',
+  status_failed:      'Rejected',
+  status_cancelled:   'Cancelled',
+  status_expired:     'Expired',
 }
 
 export default en

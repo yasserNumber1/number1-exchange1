@@ -2,18 +2,19 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuth from '../context/useAuth'
+import useLang from '../context/useLang'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const ACTION_CONFIG = {
-  CREATED:    { label: 'تم الإنشاء',   color: '#60a5fa', bg: 'rgba(37,99,235,0.15)'  },
-  IN_PROGRESS:{ label: 'جاري التنفيذ', color: '#f59e0b', bg: 'rgba(120,53,15,0.3)'   },
-  VERIFIED:   { label: 'تم التحقق',    color: '#a78bfa', bg: 'rgba(109,40,217,0.2)'  },
-  PROCESSING: { label: 'معالجة',       color: '#00b8d9', bg: 'rgba(0,74,110,0.3)'    },
-  COMPLETED:  { label: 'مكتمل',        color: '#00e5a0', bg: 'rgba(6,78,59,0.3)'     },
-  FAILED:     { label: 'مرفوض',        color: '#f43f5e', bg: 'rgba(61,10,10,0.3)'    },
-  CANCELLED:  { label: 'ملغي',         color: '#6e7681', bg: 'rgba(33,38,45,0.4)'    },
-  EXPIRED:    { label: 'منتهي',        color: '#9ca3af', bg: 'rgba(31,41,55,0.4)'    },
+  CREATED:    { ar: 'تم الإنشاء',   en: 'Created',      color: '#60a5fa', bg: 'rgba(37,99,235,0.15)'  },
+  IN_PROGRESS:{ ar: 'جاري التنفيذ', en: 'In Progress',  color: '#f59e0b', bg: 'rgba(120,53,15,0.3)'   },
+  VERIFIED:   { ar: 'تم التحقق',    en: 'Verified',     color: '#a78bfa', bg: 'rgba(109,40,217,0.2)'  },
+  PROCESSING: { ar: 'معالجة',       en: 'Processing',   color: '#00b8d9', bg: 'rgba(0,74,110,0.3)'    },
+  COMPLETED:  { ar: 'مكتمل',        en: 'Completed',    color: '#00e5a0', bg: 'rgba(6,78,59,0.3)'     },
+  FAILED:     { ar: 'مرفوض',        en: 'Rejected',     color: '#f43f5e', bg: 'rgba(61,10,10,0.3)'    },
+  CANCELLED:  { ar: 'ملغي',         en: 'Cancelled',    color: '#6e7681', bg: 'rgba(33,38,45,0.4)'    },
+  EXPIRED:    { ar: 'منتهي',        en: 'Expired',      color: '#9ca3af', bg: 'rgba(31,41,55,0.4)'    },
 }
 
 // Fallback map for status strings
@@ -23,48 +24,52 @@ const STATUS_TO_ACTION = {
   rejected: 'FAILED', cancelled: 'CANCELLED', expired: 'EXPIRED',
 }
 
-function Badge({ action, status }) {
+function Badge({ action, status, isAr }) {
   const key = action || STATUS_TO_ACTION[status] || 'IN_PROGRESS'
-  const cfg = ACTION_CONFIG[key] || { label: status || action, color: '#8b949e', bg: 'rgba(33,38,45,0.4)' }
+  const cfg = ACTION_CONFIG[key] || { ar: status || action, en: status || action, color: '#8b949e', bg: 'rgba(33,38,45,0.4)' }
   return (
     <span style={{
       padding: '4px 12px', borderRadius: 20, fontSize: '0.78rem', fontWeight: 700,
       background: cfg.bg, color: cfg.color, fontFamily: "'Tajawal',sans-serif",
       whiteSpace: 'nowrap',
     }}>
-      {cfg.label}
+      {isAr ? cfg.ar : cfg.en}
     </span>
   )
 }
 
-function OrderTypeLabel({ orderType }) {
+function OrderTypeLabel({ orderType, isAr }) {
   const map = {
-    EGP_TO_USDT:           'EGP → USDT',
-    EGP_TO_MONEYGO:        'EGP → MoneyGo',
-    USDT_TO_MONEYGO:       'USDT → MoneyGo',
-    USDT_TO_WALLET:        'USDT → محفظة',
-    USDT_TO_EGP:           'USDT → EGP',
-    WALLET_TO_USDT:        'محفظة → USDT',
-    WALLET_TO_MONEYGO:     'محفظة → MoneyGo',
-    MONEYGO_TO_USDT:       'MoneyGo → USDT',
-    MONEYGO_TO_EGP:        'MoneyGo → EGP',
-    MONEYGO_TO_WALLET:     'MoneyGo → محفظة',
-    EGP_WALLET_TO_MONEYGO: 'EGP محفظة → MoneyGo',
+    EGP_TO_USDT:           { ar: 'EGP → USDT', en: 'EGP → USDT' },
+    EGP_TO_MONEYGO:        { ar: 'EGP → MoneyGo', en: 'EGP → MoneyGo' },
+    USDT_TO_MONEYGO:       { ar: 'USDT → MoneyGo', en: 'USDT → MoneyGo' },
+    USDT_TO_WALLET:        { ar: 'USDT → محفظة', en: 'USDT → Wallet' },
+    USDT_TO_EGP:           { ar: 'USDT → EGP', en: 'USDT → EGP' },
+    WALLET_TO_USDT:        { ar: 'محفظة → USDT', en: 'Wallet → USDT' },
+    WALLET_TO_MONEYGO:     { ar: 'محفظة → MoneyGo', en: 'Wallet → MoneyGo' },
+    MONEYGO_TO_USDT:       { ar: 'MoneyGo → USDT', en: 'MoneyGo → USDT' },
+    MONEYGO_TO_EGP:        { ar: 'MoneyGo → EGP', en: 'MoneyGo → EGP' },
+    MONEYGO_TO_WALLET:     { ar: 'MoneyGo → محفظة', en: 'MoneyGo → Wallet' },
+    EGP_WALLET_TO_MONEYGO: { ar: 'EGP محفظة → MoneyGo', en: 'EGP Wallet → MoneyGo' },
   }
+  const label = map[orderType]
   return (
     <span style={{
       fontSize: '0.7rem', padding: '2px 8px', borderRadius: 6,
       background: 'rgba(0,184,217,0.1)', color: 'var(--cyan)',
       fontFamily: "'JetBrains Mono',monospace",
     }}>
-      {map[orderType] || orderType}
+      {label ? (isAr ? label.ar : label.en) : orderType}
     </span>
   )
 }
 
 export default function MyOrders() {
   const { user, loading: authLoading } = useAuth()
+  const { lang } = useLang()
   const navigate = useNavigate()
+  const isAr = lang === 'ar'
+  const tr = (ar, en) => (isAr ? ar : en)
 
   const [logs,       setLogs]       = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -76,7 +81,7 @@ export default function MyOrders() {
     if (authLoading) return
     window.scrollTo(0, 0)
     if (!user) { navigate('/'); return }
-  }, [user, authLoading])
+  }, [user, authLoading, navigate])
 
   const fetchLogs = useCallback(async () => {
     if (!user) return
@@ -129,35 +134,35 @@ export default function MyOrders() {
         setError(ordersData.message || 'حدث خطأ')
       }
     } catch {
-      setError('تعذر الاتصال بالخادم')
+      setError(isAr ? 'تعذر الاتصال بالخادم' : 'Unable to connect to server')
     } finally {
       setLoading(false)
     }
-  }, [user, page])
+  }, [user, page, isAr])
 
   useEffect(() => {
     if (!authLoading && user) fetchLogs()
-  }, [fetchLogs, authLoading])
+  }, [fetchLogs, authLoading, user])
 
   const d = (log) => log.requestDetails || {}
 
   return (
-    <div style={{ minHeight: '80vh', padding: '60px 24px', maxWidth: 860, margin: '0 auto', direction: 'rtl' }}>
+    <div style={{ minHeight: '80vh', padding: '60px 24px', maxWidth: 860, margin: '0 auto', direction: isAr ? 'rtl' : 'ltr' }}>
 
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontFamily: "'Tajawal',sans-serif", fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-1)', margin: '0 0 6px' }}>
-          📋 سجل طلباتي
+          {tr('📋 سجل طلباتي', '📋 My Orders')}
         </h1>
         <p style={{ color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif", margin: 0, fontSize: '0.9rem' }}>
-          سجل دائم بجميع طلبات الصرافة — يبقى حتى بعد انتهاء الطلب الأصلي
+          {tr('سجل دائم بجميع طلبات الصرافة — يبقى حتى بعد انتهاء الطلب الأصلي', 'Permanent history of your exchange orders, even after the original order expires')}
         </p>
       </div>
 
       {/* Loading */}
       {loading && (
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif" }}>
-          ⏳ جاري التحميل...
+          {tr('⏳ جاري التحميل...', '⏳ Loading...')}
         </div>
       )}
 
@@ -179,10 +184,10 @@ export default function MyOrders() {
         }}>
           <div style={{ fontSize: '3rem', marginBottom: 12 }}>📭</div>
           <h3 style={{ fontFamily: "'Tajawal',sans-serif", color: 'var(--text-1)', margin: '0 0 8px' }}>
-            لا يوجد طلبات بعد
+            {tr('لا يوجد طلبات بعد', 'No orders yet')}
           </h3>
           <p style={{ color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif", fontSize: '0.9rem', marginBottom: 20 }}>
-            ابدأ أول عملية صرافة الآن
+            {tr('ابدأ أول عملية صرافة الآن', 'Start your first exchange now')}
           </p>
           <button
             onClick={() => navigate('/')}
@@ -192,7 +197,7 @@ export default function MyOrders() {
               fontFamily: "'Tajawal',sans-serif", fontWeight: 700, cursor: 'pointer',
             }}
           >
-            ابدأ الآن
+            {tr('ابدأ الآن', 'Start Now')}
           </button>
         </div>
       )}
@@ -219,7 +224,7 @@ export default function MyOrders() {
                 }}>
                   {details.orderNumber || '—'}
                 </span>
-                {details.orderType && <OrderTypeLabel orderType={details.orderType} />}
+                {details.orderType && <OrderTypeLabel orderType={details.orderType} isAr={isAr} />}
               </div>
 
               <div style={{
@@ -233,20 +238,20 @@ export default function MyOrders() {
 
               {details.moneygo?.recipientName && (
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif", marginBottom: 3 }}>
-                  المستلم: {details.moneygo.recipientName}
+                  {tr('المستلم', 'Recipient')}: {details.moneygo.recipientName}
                 </div>
               )}
 
               <div style={{
                 fontFamily: "'JetBrains Mono',monospace", fontSize: '0.7rem', color: 'var(--text-3)',
               }}>
-                {new Date(log.timestamp).toLocaleString('ar-EG')}
+                {new Date(log.timestamp).toLocaleString(isAr ? 'ar-EG' : 'en-US')}
               </div>
             </div>
 
             {/* Left: badge + action buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
-              <Badge action={log.action} status={log.status} />
+              <Badge action={log.action} status={log.status} isAr={isAr} />
 
               <div style={{ display: 'flex', gap: 8 }}>
                 {details.orderNumber && (
@@ -261,7 +266,7 @@ export default function MyOrders() {
                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cyan)'; e.currentTarget.style.color = 'var(--cyan)' }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-1)'; e.currentTarget.style.color = 'var(--text-2)' }}
                   >
-                    تتبع ←
+                    {tr('تتبع ←', 'Track →')}
                   </button>
                 )}
               </div>
@@ -269,7 +274,7 @@ export default function MyOrders() {
               {log.note && (
                 <div style={{
                   fontSize: '0.72rem', color: 'var(--text-3)',
-                  fontFamily: "'Tajawal',sans-serif", maxWidth: 200, textAlign: 'end',
+                    fontFamily: "'Tajawal',sans-serif", maxWidth: 200, textAlign: isAr ? 'end' : 'start',
                 }}>
                   {log.note}
                 </div>
@@ -292,7 +297,7 @@ export default function MyOrders() {
               opacity: page <= 1 ? 0.4 : 1, fontFamily: "'Tajawal',sans-serif", fontSize: '0.85rem',
             }}
           >
-            السابق
+            {tr('السابق', 'Previous')}
           </button>
           <span style={{ padding: '8px 12px', fontSize: '0.82rem', color: 'var(--text-3)', fontFamily: "'Tajawal',sans-serif" }}>
             {page} / {pagination.pages}
@@ -307,7 +312,7 @@ export default function MyOrders() {
               opacity: page >= pagination.pages ? 0.4 : 1, fontFamily: "'Tajawal',sans-serif", fontSize: '0.85rem',
             }}
           >
-            التالي
+            {tr('التالي', 'Next')}
           </button>
         </div>
       )}

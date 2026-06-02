@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import useAuth  from '../context/useAuth'
+import useLang from '../context/useLang'
 import FlowDots from '../components/shared/FlowDots'
 import {
   getRate,
@@ -53,6 +54,9 @@ export default function ExchangeFormPage({ onOpenAuth }) {
   const navigate  = useNavigate()
   const [params]  = useSearchParams()
   const { user }  = useAuth()
+  const { lang }  = useLang()
+  const isAr = lang === 'ar'
+  const tr = (ar, en) => (isAr ? ar : en)
 
   const fromId = params.get('from')
   const toId   = params.get('to')
@@ -450,11 +454,11 @@ export default function ExchangeFormPage({ onOpenAuth }) {
           state: { sendMethod, recvMethod, sendAmount, receiveAmount, recipientId: recipientPhone, usdtNetwork: recvNetwork, email }
         })
       } else {
-        setError(data.message || 'حدث خطأ، حاول مرة أخرى')
+        setError(data.message || tr('حدث خطأ، حاول مرة أخرى', 'An error occurred, please try again'))
         setMath(genMath()); setMathInput('')
       }
     } catch {
-      setError('خطأ في الاتصال بالسيرفر، حاول مرة أخرى')
+      setError(tr('خطأ في الاتصال بالسيرفر، حاول مرة أخرى', 'Server connection error, please try again'))
       setMath(genMath()); setMathInput('')
     } finally { setLoading2(false) }
   }
@@ -464,16 +468,16 @@ export default function ExchangeFormPage({ onOpenAuth }) {
 
   
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', direction: 'rtl', fontFamily: "'Cairo','Tajawal',sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', direction: isAr ? 'rtl' : 'ltr', fontFamily: "'Cairo','Tajawal',sans-serif" }}>
       <style>{CSS}</style>
 
       {/* Header */}
       <div className="ef-header">
         <button onClick={() => { if (formStep === 2) { ss.del('step'); setFormStep(1) } else { navigate('/') } }} className="ef-back">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-          رجوع
+          {tr('رجوع', 'Back')}
         </button>
-        <div className="ef-header-title">{formStep === 1 ? 'بيانات الطلب' : 'إرسال المبلغ'}</div>
+        <div className="ef-header-title">{formStep === 1 ? tr('بيانات الطلب', 'Order Details') : tr('إرسال المبلغ', 'Send Amount')}</div>
         <div style={{ width: 72 }} />
       </div>
 
@@ -481,7 +485,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
       <div className="ef-steps">
         <div className="ef-step ef-step--done">
           <span className="ef-step-dot ef-step-dot--done"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-          <span>الطريقة</span>
+          <span>{tr('الطريقة', 'Method')}</span>
         </div>
         <div className="ef-step-line ef-step-line--done" />
         <div className={`ef-step ${formStep === 1 ? 'ef-step--active' : 'ef-step--done'}`}>
@@ -490,17 +494,17 @@ export default function ExchangeFormPage({ onOpenAuth }) {
               ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
               : '2'}
           </span>
-          <span>بيانات الطلب</span>
+          <span>{tr('بيانات الطلب', 'Order Details')}</span>
         </div>
         <div className={`ef-step-line ${formStep === 2 ? 'ef-step-line--done' : ''}`} />
         <div className={`ef-step ${formStep === 2 ? 'ef-step--active' : 'ef-step--inactive'}`}>
           <span className={`ef-step-dot ${formStep === 2 ? '' : 'ef-step-dot--off'}`}>3</span>
-          <span style={formStep !== 2 ? { color: 'var(--text-3)' } : {}}>إرسال المبلغ</span>
+          <span style={formStep !== 2 ? { color: 'var(--text-3)' } : {}}>{tr('إرسال المبلغ', 'Send Amount')}</span>
         </div>
         <div className="ef-step-line" />
         <div className="ef-step ef-step--inactive">
           <span className="ef-step-dot ef-step-dot--off">4</span>
-          <span style={{ color: 'var(--text-3)' }}>تتبع الطلب</span>
+          <span style={{ color: 'var(--text-3)' }}>{tr('تتبع الطلب', 'Track Order')}</span>
         </div>
       </div>
 
@@ -510,7 +514,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
         <div className="ef-pair-card">
           <div className="ef-pair-side">
             <MethodIcon method={sendMethod} size={40} />
-            <div><div className="ef-pair-label">ترسل</div><div className="ef-pair-name">{sendMethod.name}</div></div>
+            <div><div className="ef-pair-label">{tr('ترسل', 'SEND')}</div><div className="ef-pair-name">{sendMethod.name}</div></div>
           </div>
           <div className="ef-pair-arrow">
             {apiLoading ? <span className="ef-rate-loading" /> : (
@@ -521,7 +525,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
             )}
           </div>
           <div className="ef-pair-side ef-pair-side--right">
-            <div style={{ textAlign: 'right' }}><div className="ef-pair-label">تستلم</div><div className="ef-pair-name">{recvMethod.name}</div></div>
+            <div style={{ textAlign: isAr ? 'right' : 'left' }}><div className="ef-pair-label">{tr('تستلم', 'RECEIVE')}</div><div className="ef-pair-name">{recvMethod.name}</div></div>
             <MethodIcon method={recvMethod} size={40} />
           </div>
         </div>
@@ -533,7 +537,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
 
           {/* المبلغان المتزامنان */}
           <div className="ef-card" id="field-amount">
-            <label className="ef-label">المبلغ المُرسَل <span style={{ color: 'var(--red)' }}>*</span></label>
+            <label className="ef-label">{tr('المبلغ المُرسَل', 'Amount Sent')} <span style={{ color: 'var(--red)' }}>*</span></label>
             <div className={`ef-amount-row ${fieldErrors.amount && lastEdited === 'send' ? 'ef-amount-row--error' : ''} ${sendAmount && parseFloat(sendAmount) > limits.available * 0.9 ? 'ef-amount-row--near-max' : ''}`}>
               <input type="number" min="0" step="any" value={sendAmount} onChange={e => handleSendChange(e.target.value)} placeholder="0.00" className="ef-input ef-amount-input" />
               <div className="ef-currency-badge">
@@ -548,7 +552,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
               </div>
               <div className="ef-swap-line" />
             </div>
-            <label className="ef-label">المبلغ المُستلَم <span style={{ color: 'var(--text-3)', fontSize: '0.65rem' }}>(تقريبي)</span></label>
+            <label className="ef-label">{tr('المبلغ المُستلَم', 'Amount Received')} <span style={{ color: 'var(--text-3)', fontSize: '0.65rem' }}>{tr('(تقريبي)', '(Estimated)')}</span></label>
             <div className={`ef-amount-row ef-amount-row--recv ${fieldErrors.amount && lastEdited === 'recv' ? 'ef-amount-row--error' : ''}`}>
               <input type="number" min="0" step="any" value={receiveAmount} onChange={e => handleReceiveChange(e.target.value)} placeholder="0.00" className="ef-input ef-amount-input ef-amount-input--recv" disabled={isWalletRecv} />
               <div className="ef-currency-badge ef-currency-badge--recv">
@@ -560,21 +564,21 @@ export default function ExchangeFormPage({ onOpenAuth }) {
             {isWalletSend && walletBalance !== null && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: walletBalance <= 0 ? 'rgba(239,68,68,0.12)' : parseFloat(sendAmount) > walletBalance ? 'rgba(239,68,68,0.12)' : 'rgba(0,229,160,0.12)', border: `1px solid ${walletBalance <= 0 || parseFloat(sendAmount) > walletBalance ? 'rgba(239,68,68,0.4)' : 'rgba(0,229,160,0.4)'}`, borderRadius: 10, marginTop: 6, fontSize: '0.8rem', fontWeight: 700 }}>
                 <div style={{ fontSize: '1.1rem' }}>💼</div>
-                <span>رصيد محفظتك الداخلية: <strong style={{ color: walletBalance <= 0 || parseFloat(sendAmount) > walletBalance ? 'var(--red)' : 'var(--green)' }}>{walletBalance.toFixed(4)} USDT</strong></span>
-                {walletBalance <= 0 && <span style={{ fontSize: '0.74rem', color: 'var(--red)' }}>⛔ رصيد فارغ</span>}
-                {walletBalance > 0 && parseFloat(sendAmount) > walletBalance && <span style={{ fontSize: '0.74rem', color: 'var(--red)' }}>⛔ غير كافٍ</span>}
+                <span>{tr('رصيد محفظتك الداخلية', 'Your wallet balance')}: <strong style={{ color: walletBalance <= 0 || parseFloat(sendAmount) > walletBalance ? 'var(--red)' : 'var(--green)' }}>{walletBalance.toFixed(4)} USDT</strong></span>
+                {walletBalance <= 0 && <span style={{ fontSize: '0.74rem', color: 'var(--red)' }}>{tr('⛔ رصيد فارغ', '⛔ Empty balance')}</span>}
+                {walletBalance > 0 && parseFloat(sendAmount) > walletBalance && <span style={{ fontSize: '0.74rem', color: 'var(--red)' }}>{tr('⛔ غير كافٍ', '⛔ Insufficient')}</span>}
               </div>
             )}
             {limits.available !== undefined && limits.available < Infinity && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: limits.available <= 0 ? 'rgba(239,68,68,0.12)' : limits.available < 500 ? 'rgba(245,158,11,0.12)' : 'rgba(0,229,160,0.12)', border: `1px solid ${limits.available <= 0 ? 'rgba(239,68,68,0.4)' : limits.available < 500 ? 'rgba(245,158,11,0.4)' : 'rgba(0,229,160,0.4)'}`, borderRadius: 10, marginTop: 6, fontSize: '0.8rem', fontWeight: 700 }}>
                 <div style={{ fontSize: '1.1rem' }}>💰</div>
-                <span>الرصيد المتاح: <strong style={{ color: limits.available <= 0 ? 'var(--red)' : limits.available < 500 ? 'var(--gold)' : 'var(--green)' }}>{limits.available.toLocaleString()} {limits.unit}</strong></span>
-                {limits.available <= 0 && <span style={{ fontSize: '0.74rem', color: 'var(--red)' }}>⛔ نفد الرصيد</span>}
-                {limits.available > 0 && limits.available < 500 && <span style={{ fontSize: '0.74rem', color: 'var(--gold)' }}>⚠️ منخفض</span>}
+                <span>{tr('الرصيد المتاح', 'Available liquidity')}: <strong style={{ color: limits.available <= 0 ? 'var(--red)' : limits.available < 500 ? 'var(--gold)' : 'var(--green)' }}>{limits.available.toLocaleString(isAr ? 'ar-EG' : 'en-US')} {limits.unit}</strong></span>
+                {limits.available <= 0 && <span style={{ fontSize: '0.74rem', color: 'var(--red)' }}>{tr('⛔ نفد الرصيد', '⛔ Out of liquidity')}</span>}
+                {limits.available > 0 && limits.available < 500 && <span style={{ fontSize: '0.74rem', color: 'var(--gold)' }}>{tr('⚠️ منخفض', '⚠️ Low')}</span>}
               </div>
             )}
             <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginTop: 8 }}>
-              الحد الأدنى: {limits.min.toLocaleString()} {limits.unit} · الأقصى: {limits.max.toLocaleString()} {limits.unit}
+              {tr('الحد الأدنى', 'Min')}: {limits.min.toLocaleString(isAr ? 'ar-EG' : 'en-US')} {limits.unit} · {tr('الأقصى', 'Max')}: {limits.max.toLocaleString(isAr ? 'ar-EG' : 'en-US')} {limits.unit}
             </div>
           </div>
 
@@ -647,7 +651,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
 
           {/* البريد الإلكتروني + الهاتف */}
           <div className="ef-card" id="field-email">
-            <label className="ef-label">البريد الإلكتروني <span style={{ color: 'var(--red)' }}>*</span></label>
+            <label className="ef-label">{tr('البريد الإلكتروني', 'Email')} <span style={{ color: 'var(--red)' }}>*</span></label>
             <input type="email" value={email} onChange={e => { if (!user?.email) { setEmail(e.target.value); clearErr('email') } }} placeholder="example@email.com" className={`ef-input ef-mono ${fieldErrors.email ? 'ef-input--error' : ''}`} readOnly={!!user?.email} style={{ direction: 'ltr', opacity: user?.email ? 0.75 : 1 }} />
             <FieldError msg={fieldErrors.email} />
             {isEgpSend && (
@@ -661,7 +665,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
 
           {submitted && Object.keys(fieldErrors).length > 0 && (
             <div className="ef-errors-summary">
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f87171', marginBottom: 6 }}>⚠ يرجى تصحيح الأخطاء التالية:</div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f87171', marginBottom: 6 }}>{tr('⚠ يرجى تصحيح الأخطاء التالية:', '⚠ Please fix the following errors:')}</div>
               {Object.values(fieldErrors).filter(Boolean).map((msg, i) => (
                 <div key={i} style={{ fontSize: '0.78rem', color: '#fca5a5', marginBottom: 3 }}>• {msg}</div>
               ))}
@@ -669,7 +673,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
           )}
 
           <button onClick={handleContinueToStep2} className="ef-submit-btn">
-            متابعة ←
+            {tr('متابعة ←', 'Continue →')}
           </button>
         </>)}
 
@@ -680,13 +684,13 @@ export default function ExchangeFormPage({ onOpenAuth }) {
 
           {/* ملخص الطلب */}
           <div className="ef-card" style={{ background: 'rgba(0,229,160,0.04)', borderColor: 'rgba(0,229,160,0.2)' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 8, letterSpacing: 0.5 }}>ملخص الطلب</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 8, letterSpacing: 0.5 }}>{tr('ملخص الطلب', 'Order Summary')}</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
-              <span style={{ color: 'var(--text-2)' }}>ترسل</span>
+              <span style={{ color: 'var(--text-2)' }}>{tr('ترسل', 'You Send')}</span>
               <strong style={{ color: 'var(--text-1)', fontFamily: "'JetBrains Mono',monospace" }}>{sendAmount} {sendMethod.symbol}</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem', marginTop: 6 }}>
-              <span style={{ color: 'var(--text-2)' }}>تستلم (تقريباً)</span>
+              <span style={{ color: 'var(--text-2)' }}>{tr('تستلم (تقريباً)', 'You Receive (estimated)')}</span>
               <strong style={{ color: 'var(--green)', fontFamily: "'JetBrains Mono',monospace" }}>{receiveAmount} {recvMethod.symbol}</strong>
             </div>
           </div>
@@ -817,7 +821,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
 
           {submitted && Object.keys(fieldErrors).length > 0 && (
             <div className="ef-errors-summary">
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f87171', marginBottom: 6 }}>⚠ يرجى تصحيح الأخطاء التالية:</div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f87171', marginBottom: 6 }}>{tr('⚠ يرجى تصحيح الأخطاء التالية:', '⚠ Please fix the following errors:')}</div>
               {Object.values(fieldErrors).filter(Boolean).map((msg, i) => (
                 <div key={i} style={{ fontSize: '0.78rem', color: '#fca5a5', marginBottom: 3 }}>• {msg}</div>
               ))}
@@ -825,7 +829,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
           )}
 
           <button onClick={handleSubmit} disabled={loading || !agreed} className="ef-submit-btn">
-            {loading ? <><span className="ef-btn-spinner" /> جاري إرسال الطلب...</> : 'إرسال الطلب ✓'}
+            {loading ? <><span className="ef-btn-spinner" /> {tr('جاري إرسال الطلب...', 'Submitting order...')}</> : tr('إرسال الطلب ✓', 'Submit Order ✓')}
           </button>
         </>)}
       </div>
