@@ -311,7 +311,7 @@ function MobileExchangeSelector({ sendMethod, recvMethod, onSend, onRecv, bothRe
         {/* SEND */}
         <div style={{ flex: 1, minWidth: 0, background: "var(--card)", border: "1px solid var(--border-1)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "8px 10px 6px", borderBottom: "1px solid var(--border-1)", background: "linear-gradient(135deg,rgba(0,210,255,0.07),transparent)", textAlign: "center" }}>
-            <span style={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 1, color: "var(--cyan)", fontFamily: "'JetBrains Mono',monospace" }}>SEND · ترسل</span>
+            <span style={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 1, color: "var(--cyan)", fontFamily: "'JetBrains Mono',monospace" }}>{lang === "ar" ? "أنت ترسل" : "you send"}</span>
           </div>
           <div style={{ padding: "6px", display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
             {activeSend.map(m => (
@@ -338,7 +338,7 @@ function MobileExchangeSelector({ sendMethod, recvMethod, onSend, onRecv, bothRe
         {/* RECV */}
         <div style={{ flex: 1, minWidth: 0, background: "var(--card)", border: "1px solid var(--border-1)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "8px 10px 6px", borderBottom: "1px solid var(--border-1)", background: "linear-gradient(135deg,rgba(0,229,160,0.07),transparent)", textAlign: "center" }}>
-            <span style={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 1, color: "var(--green)", fontFamily: "'JetBrains Mono',monospace" }}>RECV · تستلم</span>
+            <span style={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 1, color: "var(--green)", fontFamily: "'JetBrains Mono',monospace" }}>{lang === "ar" ? "أنت تستلم" : "you receive"}</span>
           </div>
           <div style={{ padding: "6px", display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
             {recvMethods.map(m => (
