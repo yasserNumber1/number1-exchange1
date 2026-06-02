@@ -285,43 +285,43 @@ export default function ExchangeFormPage({ onOpenAuth }) {
     const recvAmt = parseFloat(receiveAmount)
 
     // Method enabled checks
-    if (sendMethod && sendMethod.enabled === false) errs.amount = `وسيلة الإرسال "${sendMethod.name}" معطّلة حالياً`
-    if (recvMethod && recvMethod.enabled === false) errs.amount = `وسيلة الاستلام "${recvMethod.name}" معطّلة حالياً`
+    if (sendMethod && sendMethod.enabled === false) errs.amount = tr(`وسيلة الإرسال "${sendMethod.name}" معطّلة حالياً`, `Send method "${sendMethod.name}" is currently disabled`)
+    if (recvMethod && recvMethod.enabled === false) errs.amount = tr(`وسيلة الاستلام "${recvMethod.name}" معطّلة حالياً`, `Receive method "${recvMethod.name}" is currently disabled`)
 
     if (!errs.amount) {
-      if (!sendAmount || isNaN(amt) || amt <= 0 || recvAmt <= 0) errs.amount = 'يرجى إدخال مبلغ صحيح'
+      if (!sendAmount || isNaN(amt) || amt <= 0 || recvAmt <= 0) errs.amount = tr('يرجى إدخال مبلغ صحيح', 'Please enter a valid amount')
       // Limits are in recv currency — compare recvAmt against them
-      else if (recvAmt < limits.min) errs.amount = `الحد الأدنى هو ${limits.min.toLocaleString()} ${limits.unit}`
-      else if (limits.max < Infinity && recvAmt > limits.max) errs.amount = `الحد الأقصى هو ${limits.max.toLocaleString()} ${limits.unit}`
+      else if (recvAmt < limits.min) errs.amount = tr(`الحد الأدنى هو ${limits.min.toLocaleString()} ${limits.unit}`, `Minimum is ${limits.min.toLocaleString()} ${limits.unit}`)
+      else if (limits.max < Infinity && recvAmt > limits.max) errs.amount = tr(`الحد الأقصى هو ${limits.max.toLocaleString()} ${limits.unit}`, `Maximum is ${limits.max.toLocaleString()} ${limits.unit}`)
       else if (limits.available < Infinity && recvAmt > limits.available) {
-        errs.amount = `المبلغ يتجاوز الرصيد المتاح (${limits.available.toLocaleString()} ${limits.unit})`
+        errs.amount = tr(`المبلغ يتجاوز الرصيد المتاح (${limits.available.toLocaleString()} ${limits.unit})`, `Amount exceeds available liquidity (${limits.available.toLocaleString()} ${limits.unit})`)
       } else if (isWalletSend && walletBalance !== null && amt > walletBalance) {
-        errs.amount = `رصيد محفظتك الداخلية غير كافٍ — رصيدك: ${walletBalance.toFixed(4)} USDT`
+        errs.amount = tr(`رصيد محفظتك الداخلية غير كافٍ — رصيدك: ${walletBalance.toFixed(4)} USDT`, `Insufficient wallet balance — your balance: ${walletBalance.toFixed(4)} USDT`)
       }
     }
 
-    if (!email || !emailRx.test(email)) errs.email = 'يرجى إدخال بريد إلكتروني صحيح'
-    if (isEgpSend && userPhone && !/^\+?[0-9\s\-]{7,20}$/.test(userPhone.trim())) errs.phone = 'رقم الهاتف غير صحيح'
-    if (isEgpRecv && recipientId.trim().length < 5) errs.recipient = `يرجى إدخال رقم ${recvMethod?.name || ''} للاستلام`
-    if (isMoneyGoRecv && recipientId.trim().length < 3) errs.recipient = 'يرجى إدخال معرّف محفظة MoneyGo صحيح'
+    if (!email || !emailRx.test(email)) errs.email = tr('يرجى إدخال بريد إلكتروني صحيح', 'Please enter a valid email address')
+    if (isEgpSend && userPhone && !/^\+?[0-9\s\-]{7,20}$/.test(userPhone.trim())) errs.phone = tr('رقم الهاتف غير صحيح', 'Invalid phone number')
+    if (isEgpRecv && recipientId.trim().length < 5) errs.recipient = tr(`يرجى إدخال رقم ${recvMethod?.name || ''} للاستلام`, `Please enter your ${recvMethod?.name || ''} number to receive`)
+    if (isMoneyGoRecv && recipientId.trim().length < 3) errs.recipient = tr('يرجى إدخال معرّف محفظة MoneyGo صحيح', 'Please enter a valid MoneyGo wallet ID')
     if (isUsdtRecv) {
       const addr = usdtAddress.trim()
       if (!addr || addr.length < 10) {
-        errs.recipient = 'يرجى إدخال عنوان محفظة USDT صحيح'
+        errs.recipient = tr('يرجى إدخال عنوان محفظة USDT صحيح', 'Please enter a valid USDT wallet address')
       } else if (recvNetwork === 'TRC20' && !addr.startsWith('T')) {
-        errs.recipient = 'عنوان TRC20 يجب أن يبدأ بحرف T'
+        errs.recipient = tr('عنوان TRC20 يجب أن يبدأ بحرف T', 'TRC20 address must start with T')
       } else if (recvNetwork === 'BEP20' && !addr.startsWith('0x')) {
-        errs.recipient = 'عنوان BEP20 يجب أن يبدأ بـ 0x'
+        errs.recipient = tr('عنوان BEP20 يجب أن يبدأ بـ 0x', 'BEP20 address must start with 0x')
       } else if (recvNetwork === 'TRC20' && addr.length !== 34) {
-        errs.recipient = 'عنوان TRC20 يجب أن يكون 34 حرفاً'
+        errs.recipient = tr('عنوان TRC20 يجب أن يكون 34 حرفاً', 'TRC20 address must be 34 characters')
       } else if (recvNetwork === 'BEP20' && addr.length !== 42) {
-        errs.recipient = 'عنوان BEP20 يجب أن يكون 42 حرفاً'
+        errs.recipient = tr('عنوان BEP20 يجب أن يكون 42 حرفاً', 'BEP20 address must be 42 characters')
       }
     }
-    if (isWalletRecv  && !user)           errs.recipient = 'يجب تسجيل الدخول لاستخدام المحفظة الداخلية'
-    if (isWalletRecv  && user && !walletId) errs.recipient = 'جاري تحميل بيانات المحفظة، حاول مرة أخرى'
-    if (!agreed) errs.agreed = 'يجب الموافقة على الشروط والأحكام للمتابعة'
-    if (mathInput.trim() !== math.ans) errs.math = 'إجابة خاطئة — تحقق من الحساب مرة أخرى'
+    if (isWalletRecv  && !user)           errs.recipient = tr('يجب تسجيل الدخول لاستخدام المحفظة الداخلية', 'You must be logged in to use the internal wallet')
+    if (isWalletRecv  && user && !walletId) errs.recipient = tr('جاري تحميل بيانات المحفظة، حاول مرة أخرى', 'Loading wallet data, please try again')
+    if (!agreed) errs.agreed = tr('يجب الموافقة على الشروط والأحكام للمتابعة', 'You must agree to the Terms & Conditions to proceed')
+    if (mathInput.trim() !== math.ans) errs.math = tr('إجابة خاطئة — تحقق من الحساب مرة أخرى', 'Wrong answer — please check your calculation')
     return errs
   }
 
@@ -334,37 +334,37 @@ export default function ExchangeFormPage({ onOpenAuth }) {
     const amt = parseFloat(sendAmount)
     const recvAmt = parseFloat(receiveAmount)
 
-    if (sendMethod && sendMethod.enabled === false) errs.amount = `وسيلة الإرسال "${sendMethod.name}" معطّلة حالياً`
-    if (recvMethod && recvMethod.enabled === false) errs.amount = `وسيلة الاستلام "${recvMethod.name}" معطّلة حالياً`
+    if (sendMethod && sendMethod.enabled === false) errs.amount = tr(`وسيلة الإرسال "${sendMethod.name}" معطّلة حالياً`, `Send method "${sendMethod.name}" is currently disabled`)
+    if (recvMethod && recvMethod.enabled === false) errs.amount = tr(`وسيلة الاستلام "${recvMethod.name}" معطّلة حالياً`, `Receive method "${recvMethod.name}" is currently disabled`)
     if (!errs.amount) {
-      if (!sendAmount || isNaN(amt) || amt <= 0 || recvAmt <= 0) errs.amount = 'يرجى إدخال مبلغ صحيح'
-      else if (recvAmt < limits.min) errs.amount = `الحد الأدنى هو ${limits.min.toLocaleString()} ${limits.unit}`
-      else if (limits.max < Infinity && recvAmt > limits.max) errs.amount = `الحد الأقصى هو ${limits.max.toLocaleString()} ${limits.unit}`
+      if (!sendAmount || isNaN(amt) || amt <= 0 || recvAmt <= 0) errs.amount = tr('يرجى إدخال مبلغ صحيح', 'Please enter a valid amount')
+      else if (recvAmt < limits.min) errs.amount = tr(`الحد الأدنى هو ${limits.min.toLocaleString()} ${limits.unit}`, `Minimum is ${limits.min.toLocaleString()} ${limits.unit}`)
+      else if (limits.max < Infinity && recvAmt > limits.max) errs.amount = tr(`الحد الأقصى هو ${limits.max.toLocaleString()} ${limits.unit}`, `Maximum is ${limits.max.toLocaleString()} ${limits.unit}`)
       else if (limits.available < Infinity && recvAmt > limits.available)
-        errs.amount = `المبلغ يتجاوز الرصيد المتاح (${limits.available.toLocaleString()} ${limits.unit})`
+        errs.amount = tr(`المبلغ يتجاوز الرصيد المتاح (${limits.available.toLocaleString()} ${limits.unit})`, `Amount exceeds available liquidity (${limits.available.toLocaleString()} ${limits.unit})`)
       else if (isWalletSend && walletBalance !== null && amt > walletBalance)
-        errs.amount = `رصيد محفظتك الداخلية غير كافٍ — رصيدك: ${walletBalance.toFixed(4)} USDT`
+        errs.amount = tr(`رصيد محفظتك الداخلية غير كافٍ — رصيدك: ${walletBalance.toFixed(4)} USDT`, `Insufficient wallet balance — your balance: ${walletBalance.toFixed(4)} USDT`)
     }
-    if (!email || !emailRx.test(email)) errs.email = 'يرجى إدخال بريد إلكتروني صحيح'
-    if (isEgpSend && userPhone && !/^\+?[0-9\s\-]{7,20}$/.test(userPhone.trim())) errs.phone = 'رقم الهاتف غير صحيح'
-    if (isEgpRecv && recipientId.trim().length < 5) errs.recipient = `يرجى إدخال رقم ${recvMethod?.name || ''} للاستلام`
-    if (isMoneyGoRecv && recipientId.trim().length < 3) errs.recipient = 'يرجى إدخال معرّف محفظة MoneyGo صحيح'
+    if (!email || !emailRx.test(email)) errs.email = tr('يرجى إدخال بريد إلكتروني صحيح', 'Please enter a valid email address')
+    if (isEgpSend && userPhone && !/^\+?[0-9\s\-]{7,20}$/.test(userPhone.trim())) errs.phone = tr('رقم الهاتف غير صحيح', 'Invalid phone number')
+    if (isEgpRecv && recipientId.trim().length < 5) errs.recipient = tr(`يرجى إدخال رقم ${recvMethod?.name || ''} للاستلام`, `Please enter your ${recvMethod?.name || ''} number to receive`)
+    if (isMoneyGoRecv && recipientId.trim().length < 3) errs.recipient = tr('يرجى إدخال معرّف محفظة MoneyGo صحيح', 'Please enter a valid MoneyGo wallet ID')
     if (isUsdtRecv) {
       const addr = usdtAddress.trim()
       if (!addr || addr.length < 10) {
-        errs.recipient = 'يرجى إدخال عنوان محفظة صحيح'
+        errs.recipient = tr('يرجى إدخال عنوان محفظة صحيح', 'Please enter a valid wallet address')
       } else if (recvNetwork === 'TRC20' && !addr.startsWith('T')) {
-        errs.recipient = 'عنوان TRC20 يجب أن يبدأ بحرف T'
+        errs.recipient = tr('عنوان TRC20 يجب أن يبدأ بحرف T', 'TRC20 address must start with T')
       } else if (recvNetwork === 'BEP20' && !addr.startsWith('0x')) {
-        errs.recipient = 'عنوان BEP20 يجب أن يبدأ بـ 0x'
+        errs.recipient = tr('عنوان BEP20 يجب أن يبدأ بـ 0x', 'BEP20 address must start with 0x')
       } else if (recvNetwork === 'TRC20' && addr.length !== 34) {
-        errs.recipient = 'عنوان TRC20 يجب أن يكون 34 حرفاً'
+        errs.recipient = tr('عنوان TRC20 يجب أن يكون 34 حرفاً', 'TRC20 address must be 34 characters')
       } else if (recvNetwork === 'BEP20' && addr.length !== 42) {
-        errs.recipient = 'عنوان BEP20 يجب أن يكون 42 حرفاً'
+        errs.recipient = tr('عنوان BEP20 يجب أن يكون 42 حرفاً', 'BEP20 address must be 42 characters')
       }
     }
-    if (isWalletRecv && !user) errs.recipient = 'يجب تسجيل الدخول لاستخدام المحفظة الداخلية'
-    if (isWalletRecv && user && !walletId) errs.recipient = 'جاري تحميل بيانات المحفظة، حاول مرة أخرى'
+    if (isWalletRecv && !user) errs.recipient = tr('يجب تسجيل الدخول لاستخدام المحفظة الداخلية', 'You must be logged in to use the internal wallet')
+    if (isWalletRecv && user && !walletId) errs.recipient = tr('جاري تحميل بيانات المحفظة، حاول مرة أخرى', 'Loading wallet data, please try again')
     return errs
   }
 
@@ -586,51 +586,51 @@ export default function ExchangeFormPage({ onOpenAuth }) {
           <div className="ef-card" id="field-recipient">
             {isMoneyGoRecv && (
               <>
-                <label className="ef-label">معرّف محفظة MoneyGo <span style={{ color: 'var(--red)' }}>*</span></label>
+                <label className="ef-label">{tr('معرّف محفظة MoneyGo', 'MoneyGo Wallet ID')} <span style={{ color: 'var(--red)' }}>*</span></label>
                 <input type="text" value={recipientId} onChange={e => { setRecipientId(e.target.value); clearErr('recipient') }} placeholder="U-XXXXXXXX" className={`ef-input ef-mono ${fieldErrors.recipient ? 'ef-input--error' : ''}`} style={{ direction: 'ltr' }} />
                 <FieldError msg={fieldErrors.recipient} />
-                <p className="ef-hint">أدخل معرّف محفظة MoneyGo الذي ستستلم عليه المبلغ</p>
+                <p className="ef-hint">{tr('أدخل معرّف محفظة MoneyGo الذي ستستلم عليه المبلغ', 'Enter your MoneyGo wallet ID to receive the amount')}</p>
               </>
             )}
             {isUsdtRecv && (
               <>
-                <label className="ef-label">عنوان محفظتك ({recvNetworkLabel}) للاستلام <span style={{ color: 'var(--red)' }}>*</span></label>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-2)', fontFamily: "'Cairo','Tajawal',sans-serif", marginBottom: 6, lineHeight: 1.5 }}>هذا العنوان سيتم استخدامه لإرسال الأموال إليك</div>
+                <label className="ef-label">{tr(`عنوان محفظتك (${recvNetworkLabel}) للاستلام`, `Your ${recvNetworkLabel} wallet address`)} <span style={{ color: 'var(--red)' }}>*</span></label>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-2)', fontFamily: "'Cairo','Tajawal',sans-serif", marginBottom: 6, lineHeight: 1.5 }}>{tr('هذا العنوان سيتم استخدامه لإرسال الأموال إليك', 'This address will be used to send funds to you')}</div>
                 <input type="text" value={usdtAddress} onChange={e => { setUsdtAddress(e.target.value); clearErr('recipient') }} placeholder={recvNetwork === 'BEP20' ? '0x...' : 'T...'} className={`ef-input ef-mono ${fieldErrors.recipient ? 'ef-input--error' : ''}`} style={{ direction: 'ltr' }} />
                 <FieldError msg={fieldErrors.recipient} />
                 {usdtAddress.trim() && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: '0.74rem', fontFamily: "'JetBrains Mono',monospace" }}>
                     {((recvNetwork === 'TRC20' && usdtAddress.trim().startsWith('T') && usdtAddress.trim().length === 34) || (recvNetwork === 'BEP20' && usdtAddress.trim().startsWith('0x') && usdtAddress.trim().length === 42))
-                      ? <span style={{ color: 'var(--green)' }}>✓ عنوان {recvNetwork} صحيح</span>
-                      : <span style={{ color: '#f87171' }}>✗ {recvNetwork === 'TRC20' ? 'يجب أن يبدأ بـ T ويكون 34 حرفاً' : 'يجب أن يبدأ بـ 0x ويكون 42 حرفاً'}</span>}
+                      ? <span style={{ color: 'var(--green)' }}>{tr(`✓ عنوان ${recvNetwork} صحيح`, `✓ Valid ${recvNetwork} address`)}</span>
+                      : <span style={{ color: '#f87171' }}>✗ {recvNetwork === 'TRC20' ? tr('يجب أن يبدأ بـ T ويكون 34 حرفاً', 'Must start with T and be 34 characters') : tr('يجب أن يبدأ بـ 0x ويكون 42 حرفاً', 'Must start with 0x and be 42 characters')}</span>}
                   </div>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'rgba(0,210,255,0.06)', border: '1px solid rgba(0,210,255,0.15)', marginTop: 6 }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>الشبكة:</span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>{tr('الشبكة:', 'Network:')}</span>
                   <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace" }}>{recvNetwork}</span>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', marginRight: 'auto' }}>({recvNetworkLabel})</span>
                 </div>
                 <div className="ef-warning" style={{ marginTop: 6 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  <span>⚠ تأكد من إدخال عنوان شبكة <strong>{recvNetwork}</strong> الصحيح. الإرسال على شبكة خاطئة قد يؤدي إلى فقدان الأموال نهائياً.</span>
+                  <span>{tr(`⚠ تأكد من إدخال عنوان شبكة ${recvNetwork} الصحيح. الإرسال على شبكة خاطئة قد يؤدي إلى فقدان الأموال نهائياً.`, `⚠ Make sure to enter a correct ${recvNetwork} network address. Sending to the wrong network may result in permanent loss of funds.`)}</span>
                 </div>
               </>
             )}
             {isEgpRecv && (
               <>
                 <label className="ef-label">
-                  رقم {recvMethod?.name} للاستلام <span style={{ color: 'var(--red)' }}>*</span>
+                  {isAr ? `رقم ${recvMethod?.name} للاستلام` : `Receive ${recvMethod?.name} Number`} <span style={{ color: 'var(--red)' }}>*</span>
                 </label>
                 <input
                   type="text"
                   value={recipientId}
                   onChange={e => { setRecipientId(e.target.value); clearErr('recipient') }}
-                  placeholder={recvMethod?.placeholder || '01XXXXXXXXX'}
+                  placeholder={isAr ? recvMethod?.placeholder : 'username or phone number'}
                   className={`ef-input ef-mono ${fieldErrors.recipient ? 'ef-input--error' : ''}`}
                   style={{ direction: 'ltr' }}
                 />
                 <FieldError msg={fieldErrors.recipient} />
-                <p className="ef-hint">أدخل الرقم أو المعرّف الذي تريد استلام المبلغ عليه</p>
+                <p className="ef-hint">{tr('أدخل الرقم أو المعرّف الذي تريد استلام المبلغ عليه', 'Enter the number or ID where you want to receive the amount')}</p>
               </>
             )}
             {isWalletRecv && (
@@ -638,10 +638,10 @@ export default function ExchangeFormPage({ onOpenAuth }) {
                 <div className="ef-wallet-info">
                   <div className="ef-wallet-info-icon">🏦</div>
                   <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-1)' }}>سيتم الإيداع في محفظتك الداخلية تلقائياً</div>
-                    {walletId ? <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginTop: 4 }}>رقم المحفظة: {walletId}</div>
-                      : !user ? <div style={{ fontSize: '0.72rem', color: '#f87171', marginTop: 4 }}>⚠ يجب تسجيل الدخول لاستخدام المحفظة الداخلية</div>
-                      : <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', marginTop: 4 }}>جاري تحميل بيانات المحفظة...</div>}
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-1)' }}>{tr('سيتم الإيداع في محفظتك الداخلية تلقائياً', 'Funds will be deposited to your internal wallet automatically')}</div>
+                    {walletId ? <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginTop: 4 }}>{tr('رقم المحفظة:', 'Wallet ID:')} {walletId}</div>
+                      : !user ? <div style={{ fontSize: '0.72rem', color: '#f87171', marginTop: 4 }}>⚠ {tr('يجب تسجيل الدخول لاستخدام المحفظة الداخلية', 'You must be logged in to use the internal wallet')}</div>
+                      : <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', marginTop: 4 }}>{tr('جاري تحميل بيانات المحفظة...', 'Loading wallet data...')}</div>}
                   </div>
                 </div>
                 <FieldError msg={fieldErrors.recipient} />
@@ -656,7 +656,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
             <FieldError msg={fieldErrors.email} />
             {isEgpSend && (
               <>
-                <label className="ef-label" style={{ marginTop: 14 }}>رقم هاتف المُرسِل <span style={{ color: 'var(--text-3)', fontSize: '0.65rem' }}>(اختياري)</span></label>
+                <label className="ef-label" style={{ marginTop: 14 }}>{tr('رقم هاتف المُرسِل', 'Sender Phone Number')} <span style={{ color: 'var(--text-3)', fontSize: '0.65rem' }}>({tr('اختياري', 'Optional')})</span></label>
                 <input type="tel" value={userPhone} onChange={e => { setUserPhone(e.target.value); clearErr('phone') }} placeholder="01XXXXXXXXX" className={`ef-input ef-mono ${fieldErrors.phone ? 'ef-input--error' : ''}`} style={{ direction: 'ltr' }} />
                 <FieldError msg={fieldErrors.phone} />
               </>
@@ -698,34 +698,34 @@ export default function ExchangeFormPage({ onOpenAuth }) {
           {/* بيانات التحويل — أين يرسل العميل */}
           {isEgpSend && (
             <div className="ef-card" style={{ background: 'rgba(0,210,255,0.04)', borderColor: 'rgba(0,210,255,0.25)' }}>
-              <label className="ef-label">حوّل المبلغ إلى</label>
+              <label className="ef-label">{tr('حوّل المبلغ إلى', 'Transfer the amount to')}</label>
               {sendMethod?.receiverNumber ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'rgba(0,229,160,0.07)', borderRadius: 10, border: '1px solid rgba(0,229,160,0.25)' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 3 }}>الرقم</div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 3 }}>{tr('الرقم', 'Number')}</div>
                     <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-1)', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1 }}>{sendMethod.receiverNumber}</div>
                   </div>
-                  <button onClick={() => navigator.clipboard?.writeText(sendMethod.receiverNumber)} style={{ padding: '6px 14px', border: '1px solid rgba(0,229,160,0.4)', borderRadius: 8, background: 'transparent', color: 'var(--green)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'Cairo',sans-serif", flexShrink: 0 }}>نسخ</button>
+                  <button onClick={() => navigator.clipboard?.writeText(sendMethod.receiverNumber)} style={{ padding: '6px 14px', border: '1px solid rgba(0,229,160,0.4)', borderRadius: 8, background: 'transparent', color: 'var(--green)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'Cairo',sans-serif", flexShrink: 0 }}>{tr('نسخ', 'Copy')}</button>
                 </div>
               ) : (
-                <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.84rem', color: 'var(--gold)', textAlign: 'center' }}>تواصل مع الدعم للحصول على بيانات التحويل</div>
+                <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.84rem', color: 'var(--gold)', textAlign: 'center' }}>{tr('تواصل مع الدعم للحصول على بيانات التحويل', 'Contact support to get transfer details')}</div>
               )}
             </div>
           )}
 
           {(sendMethod?.type === 'moneygo' || fromId === 'mgo-send') && (
             <div className="ef-card" style={{ background: 'rgba(0,210,255,0.04)', borderColor: 'rgba(0,210,255,0.25)' }}>
-              <label className="ef-label">حوّل المبلغ إلى معرّف MoneyGo التالي</label>
+              <label className="ef-label">{tr('حوّل المبلغ إلى معرّف MoneyGo التالي', 'Transfer the amount to the following MoneyGo ID')}</label>
               {sendMethod?.receiverNumber ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'rgba(0,229,160,0.07)', borderRadius: 10, border: '1px solid rgba(0,229,160,0.25)' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 3 }}>معرّف المحفظة</div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 3 }}>{tr('معرّف المحفظة', 'Wallet ID')}</div>
                     <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-1)', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1 }}>{sendMethod.receiverNumber}</div>
                   </div>
-                  <button onClick={() => navigator.clipboard?.writeText(sendMethod.receiverNumber)} style={{ padding: '6px 14px', border: '1px solid rgba(0,229,160,0.4)', borderRadius: 8, background: 'transparent', color: 'var(--green)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'Cairo',sans-serif", flexShrink: 0 }}>📋 نسخ</button>
+                  <button onClick={() => navigator.clipboard?.writeText(sendMethod.receiverNumber)} style={{ padding: '6px 14px', border: '1px solid rgba(0,229,160,0.4)', borderRadius: 8, background: 'transparent', color: 'var(--green)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'Cairo',sans-serif", flexShrink: 0 }}>📋 {tr('نسخ', 'Copy')}</button>
                 </div>
               ) : (
-                <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.84rem', color: 'var(--gold)', textAlign: 'center' }}>تواصل مع الدعم للحصول على بيانات التحويل</div>
+                <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.84rem', color: 'var(--gold)', textAlign: 'center' }}>{tr('تواصل مع الدعم للحصول على بيانات التحويل', 'Contact support to get transfer details')}</div>
               )}
             </div>
           )}
@@ -734,26 +734,26 @@ export default function ExchangeFormPage({ onOpenAuth }) {
             const adminAddr = sendMethod?.networks?.find(n => n.networkKey === sendNetwork && n.address)?.address || sendMethod?.receiverNumber || ''
             return (
               <div className="ef-card" style={{ background: 'rgba(0,210,255,0.04)', borderColor: 'rgba(0,210,255,0.25)' }}>
-                <label className="ef-label">قم بتحويل المبلغ إلى العنوان التالي</label>
+                <label className="ef-label">{isAr ? 'قم بتحويل المبلغ إلى العنوان التالي' : 'Transfer the amount to the following address'}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'rgba(0,210,255,0.06)', border: '1px solid rgba(0,210,255,0.15)', marginBottom: 8 }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>الشبكة:</span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>{tr('الشبكة:', 'Network:')}</span>
                   <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace" }}>{sendNetwork}</span>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', marginRight: 'auto' }}>({sendNetworkLabel})</span>
                 </div>
                 {adminAddr ? (
                   <div style={{ padding: '14px 16px', background: 'rgba(0,229,160,0.07)', borderRadius: 12, border: '1px solid rgba(0,229,160,0.25)' }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 6 }}>عنوان محفظة {sendNetworkLabel}</div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 6 }}>{tr(`عنوان محفظة ${sendNetworkLabel}`, `${sendNetworkLabel} wallet address`)}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ flex: 1, fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-1)', fontFamily: "'JetBrains Mono',monospace", wordBreak: 'break-all', lineHeight: 1.5 }}>{adminAddr}</div>
-                      <button onClick={() => navigator.clipboard?.writeText(adminAddr)} style={{ padding: '8px 16px', border: '1px solid rgba(0,229,160,0.4)', borderRadius: 8, background: 'rgba(0,229,160,0.08)', color: 'var(--green)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, fontFamily: "'Cairo',sans-serif", flexShrink: 0 }}>📋 نسخ</button>
+                      <button onClick={() => navigator.clipboard?.writeText(adminAddr)} style={{ padding: '8px 16px', border: '1px solid rgba(0,229,160,0.4)', borderRadius: 8, background: 'rgba(0,229,160,0.08)', color: 'var(--green)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, fontFamily: "'Cairo',sans-serif", flexShrink: 0 }}>📋 {tr('نسخ', 'Copy')}</button>
                     </div>
                   </div>
                 ) : (
-                  <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.84rem', color: 'var(--gold)', textAlign: 'center' }}>⚠ لم يتم تحديد عنوان المحفظة لهذه الشبكة بعد — تواصل مع الدعم</div>
+                  <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.84rem', color: 'var(--gold)', textAlign: 'center' }}>{tr('⚠ لم يتم تحديد عنوان المحفظة لهذه الشبكة بعد — تواصل مع الدعم', '⚠ No wallet address set for this network yet — contact support')}</div>
                 )}
                 <div className="ef-warning" style={{ marginTop: 8 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  <span>⚠ تأكد من الإرسال على شبكة <strong>{sendNetwork}</strong> فقط. الإرسال على شبكة خاطئة يؤدي لفقدان الأموال نهائياً.</span>
+                  <span>{tr(`⚠ تأكد من الإرسال على شبكة ${sendNetwork} فقط. الإرسال على شبكة خاطئة يؤدي لفقدان الأموال نهائياً.`, `⚠ Only send on the ${sendNetwork} network. Sending on the wrong network will result in permanent loss of funds.`)}</span>
                 </div>
               </div>
             )
@@ -762,27 +762,27 @@ export default function ExchangeFormPage({ onOpenAuth }) {
           {/* TXID */}
           {isUsdtSend && !isWalletRecv && !isMoneyGoRecv && (
             <div className="ef-card">
-              <label className="ef-label">رقم المعاملة TXID <span style={{ color: 'var(--text-3)', fontSize: '0.65rem' }}>(اختياري)</span></label>
-              <input type="text" value={txid} onChange={e => setTxid(e.target.value)} placeholder="الصق رقم المعاملة هنا..." className="ef-input ef-mono" style={{ direction: 'ltr' }} />
-              <p className="ef-hint">ℹ️ أدخل الـ TXID لتسريع التحقق من طلبك</p>
+              <label className="ef-label">{tr('رقم المعاملة TXID', 'Transaction ID (TXID)')} <span style={{ color: 'var(--text-3)', fontSize: '0.65rem' }}>({tr('اختياري', 'Optional')})</span></label>
+              <input type="text" value={txid} onChange={e => setTxid(e.target.value)} placeholder={tr("الصق رقم المعاملة هنا...", "Paste transaction ID here...")} className="ef-input ef-mono" style={{ direction: 'ltr' }} />
+              <p className="ef-hint">{tr('ℹ️ أدخل الـ TXID لتسريع التحقق من طلبك', 'ℹ️ Enter the TXID to speed up verification of your order')}</p>
             </div>
           )}
 
           {/* رفع إيصال */}
           {isEgpSend && (
             <div className="ef-card">
-              <label className="ef-label">صورة إيصال التحويل <span style={{ color: 'var(--text-3)', fontSize: '0.65rem' }}>(اختياري)</span></label>
+              <label className="ef-label">{tr('صورة إيصال التحويل', 'Transfer Receipt Image')} <span style={{ color: 'var(--text-3)', fontSize: '0.65rem' }}>({tr('اختياري', 'Optional')})</span></label>
               <label className="ef-dropzone" style={receiptPrev ? { borderColor: 'var(--green)', background: 'rgba(0,229,160,0.04)' } : {}}>
                 {receiptPrev ? (
                   <div style={{ textAlign: 'center' }}>
-                    <img src={receiptPrev} alt="الإيصال" style={{ maxHeight: 150, maxWidth: '100%', borderRadius: 8, objectFit: 'contain' }} />
+                    <img src={receiptPrev} alt={tr("الإيصال", "Receipt")} style={{ maxHeight: 150, maxWidth: '100%', borderRadius: 8, objectFit: 'contain' }} />
                     <div style={{ marginTop: 8, fontSize: '0.74rem', color: 'var(--green)' }}>✓ {receipt?.name}</div>
                   </div>
                 ) : (
                   <>
                     <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>📸</div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>اضغط لرفع صورة الإيصال</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>JPG, PNG — حتى 5MB</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>{tr('اضغط لرفع صورة الإيصال', 'Click to upload receipt image')}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>{tr('JPG, PNG — حتى 5MB', 'JPG, PNG — up to 5MB')}</div>
                   </>
                 )}
                 <input type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
@@ -793,11 +793,11 @@ export default function ExchangeFormPage({ onOpenAuth }) {
           {/* التحقق الرياضي */}
           <div className="ef-card ef-math-card" id="field-math">
             <label className="ef-label">
-              تحقق أمني: ما هو ناتج <strong style={{ color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace" }}>{math.a} + {math.b}</strong> ؟
+              {tr('تحقق أمني: ما هو ناتج', 'Security check: what is')} <strong style={{ color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace" }}>{math.a} + {math.b}</strong> ؟
               <span style={{ color: 'var(--red)' }}> *</span>
             </label>
-            <input type="number" value={mathInput} onChange={e => { setMathInput(e.target.value); clearErr('math') }} placeholder="اكتب الناتج هنا" className={`ef-input ${fieldErrors.math ? 'ef-input--error' : ''}`} style={{ maxWidth: 160 }} />
-            {mathInput && mathInput.trim() === math.ans && !fieldErrors.math && <span style={{ fontSize: '0.74rem', color: 'var(--green)', marginTop: 4 }}>✓ صحيح</span>}
+            <input type="number" value={mathInput} onChange={e => { setMathInput(e.target.value); clearErr('math') }} placeholder={tr("اكتب الناتج هنا", "Type the result here")} className={`ef-input ${fieldErrors.math ? 'ef-input--error' : ''}`} style={{ maxWidth: 160 }} />
+            {mathInput && mathInput.trim() === math.ans && !fieldErrors.math && <span style={{ fontSize: '0.74rem', color: 'var(--green)', marginTop: 4 }}>✓ {tr('صحيح', 'Correct')}</span>}
             <FieldError msg={fieldErrors.math} />
           </div>
 
@@ -806,13 +806,13 @@ export default function ExchangeFormPage({ onOpenAuth }) {
             <label className="ef-checkbox-row" style={{ border: fieldErrors.agreed ? '1px solid rgba(239,68,68,0.35)' : 'none', borderRadius: 10, padding: fieldErrors.agreed ? '10px 12px' : '0', background: fieldErrors.agreed ? 'rgba(239,68,68,0.04)' : 'transparent' }}>
               <input type="checkbox" checked={agreed} onChange={e => { setAgreed(e.target.checked); clearErr('agreed') }} className="ef-checkbox" />
               <span style={{ fontSize: '0.84rem', color: 'var(--text-2)', lineHeight: 1.55 }}>
-                أوافق على <a href="/terms" target="_blank" style={{ color: 'var(--cyan)' }}>الشروط والأحكام</a> و<a href="/aml" target="_blank" style={{ color: 'var(--cyan)' }}>سياسة AML</a>
+                {tr('أوافق على', 'I agree to the')} <a href="/terms" target="_blank" style={{ color: 'var(--cyan)' }}>{tr('الشروط والأحكام', 'Terms & Conditions')}</a> {tr('و', 'and')} <a href="/aml" target="_blank" style={{ color: 'var(--cyan)' }}>AML {tr('سياسة', 'Policy')}</a>
               </span>
             </label>
             <FieldError msg={fieldErrors.agreed} />
             {agreed && (
               <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 8, background: 'rgba(34,211,238,0.06)', border: '1px solid rgba(34,211,238,0.2)', fontSize: '0.84rem', color: '#22d3ee', textAlign: 'center' }}>
-                إذا قمت بإرسال الأموال، اضغط زر <strong>إرسال الطلب</strong> أدناه للتأكيد
+                {tr('إذا قمت بإرسال الأموال، اضغط زر', 'If you have already sent the funds, press the')} <strong>{tr('إرسال الطلب', 'Submit Order')}</strong> {tr('أدناه للتأكيد', 'button below to confirm')}
               </div>
             )}
           </div>
