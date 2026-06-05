@@ -57,13 +57,16 @@ function CurrencyIcon({ method, size = 36 }) {
 }
 
 function LockBadge() {
+  const { lang } = useLang()
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', flexShrink: 0 }}>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round">
         <rect x="3" y="11" width="18" height="11" rx="2"/>
         <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
       </svg>
-      <span style={{ fontSize: '0.62rem', color: '#f59e0b', fontFamily: "'Cairo',sans-serif", fontWeight: 700, whiteSpace: 'nowrap' }}>تسجيل دخول</span>
+      <span style={{ fontSize: '0.62rem', color: '#f59e0b', fontFamily: "'Cairo',sans-serif", fontWeight: 700, whiteSpace: 'nowrap' }}>
+        {lang === 'ar' ? 'تسجيل دخول' : 'Login'}
+      </span>
     </div>
   )
 }
@@ -98,6 +101,7 @@ function isCompatible(send, recv) {
 
 function MethodCard({ method, selected, disabled, onClick, locked, onLockedClick }) {
   const [hov, setHov] = useState(false)
+  const { lang } = useLang()
   const isSelected = selected?.id === method.id
   return (
     <div
@@ -129,7 +133,13 @@ function MethodCard({ method, selected, disabled, onClick, locked, onLockedClick
           {method.name}
         </div>
         <div style={{ fontSize: "0.68rem", color: "var(--text-3)", fontFamily: "'JetBrains Mono',monospace", marginTop: 2 }}>
-          {method.type === 'egp' ? 'EGP · جنيه مصري' : method.type === 'wallet' ? 'محفظة داخلية' : method.type === 'moneygo' ? 'MoneyGo USD' : `${method.symbol} · رقمي`}
+          {method.type === 'egp'
+            ? (lang === 'ar' ? 'EGP · جنيه مصري' : 'EGP · Egyptian Pound')
+            : method.type === 'wallet'
+            ? (lang === 'ar' ? 'محفظة داخلية' : 'Internal Wallet')
+            : method.type === 'moneygo'
+            ? 'MoneyGo USD'
+            : `${method.symbol} · ${lang === 'ar' ? 'رقمي' : 'Crypto'}`}
         </div>
       </div>
       {locked ? <LockBadge /> : isSelected && (
@@ -245,10 +255,14 @@ function useIsMobile(bp = 640) {
 
 function MobileMethodCard({ method, selected, disabled, onClick, locked, onLockedClick }) {
   const [hov, setHov] = useState(false)
+  const { lang } = useLang()
   const isSelected = selected?.id === method.id
-  const subtitle = method.type === "egp" ? `EGP · ${method.network || "محفظة"}`
-    : method.type === "wallet" ? "داخلي"
-    : method.type === "moneygo" ? "MoneyGo USD"
+  const subtitle = method.type === "egp"
+    ? `EGP · ${method.network || (lang === 'ar' ? 'محفظة' : 'Wallet')}`
+    : method.type === "wallet"
+    ? (lang === 'ar' ? 'داخلي' : 'Internal')
+    : method.type === "moneygo"
+    ? "MoneyGo USD"
     : `${method.symbol}${method.network ? " · " + method.network : ""}`
 
   return (
@@ -426,7 +440,11 @@ function ExchangeSelector() {
   const lockAlert = loginAlert && (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 12, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', marginBottom: 14, fontFamily: "'Cairo','Tajawal',sans-serif", fontSize: '0.87rem', color: '#f59e0b', animation: 'alertIn 0.2s ease' }}>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0 }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      <span style={{ flex: 1 }}>المحفظة الداخلية تتطلب <strong>تسجيل الدخول</strong> أولاً</span>
+      <span style={{ flex: 1 }}>
+        {lang === 'ar'
+          ? <>المحفظة الداخلية تتطلب <strong>تسجيل الدخول</strong> أولاً</>
+          : <>Internal Wallet requires <strong>login</strong> first</>}
+      </span>
     </div>
   )
 
@@ -510,6 +528,7 @@ function HeroSection({ onAbout }) {
 // ── بانر "قيّمنا واربح" ──────────────────────────────────────
 function ReviewBanner() {
   const [hover, setHover] = useState(false)
+  const { lang } = useLang()
 
   return (
     <a
@@ -533,7 +552,7 @@ function ReviewBanner() {
         textDecoration: 'none',
         cursor: 'pointer',
         transition: 'all 0.25s',
-        direction: 'rtl',
+        direction: lang === 'ar' ? 'rtl' : 'ltr',
         fontFamily: "'Cairo','Tajawal',sans-serif",
         boxShadow: hover ? '0 4px 24px rgba(0,182,122,0.12)' : 'none',
       }}
@@ -550,11 +569,13 @@ function ReviewBanner() {
             ))}
           </div>
           <span style={{ fontSize: '1rem', fontWeight: 900, color: '#00e5a0' }}>
-            قيّمنا واربح 🏆
+            {lang === 'ar' ? 'قيّمنا واربح 🏆' : 'Rate Us & Win 🏆'}
           </span>
         </div>
         <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-2)', lineHeight: 1.65 }}>
-          شاركنا رأيك على <strong style={{ color: '#00b67a' }}>Trustpilot</strong> — تقييمك يهمنا ويساعدنا في تطوير خدمتنا 🙏
+          {lang === 'ar'
+            ? <>شاركنا رأيك على <strong style={{ color: '#00b67a' }}>Trustpilot</strong> — تقييمك يهمنا ويساعدنا في تطوير خدمتنا 🙏</>
+            : <>Share your feedback on <strong style={{ color: '#00b67a' }}>Trustpilot</strong> — your review helps us improve our service 🙏</>}
         </p>
       </div>
 
