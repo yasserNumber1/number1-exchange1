@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /wallet
+Disallow: /my-orders
+
+Sitemap: https://www.yasser-number1.com/sitemap.xml

@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { ROBOT_IMG } from '../RobotImg'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 
 const BOT_QS = [
   { id: 'q1', text: 'كيف أبدأ عملية التبادل؟' },

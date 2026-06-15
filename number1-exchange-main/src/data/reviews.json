@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "nameAr": "أحمد محمد",
+    "nameEn": "Ahmed Mohammed",
+    "country": "SA",
+    "rating": 5,
+    "dateAr": "مارس 2025",
+    "dateEn": "Mar 2025",
+    "amount": "500 USDT → MoneyGo",
+    "textAr": "خدمة ممتازة! التحويل تم خلال 10 دقائق فقط. السعر أفضل مما وجدته في أي مكان آخر.",
+    "textEn": "Excellent service! Transfer was done in just 10 minutes. The rate was better than anywhere else."
+  },
+  {
+    "id": 2,
+    "nameAr": "محمود علي",
+    "nameEn": "Mahmoud Ali",
+    "country": "EG",
+    "rating": 5,
+    "dateAr": "مارس 2025",
+    "dateEn": "Mar 2025",
+    "amount": "200 USDT → Vodafone",
+    "textAr": "تعاملت معهم مرات عديدة ودائماً الخدمة سريعة وأمينة. فريق الدعم متجاوب جداً على تيليجرام.",
+    "textEn": "I've dealt with them many times and the service is always fast and reliable. Support team is very responsive on Telegram."
+  },
+  {
+    "id": 3,
+    "nameAr": "خالد العمري",
+    "nameEn": "Khalid Al-Omari",
+    "country": "SA",
+    "rating": 4,
+    "dateAr": "فبراير 2025",
+    "dateEn": "Feb 2025",
+    "amount": "1000 USDT → MoneyGo",
+    "textAr": "تجربة جيدة جداً. انتظرت 20 دقيقة بسبب ازدحام لكن المبلغ وصل كاملاً. أنصح بهم.",
+    "textEn": "Very good experience. Waited 20 minutes due to congestion but the full amount arrived. Recommended."
+  },
+  {
+    "id": 4,
+    "nameAr": "ياسمين حسن",
+    "nameEn": "Yasmine Hassan",
+    "country": "EG",
+    "rating": 5,
+    "dateAr": "فبراير 2025",
+    "dateEn": "Feb 2025",
+    "amount": "300 USDT → InstaPay",
+    "textAr": "أول تعامل معهم وكان رائعاً. الموقع واضح وسهل، والتحويل وصل بسرعة. شكراً!",
+    "textEn": "First time using them and it was great. The site is clear and easy, and the transfer arrived quickly. Thanks!"
+  },
+  {
+    "id": 5,
+    "nameAr": "عمر الزهراني",
+    "nameEn": "Omar Al-Zahrani",
+    "country": "SA",
+    "rating": 5,
+    "dateAr": "يناير 2025",
+    "dateEn": "Jan 2025",
+    "amount": "750 USDT → MoneyGo",
+    "textAr": "من أفضل منصات الصرف التي استخدمتها. شفافية كاملة في الأسعار وسرعة في التنفيذ.",
+    "textEn": "One of the best exchange platforms I've used. Full price transparency and fast execution."
+  },
+  {
+    "id": 6,
+    "nameAr": "نورة القحطاني",
+    "nameEn": "Noura Al-Qahtani",
+    "country": "SA",
+    "rating": 4,
+    "dateAr": "يناير 2025",
+    "dateEn": "Jan 2025",
+    "amount": "150 USDT → Vodafone",
+    "textAr": "الخدمة ممتازة والفريق محترف. السعر منافس جداً مقارنة بالبدائل الأخرى.",
+    "textEn": "Excellent service and professional team. Very competitive rates compared to alternatives."
+  },
+  {
+    "id": 7,
+    "nameAr": "مصطفى إبراهيم",
+    "nameEn": "Mustafa Ibrahim",
+    "country": "EG",
+    "rating": 5,
+    "dateAr": "ديسمبر 2024",
+    "dateEn": "Dec 2024",
+    "amount": "2000 USDT → MoneyGo",
+    "textAr": "أثق بهم بمبالغ كبيرة منذ سنة. لم يخذلوني أبداً. الدعم متاح على مدار الساعة.",
+    "textEn": "I trust them with large amounts for a year now. They never let me down. Support is available 24/7."
+  },
+  {
+    "id": 8,
+    "nameAr": "سارة الأنصاري",
+    "nameEn": "Sara Al-Ansari",
+    "country": "SA",
+    "rating": 5,
+    "dateAr": "ديسمبر 2024",
+    "dateEn": "Dec 2024",
+    "amount": "400 USDT → InstaPay",
+    "textAr": "تحويل سلس ومريح. الموقع جميل ومنظم. استمروا هكذا.",
+    "textEn": "Smooth and convenient transfer. Beautiful and organized website. Keep it up."
+  },
+  {
+    "id": 9,
+    "nameAr": "فيصل المطيري",
+    "nameEn": "Faisal Al-Mutairi",
+    "country": "SA",
+    "rating": 5,
+    "dateAr": "نوفمبر 2024",
+    "dateEn": "Nov 2024",
+    "amount": "600 USDT → MoneyGo",
+    "textAr": "من أفضل تجاربي في تحويل الأموال. سرعة التنفيذ لا تصدق والأسعار منافسة جداً.",
+    "textEn": "One of my best money transfer experiences. Unbelievable execution speed and very competitive rates."
+  },
+  {
+    "id": 10,
+    "nameAr": "رنا الشهراني",
+    "nameEn": "Rana Al-Shahrani",
+    "country": "SA",
+    "rating": 5,
+    "dateAr": "أكتوبر 2024",
+    "dateEn": "Oct 2024",
+    "amount": "350 USDT → InstaPay",
+    "textAr": "خدمة عملاء رائعة وتعامل احترافي. التحويل وصل قبل الوقت المتوقع. سأعود دائماً.",
+    "textEn": "Amazing customer service and professional treatment. Transfer arrived earlier than expected. Will always come back."
+  }
+]

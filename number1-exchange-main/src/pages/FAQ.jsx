@@ -40,7 +40,7 @@ function useCountUp(target, duration = 1600, start = false) {
 }
 
 /* ─── FAQ Data ─── */
-const FAQ_DATA = [
+export const FAQ_DATA = [
   {
     id: 'exchange',
     labelAr: 'عمليات الصرف',
@@ -135,6 +135,25 @@ function StatCounter({ target, suffix, labelAr, labelEn, delay, started, lang })
 
 /* ─── Timeline Item ─── */
 function TimelineItem({ item, index, isOpen, onToggle, inView, lang }) {
+  const relatedLinks = {
+    exchange: [
+      { href: '/rates', labelAr: 'الأسعار', labelEn: 'Rates' },
+      { href: '/how-it-works', labelAr: 'كيف تعمل المنصة', labelEn: 'How It Works' },
+    ],
+    payment: [
+      { href: '/how-it-works', labelAr: 'خطوات التحويل', labelEn: 'Transfer Steps' },
+      { href: '/contact', labelAr: 'الدعم', labelEn: 'Support' },
+    ],
+    security: [
+      { href: '/aml', labelAr: 'سياسة AML/KYC', labelEn: 'AML/KYC Policy' },
+      { href: '/privacy', labelAr: 'سياسة الخصوصية', labelEn: 'Privacy Policy' },
+    ],
+    tracking: [
+      { href: '/track', labelAr: 'تتبع الطلب', labelEn: 'Track Order' },
+      { href: '/contact', labelAr: 'تواصل معنا', labelEn: 'Contact Us' },
+    ],
+  }[item.sectionId] || []
+
   return (
     <div
       style={{
@@ -249,6 +268,29 @@ function TimelineItem({ item, index, isOpen, onToggle, inView, lang }) {
             }}>
               {lang === 'ar' ? item.aAr : item.aEn}
             </p>
+            {relatedLinks.length > 0 && (
+              <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {relatedLinks.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    style={{
+                      textDecoration: 'none',
+                      padding: '5px 10px',
+                      borderRadius: 999,
+                      border: '1px solid rgba(0,210,255,0.18)',
+                      background: 'rgba(0,210,255,0.05)',
+                      color: 'var(--cyan)',
+                      fontSize: '0.72rem',
+                      fontFamily: "'Tajawal', sans-serif",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {lang === 'ar' ? link.labelAr : link.labelEn}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -295,12 +337,12 @@ export default function FAQ() {
   const currentSection = FAQ_DATA.find(s => s.id === activeSection)
 
   const filteredItems = searchQuery.trim()
-    ? FAQ_DATA.flatMap(s => s.items).filter(item => {
+    ? FAQ_DATA.flatMap(s => s.items.map(item => ({ ...item, sectionId: s.id }))).filter(item => {
         const q = lang === 'ar' ? item.qAr : item.qEn
         const a = lang === 'ar' ? item.aAr : item.aEn
         return (q + a).toLowerCase().includes(searchQuery.toLowerCase())
       })
-    : currentSection?.items || []
+    : (currentSection?.items || []).map(item => ({ ...item, sectionId: currentSection.id }))
 
   const totalQ = FAQ_DATA.reduce((acc, s) => acc + s.items.length, 0)
 

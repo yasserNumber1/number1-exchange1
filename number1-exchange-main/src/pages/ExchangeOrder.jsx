@@ -7,7 +7,7 @@ import { readOrderSession, clearOrderSession } from '../services/orderSession'
 import { ReviewModal } from '../components/shared/ReviewPrompt'
 import useLang from '../context/useLang'
 
-const API            = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API            = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 const ORDER_LIFETIME = 30 * 60
 
 const DONE_STATUSES     = ['completed', 'rejected', 'cancelled']

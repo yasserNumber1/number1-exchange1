@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 
 const ACTION_CONFIG = {
   CREATED:    { label: 'تم الإنشاء',   color: '#60a5fa', bg: 'rgba(37,99,235,0.12)'  },

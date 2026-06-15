@@ -215,4 +215,18 @@ router.get("/exchange-methods", async (req, res) => {
   }
 });
 
+// ─── GET /api/public/bestchange.xml ──────────
+router.get("/bestchange.xml", async (req, res) => {
+  try {
+    const doc = await Rate.getSingleton();
+    const { buildBestChangeXML } = require("../services/bestChangeXmlBuilder");
+    const xml = buildBestChangeXML(doc);
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.send(xml);
+  } catch (error) {
+    console.error("BestChange XML feed error:", error);
+    res.status(500).send("<error>Server error</error>");
+  }
+});
+
 module.exports = router;

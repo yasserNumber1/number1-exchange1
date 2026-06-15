@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import useAuth from '../context/useAuth'
 import useLang from '../context/useLang'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 
 const ACTION_CONFIG = {
   CREATED:    { ar: 'تم الإنشاء',   en: 'Created',      color: '#60a5fa', bg: 'rgba(37,99,235,0.15)'  },

@@ -5,7 +5,7 @@ import { adminAPI } from '../../../services/api'
 
 // Helper: call the register-webhook endpoint (not yet in adminAPI, so use fetch via api.js pattern)
 const registerWebhook = (backendUrl) =>
-  fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/admin/telegram/register-webhook', {
+  fetch((import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com') + '/api/admin/telegram/register-webhook', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -15,7 +15,7 @@ const registerWebhook = (backendUrl) =>
   }).then(r => r.json())
 
 const getWebhookInfo = () =>
-  fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/admin/telegram/webhook-info', {
+  fetch((import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com') + '/api/admin/telegram/webhook-info', {
     headers: { Authorization: `Bearer ${localStorage.getItem('n1_token')}` },
   }).then(r => r.json())
 

@@ -7,14 +7,21 @@ const LanguageContext = createContext()
 
 const translations = { ar: arLocale, en: enLocale }
 
+function getStoredLanguage() {
+  if (typeof window === 'undefined') return 'ar'
+  return window.localStorage.getItem('lang') || 'ar'
+}
+
 export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState(() => localStorage.getItem('lang') || 'ar')
+  const [lang, setLang] = useState(getStoredLanguage)
   const dir = lang === 'ar' ? 'rtl' : 'ltr'
 
   useEffect(() => {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return
+
     document.documentElement.lang = lang
     document.documentElement.dir  = dir
-    localStorage.setItem('lang', lang)
+    window.localStorage.setItem('lang', lang)
   }, [lang, dir])
 
   const t = useCallback((key) => translations[lang][key] || key, [lang])

@@ -7,7 +7,7 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import { walletAPI, adminAPI } from '../../services/api'
 import { CRYPTO_PRESETS, uid } from '../../components/admin/adminConstants'
 
-const API      = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API      = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 const getToken = () => localStorage.getItem('n1_token')
 
 const newNet = (s = {}) => ({

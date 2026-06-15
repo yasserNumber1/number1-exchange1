@@ -108,7 +108,7 @@ function ConfirmModal({ isOpen, onClose, orderData }) {
 
     const token = localStorage.getItem('n1_token')
     const res   = await fetch(
-      `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders/upload-receipt`,
+      `${import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'}/api/orders/upload-receipt`,
       {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},

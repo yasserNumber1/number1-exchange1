@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { readOrderSession, getTimeRemaining, clearOrderSession } from './services/orderSession'
+import { getRouteSeo } from './seo/routes'
+import { toAbsoluteUrl } from './seo/site'
 
 // ── Per-page SEO metadata ──────────────────────────────────
 const PAGE_SEO = {
@@ -131,7 +133,7 @@ import Privacy from './pages/legal/Privacy'
 import AML     from './pages/legal/AML'
 import Cookies from './pages/legal/Cookies'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 
 // ── Return to Active Order Banner ──────────────────────────────
 function ReturnToOrderBanner() {
@@ -272,16 +274,50 @@ function App() {
   const isAdminPage = location.pathname.startsWith('/admin')
   const { user }    = useAuth()
   const { lang }    = useLang()
+  const routeSeo = getRouteSeo(location.pathname)
+  const pageSeo = isAdminPage
+    ? {
+        title: 'Admin | Number1 Exchange',
+        description: 'Administrative area',
+        canonical: toAbsoluteUrl(location.pathname),
+        robots: 'noindex,nofollow',
+      }
+    : routeSeo
 
   // ── Update title + meta description on every route change ──
   useEffect(() => {
-    const seo = lang === 'ar' ? PAGE_SEO[location.pathname] : PAGE_SEO_EN[location.pathname]
-    if (seo) {
-      document.title = seo.title
+    if (pageSeo) {
+      document.title = pageSeo.title
       let desc = document.querySelector('meta[name="description"]')
-      if (desc) desc.setAttribute('content', seo.description)
+      if (desc) desc.setAttribute('content', pageSeo.description)
+      let robots = document.querySelector('meta[name="robots"]')
+      if (robots) robots.setAttribute('content', pageSeo.robots || 'index,follow')
+
+      let canonical = document.querySelector('link[rel="canonical"]')
+      if (canonical) canonical.setAttribute('href', pageSeo.canonical)
+
+      let ogTitle = document.querySelector('meta[property="og:title"]')
+      if (ogTitle) ogTitle.setAttribute('content', pageSeo.ogTitle || pageSeo.title)
+
+      let ogDescription = document.querySelector('meta[property="og:description"]')
+      if (ogDescription) ogDescription.setAttribute('content', pageSeo.ogDescription || pageSeo.description)
+
+      let ogUrl = document.querySelector('meta[property="og:url"]')
+      if (ogUrl) ogUrl.setAttribute('content', pageSeo.canonical)
+
+      let ogImage = document.querySelector('meta[property="og:image"]')
+      if (ogImage && pageSeo.ogImage) ogImage.setAttribute('content', pageSeo.ogImage)
+
+      let twitterTitle = document.querySelector('meta[name="twitter:title"]')
+      if (twitterTitle) twitterTitle.setAttribute('content', pageSeo.ogTitle || pageSeo.title)
+
+      let twitterDescription = document.querySelector('meta[name="twitter:description"]')
+      if (twitterDescription) twitterDescription.setAttribute('content', pageSeo.ogDescription || pageSeo.description)
+
+      let twitterImage = document.querySelector('meta[name="twitter:image"]')
+      if (twitterImage && pageSeo.ogImage) twitterImage.setAttribute('content', pageSeo.ogImage)
     }
-  }, [location.pathname, lang])
+  }, [pageSeo])
 
   const [authOpen,     setAuthOpen]     = useState(false)
   const [authTab,      setAuthTab]      = useState('login')
@@ -320,18 +356,20 @@ function App() {
   // ══════════════════════════════════════════
   if (isAdminPage) {
     return (
-      <Routes key={`admin-${lang}`}>
-        <Route path="/admin"                 element={<AdminRoute><AdminDashboard      /></AdminRoute>} />
-        <Route path="/admin/orders"          element={<AdminRoute><AdminOrders         /></AdminRoute>} />
-        <Route path="/admin/rates"           element={<AdminRoute><AdminRates          /></AdminRoute>} />
-        <Route path="/admin/payment-methods" element={<AdminRoute><AdminPaymentMethods /></AdminRoute>} />
-        <Route path="/admin/users"           element={<AdminRoute><AdminUsers          /></AdminRoute>} />
-        <Route path="/admin/settings"        element={<AdminRoute><AdminSettings       /></AdminRoute>} />
-        <Route path="/admin/wallets" element={<AdminRoute><AdminWallets /></AdminRoute>} />
-        <Route path="/admin/deposits"   element={<AdminDeposits />} />
-        <Route path="/admin/audit-logs" element={<AdminRoute><AdminAuditLogs /></AdminRoute>} />
-        <Route path="/admin/login"      element={<AdminLogin />} />
-      </Routes>
+      <>
+        <Routes key={`admin-${lang}`}>
+          <Route path="/admin"                 element={<AdminRoute><AdminDashboard      /></AdminRoute>} />
+          <Route path="/admin/orders"          element={<AdminRoute><AdminOrders         /></AdminRoute>} />
+          <Route path="/admin/rates"           element={<AdminRoute><AdminRates          /></AdminRoute>} />
+          <Route path="/admin/payment-methods" element={<AdminRoute><AdminPaymentMethods /></AdminRoute>} />
+          <Route path="/admin/users"           element={<AdminRoute><AdminUsers          /></AdminRoute>} />
+          <Route path="/admin/settings"        element={<AdminRoute><AdminSettings       /></AdminRoute>} />
+          <Route path="/admin/wallets"         element={<AdminRoute><AdminWallets /></AdminRoute>} />
+          <Route path="/admin/deposits"        element={<AdminDeposits />} />
+          <Route path="/admin/audit-logs"      element={<AdminRoute><AdminAuditLogs /></AdminRoute>} />
+          <Route path="/admin/login"           element={<AdminLogin />} />
+        </Routes>
+      </>
     )
   }
 

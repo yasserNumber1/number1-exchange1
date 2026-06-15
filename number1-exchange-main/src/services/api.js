@@ -1,4 +1,4 @@
-const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api'
+const BASE_URL = (import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com') + '/api'
 
 const request = async (endpoint, options = {}) => {
   const token = localStorage.getItem('n1_token')

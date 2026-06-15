@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useLang from '../../context/useLang'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 
 function Footer() {
   const { t, lang } = useLang()
@@ -215,7 +215,7 @@ function Footer() {
                 fontFamily: "'JetBrains Mono',monospace",
               }}>
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 5px rgba(34,197,94,0.6)' }} />
-                {isAr ? 'معتمد ومرخص' : 'LICENSED & REGULATED'}
+                {isAr ? 'دعم مباشر ومعالجة آمنة' : 'SECURE SUPPORT & PROCESSING'}
               </div>
             </div>
 

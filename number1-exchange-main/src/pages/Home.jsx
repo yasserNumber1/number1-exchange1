@@ -5,7 +5,7 @@ import useLang from "../context/useLang"
 import useAuth from "../context/useAuth"
 import { GooeyText } from "../components/ui/gooey-text-morphing"
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 
 // ── Fetch full dynamic method objects from API ──────────────
 function useActiveMethods() {
@@ -598,6 +598,211 @@ function ReviewBanner() {
   )
 }
 
+function ExploreLinks() {
+  const { lang } = useLang()
+  const isAr = lang === 'ar'
+
+  const links = [
+    {
+      href: '/about',
+      title: isAr ? 'من نحن' : 'About Us',
+      desc: isAr ? 'تعرف على المنصة وطريقة العمل وخطوات الأمان.' : 'Learn about the platform, workflow, and security process.',
+    },
+    {
+      href: '/how-it-works',
+      title: isAr ? 'كيف تعمل المنصة' : 'How It Works',
+      desc: isAr ? 'راجع خطوات تنفيذ الطلب من البداية حتى الاستلام.' : 'Review the exchange flow from order creation to payout.',
+    },
+    {
+      href: '/faq',
+      title: isAr ? 'الأسئلة الشائعة' : 'FAQ',
+      desc: isAr ? 'إجابات سريعة عن الدفع والتحويل والتحقق والتتبع.' : 'Quick answers about payments, processing, verification, and tracking.',
+    },
+    {
+      href: '/rates',
+      title: isAr ? 'أسعار الصرف' : 'Rates',
+      desc: isAr ? 'اطلع على أسعار الصرف المعروضة على المنصة.' : 'View the exchange rates presented on the platform.',
+    },
+    {
+      href: '/reviews',
+      title: isAr ? 'آراء العملاء' : 'Reviews',
+      desc: isAr ? 'شاهد تقييمات وتجارب العملاء مع الخدمة.' : 'See customer feedback and service experience.',
+    },
+    {
+      href: '/contact',
+      title: isAr ? 'تواصل معنا' : 'Contact Us',
+      desc: isAr ? 'تواصل مع الدعم عبر القنوات الرسمية للموقع.' : 'Reach support through the website’s official channels.',
+    },
+  ]
+
+  return (
+    <section
+      style={{
+        marginTop: 34,
+        padding: '22px 20px',
+        borderRadius: 20,
+        background: 'var(--card)',
+        border: '1px solid var(--border-1)',
+      }}
+    >
+      <div style={{ marginBottom: 18, textAlign: isAr ? 'right' : 'left' }}>
+        <div style={{ fontSize: '0.72rem', color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 2, marginBottom: 8 }}>
+          {isAr ? 'استكشف الموقع' : 'EXPLORE THE SITE'}
+        </div>
+        <h2 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-1)', fontWeight: 900 }}>
+          {isAr ? 'روابط مهمة للمستخدمين ومحركات البحث' : 'Important links for users and search engines'}
+        </h2>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 12 }}>
+        {links.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            style={{
+              display: 'block',
+              textDecoration: 'none',
+              padding: '14px 15px',
+              borderRadius: 14,
+              border: '1px solid var(--border-1)',
+              background: 'rgba(255,255,255,0.02)',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(0,210,255,0.35)'
+              e.currentTarget.style.background = 'rgba(0,210,255,0.04)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border-1)'
+              e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
+            }}
+          >
+            <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-1)', marginBottom: 6 }}>
+              {link.title}
+            </div>
+            <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.7, color: 'var(--text-3)' }}>
+              {link.desc}
+            </p>
+          </a>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function SeoContentSection() {
+  const { lang } = useLang()
+  const isAr = lang === 'ar'
+
+  const cards = [
+    {
+      title: isAr ? 'شراء وبيع USDT في مصر' : 'Buy and Sell USDT in Egypt',
+      body: isAr
+        ? 'توفر المنصة مساراً واضحاً لتنفيذ طلبات شراء وبيع USDT مع توضيح خطوات الدفع والتحقق والمتابعة، مما يساعد المستخدم على إتمام العملية بثقة وسرعة.'
+        : 'The platform provides a clear flow for buying and selling USDT with visible payment, verification, and tracking steps so users can complete transactions with confidence.',
+      href: '/how-it-works',
+      cta: isAr ? 'راجع خطوات التنفيذ' : 'See the process',
+    },
+    {
+      title: isAr ? 'التحويل من المحافظ الإلكترونية إلى USDT' : 'Convert Local Wallets to USDT',
+      body: isAr
+        ? 'يمكن للمستخدمين استكشاف خيارات التحويل من وسائل مثل Vodafone Cash وInstaPay وطرق أخرى مدعومة، مع مراجعة التفاصيل والأسعار قبل إرسال الطلب.'
+        : 'Users can explore conversion options from methods such as Vodafone Cash, InstaPay, and other supported channels, with pricing details available before order submission.',
+      href: '/rates',
+      cta: isAr ? 'استعرض الأسعار' : 'View rates',
+    },
+    {
+      title: isAr ? 'الدعم والتتبع بعد إنشاء الطلب' : 'Support and Order Tracking',
+      body: isAr
+        ? 'بعد إنشاء الطلب يمكن متابعة حالته والتواصل مع الدعم عبر القنوات الرسمية عند الحاجة، وهو ما يعزز الثقة في كل مرحلة من مراحل التنفيذ.'
+        : 'After creating an order, users can track its status and contact support through official channels whenever needed, strengthening trust throughout the process.',
+      href: '/contact',
+      cta: isAr ? 'تواصل مع الدعم' : 'Contact support',
+    },
+  ]
+
+  const trustPoints = isAr
+    ? [
+        'صفحات قانونية وسياسات واضحة للمستخدمين.',
+        'روابط مباشرة إلى الشرح والأسئلة الشائعة وطرق التواصل.',
+        'إمكانية متابعة الطلبات والاطلاع على معلومات الخدمة قبل التنفيذ.',
+      ]
+    : [
+        'Clear legal and policy pages for users.',
+        'Direct links to process explanations, FAQs, and contact channels.',
+        'Ability to review service details and track orders before and after submission.',
+      ]
+
+  return (
+    <section
+      style={{
+        marginTop: 34,
+        padding: '24px 20px',
+        borderRadius: 20,
+        background: 'var(--card)',
+        border: '1px solid var(--border-1)',
+      }}
+    >
+      <div style={{ maxWidth: 760, textAlign: isAr ? 'right' : 'left', marginBottom: 20 }}>
+        <div style={{ fontSize: '0.72rem', color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 2, marginBottom: 10 }}>
+          {isAr ? 'محتوى تعريفي' : 'SEO OVERVIEW'}
+        </div>
+        <h2 style={{ margin: '0 0 12px', fontSize: '1.3rem', color: 'var(--text-1)', fontWeight: 900 }}>
+          {isAr ? 'منصة تبادل USDT وتحويلات رقمية بمعلومات أوضح للمستخدم' : 'A clearer USDT exchange and digital transfer platform for users'}
+        </h2>
+        <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.9, color: 'var(--text-2)' }}>
+          {isAr
+            ? 'تم تصميم هذه الصفحة لتقديم صورة أوضح عن خدمات Number1 Exchange، مع روابط مباشرة إلى الشرح والأسعار والتقييمات والدعم، حتى يتمكن المستخدم ومحرك البحث من فهم بنية الخدمة والانتقال بسهولة بين الصفحات الأساسية.'
+            : 'This page is structured to explain Number1 Exchange more clearly, with direct links to process details, rates, reviews, and support so both users and search engines can understand the service structure.'}
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 12, marginBottom: 20 }}>
+        {cards.map((card) => (
+          <div
+            key={card.href}
+            style={{
+              padding: '16px',
+              borderRadius: 16,
+              border: '1px solid var(--border-1)',
+              background: 'rgba(255,255,255,0.02)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 8px', fontSize: '0.96rem', color: 'var(--text-1)', fontWeight: 800 }}>
+              {card.title}
+            </h3>
+            <p style={{ margin: '0 0 12px', fontSize: '0.82rem', lineHeight: 1.75, color: 'var(--text-3)' }}>
+              {card.body}
+            </p>
+            <a
+              href={card.href}
+              style={{
+                color: 'var(--cyan)',
+                textDecoration: 'none',
+                fontWeight: 700,
+                fontSize: '0.8rem',
+              }}
+            >
+              {card.cta}
+            </a>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ padding: '16px', borderRadius: 16, background: 'rgba(0,210,255,0.04)', border: '1px solid rgba(0,210,255,0.14)' }}>
+        <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', color: 'var(--text-1)', fontWeight: 800, textAlign: isAr ? 'right' : 'left' }}>
+          {isAr ? 'عناصر الثقة الموجودة في الموقع' : 'Trust elements available on the site'}
+        </h3>
+        <ul style={{ margin: 0, paddingInlineStart: isAr ? 18 : 20, color: 'var(--text-2)', lineHeight: 1.9, fontSize: '0.84rem' }}>
+          {trustPoints.map((point) => (
+            <li key={point}>{point}</li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
 function Home({ onOpenAuth }) {
   const navigate = useNavigate()
   return (
@@ -607,6 +812,8 @@ function Home({ onOpenAuth }) {
           <HeroSection onAbout={() => navigate("/about")} />
           <ExchangeSelector />
           <ReviewBanner />
+          <SeoContentSection />
+          <ExploreLinks />
         </div>
       </section>
     </div>

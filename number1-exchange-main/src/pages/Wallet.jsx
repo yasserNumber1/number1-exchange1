@@ -9,7 +9,7 @@ import useAuth                 from '../context/useAuth'
 import useLang                 from '../context/useLang'
 import { walletAPI }           from '../services/api'
 
-const API      = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API      = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 const getToken = () => localStorage.getItem('n1_token')
 
 // ─── أنواع المعاملات ──────────────────────────
