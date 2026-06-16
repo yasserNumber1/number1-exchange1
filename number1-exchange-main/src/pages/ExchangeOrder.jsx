@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import FlowDots from '../components/shared/FlowDots'
-import { readOrderSession, clearOrderSession } from '../services/orderSession'
+import { readOrderSession, clearOrderSession, getTimeRemaining } from '../services/orderSession'
 import { ReviewModal } from '../components/shared/ReviewPrompt'
 import useLang from '../context/useLang'
 
@@ -12,6 +12,11 @@ const ORDER_LIFETIME = 30 * 60
 
 const DONE_STATUSES     = ['completed', 'rejected', 'cancelled']
 const APPROVED_STATUSES = ['verified', 'processing', 'completed']
+
+function getSessionExpiry(orderId) {
+  const session = readOrderSession()
+  return session?.orderNumber === orderId ? session.expiresAt : null
+}
 
 const STATUS_MAP = {
   pending:    { ar: 'في انتظار التأكيد', en: 'Pending Confirmation', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  dot: '#f59e0b' },
@@ -189,7 +194,11 @@ export default function ExchangeOrder() {
   const [apiError,    setApiError]    = useState('')
   const [fetching,    setFetching]    = useState(false)
   const [lastRefresh, setLastRefresh] = useState(null)
-  const [secondsLeft,  setSecondsLeft]  = useState(ORDER_LIFETIME)
+  const [expiresAt,    setExpiresAt]    = useState(() => getSessionExpiry(orderId))
+  const [secondsLeft,  setSecondsLeft]  = useState(() => {
+    const initialExpiresAt = getSessionExpiry(orderId)
+    return initialExpiresAt ? getTimeRemaining(initialExpiresAt) : ORDER_LIFETIME
+  })
   const [showCancel,   setShowCancel]   = useState(false)
   const [sseConnected, setSseConnected] = useState(false)
   const [showReview,   setShowReview]   = useState(false)
@@ -251,7 +260,11 @@ export default function ExchangeOrder() {
   useEffect(() => {
     fetchOrder()
     const sess = readOrderSession()
-    if (sess && sess.orderNumber === orderId) connectSSE(sess.sessionToken)
+    if (sess && sess.orderNumber === orderId) {
+      setExpiresAt(sess.expiresAt)
+      setSecondsLeft(getTimeRemaining(sess.expiresAt))
+      connectSSE(sess.sessionToken)
+    }
     return () => {
       if (sseRef.current) sseRef.current.close()
       if (pollRef.current) clearInterval(pollRef.current)
@@ -271,9 +284,14 @@ export default function ExchangeOrder() {
 
   useEffect(() => {
     if (isDone || isApproved) return
-    const id = setInterval(() => setSecondsLeft(s => Math.max(0, s - 1)), 1000)
+    if (!expiresAt) {
+      const fallbackId = setInterval(() => setSecondsLeft(s => Math.max(0, s - 1)), 1000)
+      return () => clearInterval(fallbackId)
+    }
+    setSecondsLeft(getTimeRemaining(expiresAt))
+    const id = setInterval(() => setSecondsLeft(getTimeRemaining(expiresAt)), 1000)
     return () => clearInterval(id)
-  }, [isDone, isApproved])
+  }, [isDone, isApproved, expiresAt])
 
   const expired = secondsLeft <= 0 && !isDone && !isApproved
 

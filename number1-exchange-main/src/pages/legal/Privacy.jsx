@@ -92,7 +92,9 @@ function Privacy() {
             <li><strong>الاعتراض:</strong> رفض معالجة بياناتك لأغراض تسويقية.</li>
             <li><strong>النقل:</strong> الحصول على بياناتك بصيغة قابلة للنقل.</li>
           </ul>
-          <p>لممارسة أي من هذه الحقوق، راسلنا على: <a href="mailto:privacy@number1.exchange">privacy@number1.exchange</a></p>
+          <p>لممارسة أي من هذه الحقوق، راسلنا على: <a href="mailto:nimbeerr1@gmail.com
+">nimbeerr1@gmail.com
+</a></p>
 
           <h2>ملفات الكوكيز</h2>
           <p>
@@ -106,7 +108,8 @@ function Privacy() {
             لأي استفسارات تتعلق بخصوصيتك، يمكنك التواصل مع مسؤول حماية البيانات لدينا:
           </p>
           <div className="highlight-box">
-            <strong>البريد الإلكتروني:</strong> privacy@number1.exchange<br />
+            <strong>البريد الإلكتروني:</strong> nimbeerr1@gmail.com
+<br />
             <strong>وقت الاستجابة:</strong> خلال 72 ساعة من تلقي طلبك
           </div>
         </>
@@ -167,7 +170,9 @@ function Privacy() {
             <li><strong>Objection:</strong> Opt out of marketing communications.</li>
             <li><strong>Portability:</strong> Receive your data in a portable format.</li>
           </ul>
-          <p>To exercise any of these rights, contact us at: <a href="mailto:privacy@number1.exchange">privacy@number1.exchange</a></p>
+          <p>To exercise any of these rights, contact us at: <a href="nimbeerr1@gmail.com
+">nimbeerr1@gmail.com
+</a></p>
         </>
       )}
     </LegalLayout>

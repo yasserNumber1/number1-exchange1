@@ -21,12 +21,12 @@ const VALUES = [
   { icon: <IcEye2 />,   titleAr: 'الشفافية',        titleEn: 'Transparency',        descAr: 'أسعارنا واضحة بلا رسوم خفية. السعر الذي تراه هو ما ستدفعه.', descEn: 'Our rates are clear with no hidden fees. The price you see is what you pay.', color: '#a78bfa' },
   { icon: <IcSupport/>, titleAr: 'دعم حقيقي',       titleEn: 'Real Support',        descAr: 'فريق بشري يتابع كل طلب ويرد على استفساراتك بسرعة عبر تيليغرام.', descEn: 'A human team follows up every request and responds quickly via Telegram.', color: '#f59e0b' },
   { icon: <IcGlobe />,  titleAr: 'انتشار واسع',     titleEn: 'Wide Reach',          descAr: 'نخدم عملاء في عدة دول حول العالم عبر عملات رقمية ومحافظ إلكترونية متعددة.', descEn: 'We serve clients in multiple countries through various digital currencies and e-wallets.', color: '#00d2ff' },
-  { icon: <IcHeart />,  titleAr: 'ثقة متبادلة',     titleEn: 'Mutual Trust',        descAr: 'أكثر من 10 آلاف عملية ناجحة تشهد على مستوى خدمتنا وأمانة تعاملنا.', descEn: 'Over 10,000 successful transactions attest to our service quality and integrity.', color: '#00e5a0' },
+  { icon: <IcHeart />,  titleAr: 'ثقة متبادلة',     titleEn: 'Mutual Trust',        descAr: 'كل طلب يتم حفظه لتسهيل التتبع والمراجعة.', descEn: 'Each order is saved for easy tracking and review.', color: '#00e5a0' },
 ]
 
 const STATS = [
-  { value: '2023',   labelAr: 'سنة التأسيس', labelEn: 'Year Founded' },
-  { value: '10K+',  labelAr: 'صفقة منجزة',  labelEn: 'Deals Completed' },
+  { value: '2026',   labelAr: 'سنة التأسيس', labelEn: 'Year Founded' },
+  { value: '+200',  labelAr: 'صفقة منجزة',  labelEn: 'Deals Completed' },
   { value: '99.8%', labelAr: 'نسبة النجاح',  labelEn: 'Success Rate' },
   { value: '24/7',  labelAr: 'الدعم الفني',  labelEn: 'Tech Support' },
 ]

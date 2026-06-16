@@ -674,7 +674,7 @@ function AbGoldDivider() {
   )
 }
 
-function AbStatCard({ num, suffix, labelAr, labelEn, icon, delay, visible, lang }) {
+function AbStatCard({ num, suffix, displayValue, labelAr, labelEn, icon, delay, visible, lang }) {
   const count = useCountUp(num, 1600, visible)
   return (
     <div style={{ background:'var(--card)', border:'1px solid rgba(200,168,75,0.14)', borderRadius:18, padding:'28px 22px', textAlign:'center', transition:'all 0.3s', cursor:'default', animation: visible ? `ab-fadeUp 0.6s ${delay}s both` : 'none' }}
@@ -682,7 +682,7 @@ function AbStatCard({ num, suffix, labelAr, labelEn, icon, delay, visible, lang 
       onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(200,168,75,0.14)'; e.currentTarget.style.background='var(--card)'; e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none' }}>
       <div style={{ width:52, height:52, borderRadius:14, background:'rgba(200,168,75,0.1)', border:'1px solid rgba(200,168,75,0.2)', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--gold)', margin:'0 auto 16px' }}>{icon}</div>
       <div style={{ fontSize:'clamp(1.8rem,3.5vw,2.4rem)', fontWeight:900, fontFamily:"'Orbitron',monospace", background:'linear-gradient(135deg,var(--cyan),var(--purple),var(--green))', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', lineHeight:1, marginBottom:8 }}>
-        {count.toLocaleString()}{suffix}
+        {displayValue || `${count.toLocaleString()}${suffix}`}
       </div>
       <div style={{ fontSize:'0.8rem', color:'var(--text-2)', lineHeight:1.5 }}>
         {lang==='ar' ? labelAr : labelEn}
@@ -858,7 +858,15 @@ export function About({ onNavigate }) {
             </h2>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:16 }}>
-            {STATS.map((s,i) => <AbStatCard key={i} {...s} visible={statsVisible} lang={lang}/>)}
+            {STATS.map((s,i) => (
+              <AbStatCard
+                key={i}
+                {...s}
+                displayValue={s.labelEn === 'Successful transfers completed' ? '+200' : undefined}
+                visible={statsVisible}
+                lang={lang}
+              />
+            ))}
           </div>
         </section>
 
