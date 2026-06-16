@@ -35,7 +35,7 @@ const WHY_US = [
   { ar: 'تحقق فوري من blockchain لكل معاملة', en: 'Instant blockchain verification for every transaction' },
   { ar: 'أسعار تنافسية بدون رسوم مخفية',     en: 'Competitive rates with no hidden fees' },
   { ar: 'فريق دعم بشري على تيليغرام',        en: 'Human support team on Telegram' },
-  { ar: 'مسجلون على BestChange.com',          en: 'Registered on BestChange.com' },
+  { ar: 'نستعد للإدراج على BestChange.com',          en: 'Preparing for BestChange.com listing' },
   { ar: 'مراجعة يدوية من فريق متخصص',        en: 'Manual review by a specialized team' },
   { ar: 'تغطية واسعة حول العالم',            en: 'Wide global coverage' },
 ]
@@ -267,8 +267,8 @@ export default function About() {
                 <h3 style={{ margin: '0 0 10px', fontFamily: "'Tajawal',sans-serif", fontWeight: 700, color: 'var(--text-1)', fontSize: '0.98rem' }}>{isEn ? 'Compliance & Registration' : 'الامتثال والتسجيل'}</h3>
                 <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--text-3)', lineHeight: 1.9, fontFamily: "'Tajawal',sans-serif" }}>
                   {isEn
-                    ? 'Our platform is registered on BestChange.com and operates in accordance with international AML/KYC standards. We are committed to full transparency in all our operations and continuously monitor regulations related to digital currency exchange.'
-                    : 'منصتنا مسجلة على BestChange.com وتعمل وفق معايير AML/KYC الدولية. نلتزم بالشفافية الكاملة في جميع عملياتنا ونتابع باستمرار اللوائح المتعلقة بصرف العملات الرقمية.'}
+                    ? 'Our platform is preparing for BestChange.com listing and operates in accordance with international AML/KYC standards. We are committed to full transparency in all our operations and continuously monitor regulations related to digital currency exchange.'
+                    : 'منصتنا تستعد للإدراج على BestChange.com وتعمل وفق معايير AML/KYC الدولية. نلتزم بالشفافية الكاملة في جميع عملياتنا ونتابع باستمرار اللوائح المتعلقة بصرف العملات الرقمية.'}
                 </p>
               </div>
             </div>
