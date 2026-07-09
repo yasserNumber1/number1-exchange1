@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { path: '/contact',      ar: 'تواصل معنا',         en: 'Contact'      },
 ]
 
-// ── Logo ───────────────────────────────────────────────────
+// ── Logo ─────────────────────────────────────────────────── 
 function Logo({ onClick }) {
   return (
     <a onClick={onClick} style={{ display:'inline-flex', alignItems:'center', gap:12, textDecoration:'none', cursor:'pointer', userSelect:'none', flexShrink:0 }}>
