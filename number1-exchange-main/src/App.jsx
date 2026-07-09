@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { readOrderSession, getTimeRemaining, clearOrderSession } from './services/orderSession'
 import { getRouteSeo } from './seo/routes'
@@ -106,6 +106,8 @@ import Reviews    from './pages/Reviews'
 import Contact    from './pages/Contact'
 import FAQ        from './pages/FAQ'
 import About      from './pages/About'
+import Services   from './pages/Services'
+import Blog       from './pages/Blog'
 import OrderTrack from './pages/OrderTrack'
 import NotFound   from './pages/NotFound'
 import MyOrders from './pages/MyOrders'
@@ -274,15 +276,17 @@ function App() {
   const isAdminPage = location.pathname.startsWith('/admin')
   const { user }    = useAuth()
   const { lang }    = useLang()
-  const routeSeo = getRouteSeo(location.pathname)
-  const pageSeo = isAdminPage
-    ? {
+  const pageSeo = useMemo(() => {
+    if (isAdminPage) {
+      return {
         title: 'Admin | Number1 Exchange',
         description: 'Administrative area',
         canonical: toAbsoluteUrl(location.pathname),
         robots: 'noindex,nofollow',
       }
-    : routeSeo
+    }
+    return getRouteSeo(location.pathname)
+  }, [isAdminPage, location.pathname])
 
   // ── Update title + meta description on every route change ──
   useEffect(() => {
@@ -322,7 +326,7 @@ function App() {
   const [authOpen,     setAuthOpen]     = useState(false)
   const [authTab,      setAuthTab]      = useState('login')
   const [maintenance,  setMaintenance]  = useState(false)
-  const [siteSettings, setSiteSettings] = useState(null)
+  const [, setSiteSettings] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const openAuth = (tab = 'login') => {
@@ -393,6 +397,9 @@ function App() {
           <Route path="/contact"      element={<Contact />}    />
           <Route path="/faq"          element={<FAQ />}        />
           <Route path="/about"        element={<About />}      />
+          <Route path="/services"     element={<Services />}   />
+          <Route path="/blog"         element={<Blog />}       />
+          <Route path="/blog-grid"    element={<Navigate to="/blog" replace />} />
           <Route path="/track"        element={<OrderTrack />} />
           <Route path="/terms"        element={<Terms />}      />
           <Route path="/privacy"      element={<Privacy />}    />

@@ -30,6 +30,8 @@ function Footer() {
     { label: isAr ? 'من نحن'          : 'About Us',     path: '/about'        },
     { label: isAr ? 'كيف تعمل'        : 'How It Works', path: '/how-it-works' },
     { label: isAr ? 'التقييمات'       : 'Reviews',      path: '/reviews'      },
+    { label: isAr ? 'الخدمات'         : 'Services',     path: '/services'     },
+    { label: isAr ? 'الدليل'          : 'Guides',       path: '/blog'         },
     { label: isAr ? 'تواصل معنا'      : 'Contact Us',   path: '/contact'      },
     { label: isAr ? 'الأسئلة الشائعة' : 'FAQ',          path: '/faq'          },
   ]
@@ -77,8 +79,9 @@ function Footer() {
     },
   ]
 
-  const LinkItem = ({ label, path }) => (
+  const renderLinkItem = ({ label, path }) => (
     <button
+      key={path}
       onClick={() => navigate(path)}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
@@ -101,7 +104,7 @@ function Footer() {
     </button>
   )
 
-  const ColTitle = ({ text }) => (
+  const renderColTitle = (text) => (
     <div style={{ marginBottom: 18 }}>
       <h4 style={{
         fontFamily: "'JetBrains Mono',monospace",
@@ -221,20 +224,20 @@ function Footer() {
 
             {/* Company */}
             <div>
-              <ColTitle text={isAr ? 'الشركة' : 'Company'} />
-              {companyLinks.map(l => <LinkItem key={l.path} {...l} />)}
+              {renderColTitle(isAr ? 'الشركة' : 'Company')}
+              {companyLinks.map(renderLinkItem)}
             </div>
 
             {/* Legal */}
             <div>
-              <ColTitle text={isAr ? 'قانوني' : 'Legal'} />
-              {legalLinks.map(l => <LinkItem key={l.path} {...l} />)}
+              {renderColTitle(isAr ? 'قانوني' : 'Legal')}
+              {legalLinks.map(renderLinkItem)}
             </div>
 
             {/* Support */}
             <div>
-              <ColTitle text={isAr ? 'الدعم' : 'Support'} />
-              {supportLinks.map(l => <LinkItem key={l.path} {...l} />)}
+              {renderColTitle(isAr ? 'الدعم' : 'Support')}
+              {supportLinks.map(renderLinkItem)}
 
               {/* Support card */}
               <div style={{

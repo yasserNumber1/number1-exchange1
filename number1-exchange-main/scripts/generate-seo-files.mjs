@@ -13,6 +13,8 @@ const routes = [
   '/contact',
   '/reviews',
   '/rates',
+  '/services',
+  '/blog',
   '/terms',
   '/privacy',
   '/aml',
@@ -40,5 +42,12 @@ ${routes
 </urlset>
 `
 
-fs.writeFileSync(path.join(publicDir, 'robots.txt'), robotsTxt, 'utf8')
-fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), sitemapXml, 'utf8')
+function writeIfChanged(filePath, content) {
+  if (fs.existsSync(filePath) && fs.readFileSync(filePath, 'utf8') === content) {
+    return
+  }
+  fs.writeFileSync(filePath, content, 'utf8')
+}
+
+writeIfChanged(path.join(publicDir, 'robots.txt'), robotsTxt)
+writeIfChanged(path.join(publicDir, 'sitemap.xml'), sitemapXml)

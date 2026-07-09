@@ -1,4 +1,8 @@
 {
+  "redirects": [
+    { "source": "/blog-grid", "destination": "/blog", "permanent": true },
+    { "source": "/blog-grid/", "destination": "/blog", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ]

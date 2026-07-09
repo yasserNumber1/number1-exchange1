@@ -29,6 +29,14 @@ const routeSeo = {
     title: 'أسعار الصرف | Number1 Exchange',
     description: 'تابع أسعار الصرف المعروضة على Number1 Exchange لعمليات تبادل العملات الرقمية والمحافظ الإلكترونية.',
   },
+  '/services': {
+    title: 'USDT Exchange Services | Number1 Exchange',
+    description: 'Buy and sell USDT TRC20, exchange supported e-wallet balances, and track digital currency orders through Number1 Exchange.',
+  },
+  '/blog': {
+    title: 'USDT Exchange Guides | Number1 Exchange',
+    description: 'Guides about buying and selling USDT, TRC20 transfers, exchange rates, order tracking, and safer digital currency exchange.',
+  },
   '/terms': {
     title: 'شروط الخدمة | Number1 Exchange',
     description: 'اقرأ شروط استخدام منصة Number1 Exchange والخدمات المرتبطة بعمليات التبادل والتحويل.',
@@ -55,6 +63,8 @@ export const PRERENDER_ROUTES = [
   '/contact',
   '/reviews',
   '/rates',
+  '/services',
+  '/blog',
 ]
 
 export const BREADCRUMB_LABELS = {
@@ -64,6 +74,8 @@ export const BREADCRUMB_LABELS = {
   '/contact': 'تواصل معنا',
   '/reviews': 'آراء العملاء',
   '/rates': 'أسعار الصرف',
+  '/services': 'Services',
+  '/blog': 'Guides',
   '/terms': 'شروط الخدمة',
   '/privacy': 'سياسة الخصوصية',
   '/aml': 'سياسة AML/KYC',
@@ -71,17 +83,19 @@ export const BREADCRUMB_LABELS = {
 }
 
 export function getRouteSeo(pathname) {
-  const route = routeSeo[pathname] || {
+  const route = routeSeo[pathname]
+  const isKnownRoute = Boolean(route)
+  const resolvedRoute = route || {
     title: `${SITE_NAME} | تبادل العملات الرقمية`,
     description: 'منصة Number1 Exchange لتبادل العملات الرقمية والتحويلات الإلكترونية.',
   }
 
   return {
-    ...route,
-    canonical: toAbsoluteUrl(pathname),
-    ogTitle: route.title,
-    ogDescription: route.description,
+    ...resolvedRoute,
+    canonical: toAbsoluteUrl(isKnownRoute ? pathname : '/'),
+    ogTitle: resolvedRoute.title,
+    ogDescription: resolvedRoute.description,
     ogImage: DEFAULT_SOCIAL_IMAGE,
-    robots: 'index,follow',
+    robots: isKnownRoute ? 'index,follow' : 'noindex,follow',
   }
 }
