@@ -21,7 +21,7 @@ const settingSchema = new mongoose.Schema({
   // ── بيانات التواصل ────────────────────────────
   contactTelegram: { type: String, default: '@nimber1' },
   contactWhatsapp: { type: String, default: '' },
-  contactEmail:    { type: String, default: 'number1.yaser@gmail.com' },
+  contactEmail:    { type: String, default: 'nimbeerr1@gmail.com' },
   contactWebsite:  { type: String, default: '' },
 
   // ── إشعارات ──────────────────────────────────
