@@ -114,6 +114,7 @@ import MyOrders from './pages/MyOrders'
 import OrderConfirmPage from './pages/OrderConfirmPage'
 import ExchangeFormPage from './pages/ExchangeFormPage'
 import ExchangeOrder    from './pages/ExchangeOrder'
+import MoneyGoExchange  from './pages/MoneyGoExchange'
 import WalletPage    from './pages/Wallet'
 import AdminWallets  from './pages/admin/AdminWallets'
 
@@ -410,6 +411,7 @@ function App() {
           <Route path="/order-confirm"         element={<OrderConfirmPage />} />
           <Route path="/exchange/form"         element={<ExchangeFormPage />} />
           <Route path="/exchange/order/:orderId" element={<ExchangeOrder />} />
+          <Route path="/convert-usdt-to-moneygo-fast-secure-reliable-exchange-service/" element={<MoneyGoExchange />} />
         </Routes>
       </main>
       <Footer />

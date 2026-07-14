@@ -37,6 +37,10 @@ const routeSeo = {
     title: 'USDT Exchange Guides | Number1 Exchange',
     description: 'Guides about buying and selling USDT, TRC20 transfers, exchange rates, order tracking, and safer digital currency exchange.',
   },
+  '/convert-usdt-to-moneygo-fast-secure-reliable-exchange-service/': {
+    title: 'Convert USDT to MoneyGo USD | Fast & Secure | Number1 Exchange',
+    description: 'Convert USDT TRC20 to MoneyGo USD with clear rates, fast processing, and direct support from Number1 Exchange.',
+  },
   '/terms': {
     title: 'شروط الخدمة | Number1 Exchange',
     description: 'اقرأ شروط استخدام منصة Number1 Exchange والخدمات المرتبطة بعمليات التبادل والتحويل.',
@@ -65,6 +69,7 @@ export const PRERENDER_ROUTES = [
   '/rates',
   '/services',
   '/blog',
+  '/convert-usdt-to-moneygo-fast-secure-reliable-exchange-service/',
 ]
 
 export const BREADCRUMB_LABELS = {
@@ -76,6 +81,7 @@ export const BREADCRUMB_LABELS = {
   '/rates': 'أسعار الصرف',
   '/services': 'Services',
   '/blog': 'Guides',
+  '/convert-usdt-to-moneygo-fast-secure-reliable-exchange-service/': 'USDT to MoneyGo',
   '/terms': 'شروط الخدمة',
   '/privacy': 'سياسة الخصوصية',
   '/aml': 'سياسة AML/KYC',

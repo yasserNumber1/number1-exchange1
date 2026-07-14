@@ -15,6 +15,7 @@ const routes = [
   '/rates',
   '/services',
   '/blog',
+  '/convert-usdt-to-moneygo-fast-secure-reliable-exchange-service/',
   '/terms',
   '/privacy',
   '/aml',
