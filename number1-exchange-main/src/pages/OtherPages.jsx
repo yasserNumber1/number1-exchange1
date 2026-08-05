@@ -894,7 +894,7 @@ export function About({ onNavigate }) {
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
                 {[
-                  { num:'2020', labelAr:'سنة التأسيس', labelEn:'Founded'         },
+                  { num:'2025', labelAr:'سنة التأسيس', labelEn:'Founded'         },
                   { num:'#1',   labelAr:'منصة موثوقة',  labelEn:'Trusted Platform'},
                   { num:'< 3m', labelAr:'زمن التحويل',  labelEn:'Transfer Time'   },
                   { num:'99.9%',labelAr:'وقت التشغيل',  labelEn:'Uptime'          },

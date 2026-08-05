@@ -25,7 +25,7 @@ const VALUES = [
 ]
 
 const STATS = [
-  { value: '2026',   labelAr: 'سنة التأسيس', labelEn: 'Year Founded' },
+  { value: '2025',   labelAr: 'سنة التأسيس', labelEn: 'Year Founded' },
   { value: '+200',  labelAr: 'صفقة منجزة',  labelEn: 'Deals Completed' },
   { value: '99.8%', labelAr: 'نسبة النجاح',  labelEn: 'Success Rate' },
   { value: '24/7',  labelAr: 'الدعم الفني',  labelEn: 'Tech Support' },
