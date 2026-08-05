@@ -158,7 +158,7 @@ const en = {
   how_step5_desc:     'After confirmation, the amount is instantly transferred to your account. You will receive a confirmation message with your order number.',
   how_method1_name:   'USDT TRC-20',
   how_method1_desc:   'Instant automated transfer',
-  how_method1_badge:  'Automatic',
+  how_method1_badge:  'Manual',
   how_method2_name:   'Vodafone Cash',
   how_method2_desc:   'Near-instant transfer',
   how_method2_badge:  'Manual',

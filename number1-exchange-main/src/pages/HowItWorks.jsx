@@ -372,9 +372,9 @@ export default function HowItWorks() {
     obs.observe(el)
     return () => obs.disconnect()
   }, [])
-  const v1 = useCountUp(50000, '+', specsOn)
+  const v1 = useCountUp(5000, '+', specsOn)
   const v2 = useCountUp(99.9,  '%', specsOn)
-  const v3 = useCountUp(2.4,   'M', specsOn)
+  const v3 = useCountUp(2.4,   'K', specsOn)
   // country stat removed
 
   const ac = STEPS[activeStep].color

@@ -22,7 +22,7 @@ const STATS = [
     icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>,
   },
   {
-    value: '< 15m',
+    value: '< 7m',
     labelAr: 'متوسط التحويل',
     labelEn: 'Average Transfer',
     icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
@@ -96,7 +96,7 @@ function ReviewCard({ review, idx, isEn }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
             <Stars rating={review.rating} />
-            <span style={{ fontSize: '.6rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>{date}</span>
+            {/* <span style={{ fontSize: '.6rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>{date}</span> */}
           </div>
         </div>
       </div>

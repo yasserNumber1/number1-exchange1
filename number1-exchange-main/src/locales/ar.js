@@ -158,7 +158,7 @@ const ar = {
   how_step5_desc:     'بعد التأكيد، يتم تحويل المبلغ فوراً إلى حسابك. ستصلك رسالة تأكيد برقم الطلب لمتابعته.',
   how_method1_name:   'USDT TRC-20',
   how_method1_desc:   'تحويل آلي فوري',
-  how_method1_badge:  'تلقائي',
+  how_method1_badge:  'يدوي',
   how_method2_name:   'فودافون كاش',
   how_method2_desc:   'تحويل شبه فوري',
   how_method2_badge:  'يدوي',
