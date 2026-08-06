@@ -62,7 +62,34 @@ const { logOrderEvent } = require('./services/auditService');
 // ─── Telegram Webhook ─────────────────────────
 app.post('/api/telegram/webhook', async (req, res) => {
   try {
-    const { callback_query } = req.body;
+    const { callback_query, message } = req.body;
+
+    if (message && !callback_query) {
+      if (message.from?.is_bot) return res.json({ ok: true });
+
+      const replyToMessageId = message.reply_to_message?.message_id;
+      const replyText = String(message.text || message.caption || '').trim();
+
+      if (!replyToMessageId || !replyText) return res.json({ ok: true });
+
+      const SupportChat = require('./models/SupportChat');
+      const chat = await SupportChat.findOne({ telegramMessageIds: replyToMessageId });
+      if (!chat) return res.json({ ok: true });
+
+      chat.messages.push({ sender: 'admin', text: replyText, source: 'telegram' });
+      chat.lastAdminAt = new Date();
+      chat.status = 'open';
+      await chat.save();
+
+      const telegramService = require('./services/telegram');
+      await telegramService.sendMessage(
+        `<b>Support reply delivered</b>\nSession: <code>${chat.sessionId}</code>`,
+        { reply_to_message_id: message.message_id }
+      );
+
+      return res.json({ ok: true });
+    }
+
     if (!callback_query) return res.json({ ok: true });
 
     const { data, id: callbackQueryId, message: cbMessage } = callback_query;

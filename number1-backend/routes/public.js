@@ -4,6 +4,13 @@ const router         = express.Router();
 const Rate           = require("../models/Rate");
 const ExchangeMethod = require("../models/ExchangeMethod");
 const mongoose       = require("mongoose");
+const crypto         = require("crypto");
+
+const escapeTelegramHtml = (value = "") =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 
 
 // ─── GET /api/public/rates ────────────────────
@@ -166,6 +173,103 @@ router.get("/settings", async (req, res) => {
       contactWebsite:  s.contactWebsite,
     });
   } catch (error) {
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
+// ─── POST /api/public/support-message ─────────
+router.post("/support-message", async (req, res) => {
+  try {
+    const rawMessage = String(req.body?.message || "").trim();
+    const lang       = String(req.body?.lang || "en").slice(0, 8);
+    const page       = String(req.body?.page || "").slice(0, 300);
+    const sessionId  = String(req.body?.sessionId || "").trim();
+
+    if (!rawMessage) {
+      return res.status(400).json({ success: false, message: "Message is required." });
+    }
+    if (rawMessage.length > 1500) {
+      return res.status(400).json({ success: false, message: "Message is too long." });
+    }
+
+    const SupportChat = require("../models/SupportChat");
+    const telegramService = require("../services/telegram");
+    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || "unknown";
+    let chat = sessionId ? await SupportChat.findOne({ sessionId }) : null;
+    if (!chat) {
+      chat = await SupportChat.create({
+        sessionId: crypto.randomUUID(),
+        lang,
+        page,
+        ip,
+        messages: [],
+      });
+    }
+
+    chat.lang = lang;
+    chat.page = page || chat.page;
+    chat.ip = ip || chat.ip;
+    chat.status = "open";
+    chat.lastCustomerAt = new Date();
+    chat.messages.push({ sender: "customer", text: rawMessage, source: "web" });
+    await chat.save();
+
+    const text = [
+      "<b>New support chat message</b>",
+      `<b>Session:</b> <code>${escapeTelegramHtml(chat.sessionId)}</code>`,
+      "",
+      `<b>Message:</b>\n${escapeTelegramHtml(rawMessage)}`,
+      "",
+      `<b>Language:</b> ${escapeTelegramHtml(lang)}`,
+      page ? `<b>Page:</b> ${escapeTelegramHtml(page)}` : "",
+      `<b>IP:</b> ${escapeTelegramHtml(ip)}`,
+      `<b>Time:</b> ${escapeTelegramHtml(new Date().toISOString())}`,
+      "",
+      "<i>Reply to this Telegram message to answer the customer in the website chat.</i>",
+    ].filter(Boolean).join("\n");
+
+    const result = await telegramService.sendMessage(text);
+    if (!result.success) {
+      return res.status(502).json({ success: false, message: "Telegram delivery failed." });
+    }
+
+    chat.telegramMessageIds.addToSet(result.messageId);
+    await chat.save();
+
+    res.json({ success: true, sessionId: chat.sessionId });
+  } catch (error) {
+    console.error("Support message error:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
+router.get("/support-messages/:sessionId", async (req, res) => {
+  try {
+    const sessionId = String(req.params.sessionId || "").trim();
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: "Session is required." });
+    }
+
+    const SupportChat = require("../models/SupportChat");
+    const chat = await SupportChat.findOne({ sessionId }).select("sessionId messages status updatedAt");
+    if (!chat) {
+      return res.status(404).json({ success: false, message: "Chat session not found." });
+    }
+
+    res.json({
+      success: true,
+      sessionId: chat.sessionId,
+      status: chat.status,
+      messages: chat.messages.map(m => ({
+        id: String(m._id),
+        sender: m.sender,
+        text: m.text,
+        createdAt: m.createdAt,
+      })),
+      updatedAt: chat.updatedAt,
+    });
+  } catch (error) {
+    console.error("Support messages error:", error);
     res.status(500).json({ success: false, message: "Server error." });
   }
 });
