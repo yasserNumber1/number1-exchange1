@@ -19,6 +19,7 @@ export default function Contact() {
   const [form, setForm]       = useState({ name:'', email:'', subject:'', message:'' })
   const [sent, setSent]       = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState('')
   const [contacts, setContacts] = useState(null)
   const [focused, setFocused] = useState(null)
 
@@ -72,10 +73,68 @@ export default function Contact() {
     },
   ]
 
-  const handle = () => {
-    if (!form.name || !form.email || !form.message) return
+  const handle = async (event) => {
+    event.preventDefault()
+    if (loading) return
+
+    const name = form.name.trim()
+    const email = form.email.trim()
+    const subject = form.subject.trim()
+    const message = form.message.trim()
+    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+
+    if (!name || !email || !message) {
+      setError(isEn ? 'Please complete all required fields.' : 'يرجى إكمال جميع الحقول المطلوبة.')
+      return
+    }
+    if (!emailIsValid) {
+      setError(isEn ? 'Please enter a valid email address.' : 'يرجى إدخال بريد إلكتروني صحيح.')
+      return
+    }
+
+    const telegramMessage = [
+      'New contact form message',
+      '',
+      `Name: ${name}`,
+      `Email: ${email}`,
+      `Subject: ${subject || 'Not provided'}`,
+      '',
+      'Message:',
+      message,
+    ].join('\n')
+
+    if (telegramMessage.length > 1500) {
+      setError(isEn
+        ? 'Your message is too long. Please shorten it and try again.'
+        : 'رسالتك طويلة جداً. يرجى اختصارها ثم المحاولة مرة أخرى.')
+      return
+    }
+
+    setError('')
     setLoading(true)
-    setTimeout(() => { setLoading(false); setSent(true) }, 1300)
+    try {
+      const response = await fetch(`${API}/api/public/support-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: telegramMessage,
+          lang: isEn ? 'en' : 'ar',
+          page: typeof window !== 'undefined' ? window.location.href : '',
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Message delivery failed')
+      }
+      setSent(true)
+    } catch (submissionError) {
+      console.error('Contact form submission failed:', submissionError)
+      setError(isEn
+        ? 'Could not send your message right now. Please try again or use one of the contact methods above.'
+        : 'تعذر إرسال رسالتك الآن. يرجى المحاولة مرة أخرى أو استخدام إحدى وسائل التواصل أعلاه.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const fieldStyle = (name) => ({
@@ -163,25 +222,27 @@ export default function Contact() {
               <p style={{ color:'var(--text-3)', fontFamily:"'Tajawal',sans-serif", fontSize:'.88rem', lineHeight:1.7, maxWidth:320, margin:'0 auto 20px' }}>
                 {isEn ? 'We will reply within 24 hours at most. Thank you for reaching out.' : 'سنرد عليك خلال 24 ساعة على أقصى تقدير. شكراً لتواصلك معنا.'}
               </p>
-              <button onClick={()=>{ setSent(false); setForm({name:'',email:'',subject:'',message:''}) }}
+              <button onClick={()=>{ setSent(false); setError(''); setForm({name:'',email:'',subject:'',message:''}) }}
                 style={{ padding:'10px 26px', borderRadius:12, border:'1px solid rgba(0,210,255,0.3)', background:'var(--cyan-dim)', color:'var(--cyan)', fontFamily:"'Tajawal',sans-serif", fontSize:'.9rem', cursor:'pointer', fontWeight:700, transition:'all .2s' }}>
                 {isEn ? 'Send Another Message' : 'إرسال رسالة أخرى'}
               </button>
             </div>
           ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+            <form onSubmit={handle} style={{ display:'flex', flexDirection:'column', gap:18 }}>
               {/* Row 1 */}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
                 <div>
                   <label style={{ display:'block', fontSize:'.68rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", marginBottom:7, letterSpacing:1 }}>{isEn ? 'Name *' : 'الاسم *'}</label>
                   <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}
                     placeholder={isEn ? 'Your full name' : 'اسمك الكامل'} style={fieldStyle('name')}
+                    required
                     onFocus={()=>setFocused('name')} onBlur={()=>setFocused(null)}/>
                 </div>
                 <div>
                   <label style={{ display:'block', fontSize:'.68rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", marginBottom:7, letterSpacing:1 }}>{isEn ? 'Email *' : 'البريد الإلكتروني *'}</label>
                   <input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}
                     placeholder="email@example.com" style={{...fieldStyle('email'), direction:'ltr', textAlign:'left'}}
+                    required
                     onFocus={()=>setFocused('email')} onBlur={()=>setFocused(null)}/>
                 </div>
               </div>
@@ -198,11 +259,12 @@ export default function Contact() {
                 <textarea value={form.message} onChange={e=>setForm(f=>({...f,message:e.target.value}))}
                   placeholder={isEn ? 'Write your message here...' : 'اكتب رسالتك هنا...'} rows={4}
                   style={{...fieldStyle('message'), resize:'vertical', minHeight:110}}
+                  required
                   onFocus={()=>setFocused('message')} onBlur={()=>setFocused(null)}/>
               </div>
               {/* Submit */}
               <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-                <button onClick={handle} disabled={loading || !form.name || !form.email || !form.message}
+                <button type="submit" disabled={loading || !form.name.trim() || !form.email.trim() || !form.message.trim()}
                   style={{ flex:1, padding:'13px', background:'linear-gradient(135deg,#009fc0,#0077a0)', border:'none', borderRadius:13, color:'#fff', fontFamily:"'Tajawal',sans-serif", fontSize:'.95rem', fontWeight:700, cursor:(!form.name||!form.email||!form.message)?'not-allowed':'pointer', opacity:(!form.name||!form.email||!form.message)?0.5:1, transition:'all .2s', display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 4px 16px rgba(0,159,192,0.3)' }}
                   onMouseEnter={e=>{ if(!e.currentTarget.disabled) e.currentTarget.style.transform='translateY(-1px)' }}
                   onMouseLeave={e=>e.currentTarget.style.transform='translateY(0)'}>
@@ -216,8 +278,13 @@ export default function Contact() {
                   <div style={{ display:'flex', alignItems:'center', gap:4, justifyContent:'center' }}><IcClock/> {isEn ? 'Reply within 24 hours' : 'رد خلال 24 ساعة'}</div>
                 </div>
               </div>
+              {error && (
+                <div role="alert" aria-live="polite" style={{ padding:'10px 13px', borderRadius:11, border:'1px solid rgba(248,113,113,0.28)', background:'rgba(248,113,113,0.08)', color:'#f87171', fontFamily:"'Tajawal',sans-serif", fontSize:'.8rem', lineHeight:1.6 }}>
+                  {error}
+                </div>
+              )}
               <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-            </div>
+            </form>
           )}
         </div>
       </div>
