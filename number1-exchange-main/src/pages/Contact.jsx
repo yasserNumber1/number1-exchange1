@@ -92,18 +92,7 @@ export default function Contact() {
       return
     }
 
-    const telegramMessage = [
-      'New contact form message',
-      '',
-      `Name: ${name}`,
-      `Email: ${email}`,
-      `Subject: ${subject || 'Not provided'}`,
-      '',
-      'Message:',
-      message,
-    ].join('\n')
-
-    if (telegramMessage.length > 1500) {
+    if (message.length > 1500) {
       setError(isEn
         ? 'Your message is too long. Please shorten it and try again.'
         : 'رسالتك طويلة جداً. يرجى اختصارها ثم المحاولة مرة أخرى.')
@@ -117,7 +106,11 @@ export default function Contact() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: telegramMessage,
+          source: 'contact-form',
+          name,
+          email,
+          subject,
+          message,
           lang: isEn ? 'en' : 'ar',
           page: typeof window !== 'undefined' ? window.location.href : '',
         }),
@@ -235,14 +228,14 @@ export default function Contact() {
                   <label style={{ display:'block', fontSize:'.68rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", marginBottom:7, letterSpacing:1 }}>{isEn ? 'Name *' : 'الاسم *'}</label>
                   <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}
                     placeholder={isEn ? 'Your full name' : 'اسمك الكامل'} style={fieldStyle('name')}
-                    required
+                    required maxLength={120}
                     onFocus={()=>setFocused('name')} onBlur={()=>setFocused(null)}/>
                 </div>
                 <div>
                   <label style={{ display:'block', fontSize:'.68rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", marginBottom:7, letterSpacing:1 }}>{isEn ? 'Email *' : 'البريد الإلكتروني *'}</label>
                   <input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}
                     placeholder="email@example.com" style={{...fieldStyle('email'), direction:'ltr', textAlign:'left'}}
-                    required
+                    required maxLength={254}
                     onFocus={()=>setFocused('email')} onBlur={()=>setFocused(null)}/>
                 </div>
               </div>
@@ -251,6 +244,7 @@ export default function Contact() {
                 <label style={{ display:'block', fontSize:'.68rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", marginBottom:7, letterSpacing:1 }}>{isEn ? 'Subject' : 'الموضوع'}</label>
                 <input value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))}
                   placeholder={isEn ? 'Message subject' : 'موضوع رسالتك'} style={fieldStyle('subject')}
+                  maxLength={200}
                   onFocus={()=>setFocused('subject')} onBlur={()=>setFocused(null)}/>
               </div>
               {/* Message */}
@@ -259,7 +253,7 @@ export default function Contact() {
                 <textarea value={form.message} onChange={e=>setForm(f=>({...f,message:e.target.value}))}
                   placeholder={isEn ? 'Write your message here...' : 'اكتب رسالتك هنا...'} rows={4}
                   style={{...fieldStyle('message'), resize:'vertical', minHeight:110}}
-                  required
+                  required maxLength={1500}
                   onFocus={()=>setFocused('message')} onBlur={()=>setFocused(null)}/>
               </div>
               {/* Submit */}

@@ -5,6 +5,16 @@ const Rate           = require("../models/Rate");
 const ExchangeMethod = require("../models/ExchangeMethod");
 const mongoose       = require("mongoose");
 const crypto         = require("crypto");
+const rateLimit      = require("express-rate-limit");
+
+const contactFormLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.body?.source !== "contact-form",
+  message: { success: false, message: "Too many contact messages. Please try again later." },
+});
 
 const escapeTelegramHtml = (value = "") =>
   String(value)
@@ -178,12 +188,16 @@ router.get("/settings", async (req, res) => {
 });
 
 // ─── POST /api/public/support-message ─────────
-router.post("/support-message", async (req, res) => {
+router.post("/support-message", contactFormLimiter, async (req, res) => {
   try {
     const rawMessage = String(req.body?.message || "").trim();
     const lang       = String(req.body?.lang || "en").slice(0, 8);
     const page       = String(req.body?.page || "").slice(0, 300);
     const sessionId  = String(req.body?.sessionId || "").trim();
+    const isContactForm = req.body?.source === "contact-form";
+    const contactName = String(req.body?.name || "").trim();
+    const contactEmail = String(req.body?.email || "").trim();
+    const contactSubject = String(req.body?.subject || "").trim();
 
     if (!rawMessage) {
       return res.status(400).json({ success: false, message: "Message is required." });
@@ -191,9 +205,22 @@ router.post("/support-message", async (req, res) => {
     if (rawMessage.length > 1500) {
       return res.status(400).json({ success: false, message: "Message is too long." });
     }
+    if (isContactForm) {
+      const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail);
+      if (!contactName || contactName.length > 120) {
+        return res.status(400).json({ success: false, message: "A valid name is required." });
+      }
+      if (!validEmail || contactEmail.length > 254) {
+        return res.status(400).json({ success: false, message: "A valid email is required." });
+      }
+      if (contactSubject.length > 200) {
+        return res.status(400).json({ success: false, message: "Subject is too long." });
+      }
+    }
 
     const SupportChat = require("../models/SupportChat");
     const telegramService = require("../services/telegram");
+    const emailService = isContactForm ? require("../services/email") : null;
     const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || "unknown";
     let chat = sessionId ? await SupportChat.findOne({ sessionId }) : null;
     if (!chat) {
@@ -211,32 +238,63 @@ router.post("/support-message", async (req, res) => {
     chat.ip = ip || chat.ip;
     chat.status = "open";
     chat.lastCustomerAt = new Date();
-    chat.messages.push({ sender: "customer", text: rawMessage, source: "web" });
+    const storedMessage = isContactForm
+      ? [
+          `Name: ${contactName}`,
+          `Email: ${contactEmail}`,
+          `Subject: ${contactSubject || "Not provided"}`,
+          "",
+          rawMessage,
+        ].join("\n")
+      : rawMessage;
+    chat.messages.push({ sender: "customer", text: storedMessage, source: isContactForm ? "contact-form" : "web" });
     await chat.save();
 
     const text = [
       "<b>New support chat message</b>",
       `<b>Session:</b> <code>${escapeTelegramHtml(chat.sessionId)}</code>`,
       "",
-      `<b>Message:</b>\n${escapeTelegramHtml(rawMessage)}`,
+      `<b>Message:</b>\n${escapeTelegramHtml(storedMessage)}`,
       "",
       `<b>Language:</b> ${escapeTelegramHtml(lang)}`,
       page ? `<b>Page:</b> ${escapeTelegramHtml(page)}` : "",
       `<b>IP:</b> ${escapeTelegramHtml(ip)}`,
       `<b>Time:</b> ${escapeTelegramHtml(new Date().toISOString())}`,
       "",
-      "<i>Reply to this Telegram message to answer the customer in the website chat.</i>",
+      isContactForm
+        ? "<i>Reply to the customer using the email address above.</i>"
+        : "<i>Reply to this Telegram message to answer the customer in the website chat.</i>",
     ].filter(Boolean).join("\n");
 
-    const result = await telegramService.sendMessage(text);
-    if (!result.success) {
-      return res.status(502).json({ success: false, message: "Telegram delivery failed." });
+    const [telegramResult, emailResult] = await Promise.all([
+      telegramService.sendMessage(text),
+      isContactForm
+        ? emailService.sendContactMessage({
+            name: contactName,
+            email: contactEmail,
+            subject: contactSubject,
+            message: rawMessage,
+            lang,
+            page,
+            ip,
+          })
+        : Promise.resolve({ success: true, skipped: true }),
+    ]);
+    if (!telegramResult.success || !emailResult.success) {
+      return res.status(502).json({
+        success: false,
+        message: !telegramResult.success ? "Telegram delivery failed." : "Email delivery failed.",
+      });
     }
 
-    chat.telegramMessageIds.addToSet(result.messageId);
+    chat.telegramMessageIds.addToSet(telegramResult.messageId);
     await chat.save();
 
-    res.json({ success: true, sessionId: chat.sessionId });
+    res.json({
+      success: true,
+      sessionId: chat.sessionId,
+      deliveries: { telegram: true, email: isContactForm },
+    });
   } catch (error) {
     console.error("Support message error:", error);
     res.status(500).json({ success: false, message: "Server error." });

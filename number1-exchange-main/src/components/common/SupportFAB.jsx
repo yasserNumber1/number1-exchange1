@@ -2,6 +2,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import useLang from '../../context/useLang'
 
+const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
+const SUPPORT_SESSION_KEY = 'n1_support_session'
+
 /* ─── constants ─────────────────────────────────────────── */
 const WA_NUMBER  = '9647XXXXXXXXX'
 const TG_USER    = 'nimber1'
@@ -182,10 +185,16 @@ function Panel({ onClose, lang }) {
   const [showSup, setShowSup]   = useState(false)
   const [typing, setTyping]     = useState(false)
   const [input, setInput]       = useState('')
+  const [sending, setSending]   = useState(false)
+  const [sessionId, setSessionId] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    return localStorage.getItem(SUPPORT_SESSION_KEY) || ''
+  })
   const [robAnim, setRobAnim]   = useState('idle')
   const [greeted, setGreeted]   = useState(false)
   const [faqOpen,  setFaqOpen]   = useState(false)
   const bottomRef = useRef(null)
+  const seenSupportIdsRef = useRef(new Set())
   const qs = BOT_QS[ar?'ar':'en']
 
   const now = () => { const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` }
@@ -200,9 +209,32 @@ function Panel({ onClose, lang }) {
       setRobAnim('blink')
       setTimeout(()=>{ setRobAnim('idle') },700)
     },1100)
-  },[tab])
+  },[addMsg, ar, greeted, tab])
 
   useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:'smooth'}) },[messages,typing,showOpts,showSup])
+
+  useEffect(()=>{
+    if(!sessionId)return
+    let stopped=false
+    const loadReplies=async()=>{
+      try {
+        const response = await fetch(`${API}/api/public/support-messages/${encodeURIComponent(sessionId)}`)
+        const data = await response.json().catch(()=>({}))
+        if(!response.ok||!data.success||!Array.isArray(data.messages)||stopped)return
+        data.messages
+          .filter(m=>m.sender==='admin'&&!seenSupportIdsRef.current.has(m.id))
+          .forEach(m=>{
+            seenSupportIdsRef.current.add(m.id)
+            addMsg(m.text,false,'wave')
+          })
+      } catch {
+        // Polling is best-effort; the send path still shows delivery errors.
+      }
+    }
+    loadReplies()
+    const t=setInterval(loadReplies,3500)
+    return()=>{ stopped=true; clearInterval(t) }
+  },[addMsg, sessionId])
 
   useEffect(()=>{
     const t=setInterval(()=>{ if(robAnim==='idle'){setRobAnim('blink');setTimeout(()=>setRobAnim('idle'),380)} },3500+Math.random()*2500)
@@ -218,15 +250,37 @@ function Panel({ onClose, lang }) {
     },900+Math.random()*400)
   }
 
-  const sendFree=()=>{
-    if(!input.trim())return
+  const sendFree=async()=>{
+    if(!input.trim()||sending)return
     const txt=input.trim();setInput('');setShowOpts(false);setShowSup(false);setFaqOpen(false);addMsg(txt,true)
-    setTyping(true);setRobAnim('talking')
-    setTimeout(()=>{
+    setSending(true);setTyping(true);setRobAnim('talking')
+    try {
+      const response = await fetch(`${API}/api/public/support-message`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body:JSON.stringify({
+          message:txt,
+          lang:ar?'ar':'en',
+          page:typeof window!=='undefined'?window.location.href:'',
+          sessionId,
+        }),
+      })
+      const data = await response.json().catch(()=>({}))
+      if(!response.ok||!data.success) throw new Error(data.message||'Telegram delivery failed')
+      if(data.sessionId){
+        setSessionId(data.sessionId)
+        if(typeof window!=='undefined') localStorage.setItem(SUPPORT_SESSION_KEY,data.sessionId)
+      }
       setTyping(false);setRobAnim('wave')
-      addMsg(ar?'شكراً! يمكنك التواصل مع فريق الدعم البشري مباشرة:':'Thanks! You can reach our support team directly:',false,'wave')
-      setTimeout(()=>{ setShowSup(true);setRobAnim('idle') },300)
-    },900)
+      addMsg(ar?'تم إرسال رسالتك إلى فريق الدعم على تيليجرام. سنرد عليك في أقرب وقت.':'Your message was sent to support on Telegram. We will reply as soon as possible.',false,'wave')
+    } catch {
+      setTyping(false);setRobAnim('blink')
+      addMsg(ar?'تعذر إرسال الرسالة الآن. يمكنك استخدام روابط الدعم المباشر بالأسفل.':'Could not send the message right now. You can use the direct support links below.',false,'blink')
+      setShowSup(true)
+    } finally {
+      setSending(false)
+      setTimeout(()=>setRobAnim('idle'),700)
+    }
   }
 
   const TABS=[
@@ -301,7 +355,7 @@ function Panel({ onClose, lang }) {
               <div style={{ fontSize:'.6rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:1, marginBottom:2, paddingRight:2 }}>
                 {ar ? '— أسئلة شائعة —' : '— FAQ —'}
               </div>
-              {qs.map((q,i)=>(
+              {qs.map(q=>(
                 <button key={q.id} onClick={()=>pickQ(q.id,q.text)}
                   style={{ padding:'8px 12px', borderRadius:10, background:'rgba(0,210,255,0.04)', border:'1px solid rgba(0,210,255,0.14)', color:'var(--text-1)', fontSize:'.8rem', cursor:'pointer', textAlign:'right', fontFamily:"'Tajawal',sans-serif", transition:'all .17s', display:'flex', alignItems:'center', gap:8 }}
                   onMouseEnter={e=>{e.currentTarget.style.background='rgba(0,210,255,0.1)';e.currentTarget.style.borderColor='rgba(0,210,255,0.35)'}}
@@ -327,13 +381,13 @@ function Panel({ onClose, lang }) {
             </button>
 
             <input value={input} onChange={e=>setInput(e.target.value)}
-              onKeyDown={e=>e.key==='Enter'&&sendFree()}
-              onFocus={()=>setFaqOpen(false)}
-              placeholder={ar?'اكتب رسالتك...':'Type your message...'}
+              onKeyDown={e=>e.key==='Enter'&&!sending&&sendFree()}
+              disabled={sending}
+              placeholder={sending?(ar?'جارٍ الإرسال...':'Sending...'):(ar?'اكتب رسالتك...':'Type your message...')}
               style={{ flex:1, padding:'9px 12px', background:'rgba(0,210,255,0.04)', border:'1px solid rgba(0,210,255,0.12)', borderRadius:11, color:'var(--text-1)', fontSize:'.84rem', outline:'none', fontFamily:"'Tajawal',sans-serif", direction:ar?'rtl':'ltr', transition:'border-color .2s' }}
               onFocus={e=>{e.target.style.borderColor='rgba(0,210,255,0.4)';setFaqOpen(false)}}
               onBlur={e=>e.target.style.borderColor='rgba(0,210,255,0.12)'}/>
-            <button onClick={sendFree} style={{ width:36, height:36, borderRadius:11, background:'linear-gradient(135deg,#00c2ec,#007ec7)', border:'none', cursor:'pointer', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', transition:'all .2s', boxShadow:'0 3px 12px rgba(0,210,255,0.3)' }}
+            <button onClick={sendFree} disabled={sending} style={{ width:36, height:36, borderRadius:11, background:'linear-gradient(135deg,#00c2ec,#007ec7)', border:'none', cursor:sending?'wait':'pointer', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', transition:'all .2s', boxShadow:'0 3px 12px rgba(0,210,255,0.3)', opacity:sending?0.65:1 }}
               onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.1)';e.currentTarget.style.boxShadow='0 6px 20px rgba(0,210,255,0.5)'}}
               onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow='0 3px 12px rgba(0,210,255,0.3)'}}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>

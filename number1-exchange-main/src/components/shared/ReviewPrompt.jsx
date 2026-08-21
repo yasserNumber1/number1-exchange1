@@ -266,8 +266,8 @@ export function ReviewFloatingBtn() {
         title={tr('قيّم خدمتنا', 'Rate our service')}
         style={{
           position: 'fixed',
-          bottom: 124,
-          left: 24,
+          bottom: 24,
+          right: 24,
           zIndex: 1000,
           display: 'flex',
           alignItems: 'center',
