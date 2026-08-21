@@ -51,6 +51,8 @@ const DEFAULT = {
   smtpPort:              587,
   smtpEmail:             '',
   smtpPassword:          '',
+  resendApiKey:          '',
+  resendFromEmail:       'Number1 Exchange <onboarding@resend.dev>',
 
   // Integrations
   moneygoApiKey:      '',

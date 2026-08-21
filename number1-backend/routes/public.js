@@ -277,6 +277,7 @@ router.post("/support-message", contactFormLimiter, async (req, res) => {
             lang,
             page,
             ip,
+            idempotencyKey: chat.sessionId,
           })
         : Promise.resolve({ success: true, skipped: true }),
     ]);

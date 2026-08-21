@@ -1,7 +1,6 @@
 // src/pages/admin/settings/TabNotifications.jsx
 import { useState } from 'react'
 import { S, Toggle, Field, SectionCard } from './SettingsShared'
-import { adminAPI } from '../../../services/api'
 
 // Helper: call the register-webhook endpoint (not yet in adminAPI, so use fetch via api.js pattern)
 const registerWebhook = (backendUrl) =>
@@ -21,6 +20,7 @@ const getWebhookInfo = () =>
 
 export default function TabNotifications({ settings, set }) {
   const [showSmtpPass,  setShowSmtpPass]  = useState(false)
+  const [showResendKey, setShowResendKey] = useState(false)
   const [showBotToken,  setShowBotToken]  = useState(false)
   const [backendUrl,    setBackendUrl]    = useState(import.meta.env.VITE_API_URL || '')
   const [webhookStatus, setWebhookStatus] = useState(null)   // { ok, message }
@@ -180,8 +180,39 @@ export default function TabNotifications({ settings, set }) {
         </div>
       </SectionCard>
 
-      {/* ── SMTP ─────────────────────────────────── */}
-      <SectionCard title="إعدادات SMTP للبريد" icon="📧">
+      {/* ── Resend ───────────────────────────────── */}
+      <SectionCard title="إعدادات Resend للبريد" icon="📧">
+        <div style={S.fieldsGrid}>
+          <Field label="Resend API Key">
+            <div style={S.secretField}>
+              <input
+                style={{ ...S.input, direction: 'ltr', textAlign: 'left', fontFamily: 'monospace' }}
+                type={showResendKey ? 'text' : 'password'}
+                value={settings.resendApiKey || ''}
+                onChange={e => set('resendApiKey', e.target.value)}
+                placeholder="re_xxxxxxxxxxxxxxxxx"
+              />
+              <button type="button" style={S.eyeBtn} onClick={() => setShowResendKey(v => !v)}>
+                {showResendKey ? '🙈' : '👁'}
+              </button>
+            </div>
+          </Field>
+          <Field label="From Email">
+            <input
+              style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
+              value={settings.resendFromEmail || ''}
+              onChange={e => set('resendFromEmail', e.target.value)}
+              placeholder="Number1 Exchange <onboarding@resend.dev>"
+            />
+          </Field>
+        </div>
+        <div style={S.hint}>
+          استخدم onboarding@resend.dev للاختبار إلى بريد حساب Resend فقط. للإرسال إلى أي بريد آخر، استخدم نطاقاً موثقاً في Resend.
+        </div>
+      </SectionCard>
+
+      {/* ── SMTP fallback ────────────────────────── */}
+      <SectionCard title="إعدادات SMTP الاحتياطية (Railway Pro فقط)" icon="📨">
         <div style={S.fieldsGrid}>
           <Field label="SMTP Host">
             <input

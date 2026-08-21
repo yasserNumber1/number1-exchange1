@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer')
+const axios = require('axios')
 const Setting = require('../models/Setting')
 
 const DEFAULT_CONTACT_EMAIL = 'nimbeerr1@gmail.com'
@@ -8,6 +9,8 @@ const getConfig = async () => {
   const port = Number(settings.smtpPort || process.env.SMTP_PORT || 587)
 
   return {
+    resendApiKey: settings.resendApiKey || process.env.RESEND_API_KEY || '',
+    resendFrom: settings.resendFromEmail || process.env.RESEND_FROM_EMAIL || 'Number1 Exchange <onboarding@resend.dev>',
     host: settings.smtpHost || process.env.SMTP_HOST || '',
     port,
     user: settings.smtpEmail || process.env.SMTP_EMAIL || process.env.SMTP_USER || '',
@@ -16,54 +19,102 @@ const getConfig = async () => {
   }
 }
 
-exports.sendContactMessage = async ({ name, email, subject, message, lang, page, ip }) => {
+const buildEmail = ({ name, email, subject, message, lang, page, ip }) => {
+  const safeName = String(name || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 120)
+  const safeEmail = String(email || '').replace(/[\r\n]+/g, '').trim().slice(0, 254)
+  const safeSubject = String(subject || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200)
+
+  return {
+    safeName,
+    safeEmail,
+    subject: safeSubject
+      ? `New contact message: ${safeSubject}`
+      : 'New contact message — Number1 Exchange',
+    text: [
+      'New contact form message',
+      '',
+      `Name: ${safeName}`,
+      `Email: ${safeEmail}`,
+      `Subject: ${safeSubject || 'Not provided'}`,
+      '',
+      'Message:',
+      String(message || '').trim(),
+      '',
+      `Language: ${lang || 'en'}`,
+      `Page: ${page || 'Not provided'}`,
+      `IP: ${ip || 'unknown'}`,
+      `Time: ${new Date().toISOString()}`,
+    ].join('\n'),
+  }
+}
+
+const sendWithResend = async (config, emailContent, idempotencyKey) => {
+  const response = await axios.post(
+    'https://api.resend.com/emails',
+    {
+      from: config.resendFrom,
+      to: [config.to],
+      reply_to: emailContent.safeEmail,
+      subject: emailContent.subject,
+      text: emailContent.text,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${config.resendApiKey}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'number1-exchange/1.0',
+        ...(idempotencyKey && { 'Idempotency-Key': `contact-form/${idempotencyKey}` }),
+      },
+      timeout: 15000,
+    },
+  )
+
+  return { success: true, provider: 'resend', messageId: response.data.id }
+}
+
+const sendWithSmtp = async (config, emailContent) => {
+  if (!config.host || !config.user || !config.pass) {
+    return { success: false, error: 'Email provider not configured' }
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.port === 465,
+    auth: { user: config.user, pass: config.pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  })
+
+  const info = await transporter.sendMail({
+    from: `"Number1 Exchange Contact" <${config.user}>`,
+    to: config.to,
+    replyTo: emailContent.safeEmail
+      ? { name: emailContent.safeName, address: emailContent.safeEmail }
+      : undefined,
+    subject: emailContent.subject,
+    text: emailContent.text,
+  })
+
+  return { success: true, provider: 'smtp', messageId: info.messageId }
+}
+
+exports.sendContactMessage = async ({ name, email, subject, message, lang, page, ip, idempotencyKey }) => {
   try {
     const config = await getConfig()
-    if (!config.host || !config.user || !config.pass || !config.to) {
+    if (!config.to) {
       console.warn('Contact email not configured')
-      return { success: false, error: 'SMTP not configured' }
+      return { success: false, error: 'Recipient not configured' }
     }
 
-    const safeName = String(name || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 120)
-    const safeEmail = String(email || '').replace(/[\r\n]+/g, '').trim().slice(0, 254)
-    const safeSubject = String(subject || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200)
-    const transporter = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.port === 465,
-      auth: { user: config.user, pass: config.pass },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
-    })
-
-    const info = await transporter.sendMail({
-      from: `"Number1 Exchange Contact" <${config.user}>`,
-      to: config.to,
-      replyTo: safeEmail ? { name: safeName, address: safeEmail } : undefined,
-      subject: safeSubject
-        ? `New contact message: ${safeSubject}`
-        : 'New contact message — Number1 Exchange',
-      text: [
-        'New contact form message',
-        '',
-        `Name: ${safeName}`,
-        `Email: ${safeEmail}`,
-        `Subject: ${safeSubject || 'Not provided'}`,
-        '',
-        'Message:',
-        String(message || '').trim(),
-        '',
-        `Language: ${lang || 'en'}`,
-        `Page: ${page || 'Not provided'}`,
-        `IP: ${ip || 'unknown'}`,
-        `Time: ${new Date().toISOString()}`,
-      ].join('\n'),
-    })
-
-    return { success: true, messageId: info.messageId }
+    const emailContent = buildEmail({ name, email, subject, message, lang, page, ip })
+    return config.resendApiKey
+      ? await sendWithResend(config, emailContent, idempotencyKey)
+      : await sendWithSmtp(config, emailContent)
   } catch (error) {
-    console.error('Contact email delivery error:', error.message)
-    return { success: false, error: error.message }
+    const providerMessage = error.response?.data?.message || error.message
+    console.error('Contact email delivery error:', providerMessage)
+    return { success: false, error: providerMessage }
   }
 }

@@ -13,6 +13,8 @@ const mongoose = require("mongoose");
 const { completeOrder, processTransaction } = require("../services/balanceEngine");
 const { logOrderEvent } = require("../services/auditService");
 
+const SECRET_MASK = "••••••••";
+
 router.use(protect, adminOnly);
 
 // ─── GET /api/admin/orders ────────────────────
@@ -355,8 +357,9 @@ router.get("/settings", async (req, res) => {
   try {
     const settings = await Setting.getSingleton();
     const safe = settings.toObject();
-    if (safe.smtpPassword)     safe.smtpPassword     = safe.smtpPassword     ? "••••••••" : "";
-    if (safe.telegramBotToken) safe.telegramBotToken = safe.telegramBotToken ? "••••••••" : "";
+    if (safe.smtpPassword)     safe.smtpPassword     = SECRET_MASK;
+    if (safe.telegramBotToken) safe.telegramBotToken = SECRET_MASK;
+    if (safe.resendApiKey)     safe.resendApiKey     = SECRET_MASK;
     res.json({ success: true, ...safe });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error." });
@@ -371,6 +374,7 @@ router.put("/settings", async (req, res) => {
       "platformEnabled","registrationEnabled","supportEmail","supportTelegram","contactTelegram",
       "contactWhatsapp","contactEmail","contactWebsite","telegramNotifications","emailNotifications",
       "telegramBotToken","telegramChatId","smtpHost","smtpPort","smtpEmail","smtpPassword",
+      "resendApiKey","resendFromEmail",
       "minOrderUsdt","maxOrderUsdt","orderExpiryMins","minOrderUsd","maxOrderUsd","orderExpiryMinutes",
       "usdtOrdersEnabled","walletOrdersEnabled","bankTransferEnabled","maxDailyOrdersUser",
       "moneygoApiKey","moneygoApiUrl","cryptoApiKey","webhookUrl","environment","jwtRefreshEnabled",
@@ -380,12 +384,16 @@ router.put("/settings", async (req, res) => {
     const updates = {};
     allowed.forEach((key) => {
       if (req.body[key] !== undefined) {
-        if (req.body[key] === "••••••••") return;
+        if (req.body[key] === SECRET_MASK) return;
         updates[key] = req.body[key];
       }
     });
     const settings = await Setting.findOneAndUpdate({}, { $set: updates }, { new: true, upsert: true });
-    res.json({ success: true, message: "Settings saved.", ...settings.toObject() });
+    const safe = settings.toObject();
+    if (safe.smtpPassword)     safe.smtpPassword     = SECRET_MASK;
+    if (safe.telegramBotToken) safe.telegramBotToken = SECRET_MASK;
+    if (safe.resendApiKey)     safe.resendApiKey     = SECRET_MASK;
+    res.json({ success: true, message: "Settings saved.", ...safe });
   } catch (error) {
     console.error("Settings save error:", error);
     res.status(500).json({ success: false, message: "Server error." });
