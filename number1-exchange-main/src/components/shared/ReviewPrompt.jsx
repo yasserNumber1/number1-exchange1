@@ -249,6 +249,7 @@ export function ReviewModal({ open, onClose }) {
 export function ReviewFloatingBtn() {
   const [open, setOpen] = useState(false)
   const [visible, setVisible] = useState(false)
+  const [isFirstScreen, setIsFirstScreen] = useState(true)
 
   const { lang } = useLang()
   const isAr = lang === 'ar'
@@ -259,10 +260,20 @@ export function ReviewFloatingBtn() {
     return () => clearTimeout(t)
   }, [])
 
+  useEffect(() => {
+    const handleScroll = () => setIsFirstScreen(window.scrollY <= 16)
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const showButton = visible && isFirstScreen
+
   return (
     <>
       <button
         className="review-floating-btn"
+        aria-hidden={!showButton}
         onClick={() => setOpen(true)}
         title={tr('قيّم خدمتنا', 'Rate our service')}
         style={{
@@ -283,10 +294,11 @@ export function ReviewFloatingBtn() {
           fontWeight: 700,
           fontSize: '0.82rem',
           boxShadow: '0 4px 20px rgba(0,182,122,0.4)',
-          transition: 'opacity 0.4s, transform 0.4s',
-          opacity: visible ? 1 : 0,
-          transform: visible ? 'translateY(0)' : 'translateY(20px)',
-          pointerEvents: visible ? 'auto' : 'none',
+          transition: 'opacity 0.4s, transform 0.4s, visibility 0.4s',
+          opacity: showButton ? 1 : 0,
+          transform: showButton ? 'translateY(0)' : 'translateY(20px)',
+          pointerEvents: showButton ? 'auto' : 'none',
+          visibility: showButton ? 'visible' : 'hidden',
           whiteSpace: 'nowrap',
         }}
       >
