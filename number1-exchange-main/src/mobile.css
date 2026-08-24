@@ -659,6 +659,10 @@
     padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
+  .review-floating-btn {
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px) + 6px) !important;
+  }
+
   .n1-site-footer {
     display: none !important;
   }
@@ -754,8 +758,8 @@
 
   /* FAB فوق الشريط السفلي */
   .support-fab-anchor {
-    left: auto !important;
-    right: 14px !important;
+    left: 14px !important;
+    right: auto !important;
     bottom: calc(78px + env(safe-area-inset-bottom, 0px) + 6px) !important;
   }
 

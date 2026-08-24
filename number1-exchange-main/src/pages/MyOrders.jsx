@@ -90,49 +90,32 @@ export default function MyOrders() {
     try {
       const token = localStorage.getItem('n1_token')
 
-      // محاولة جلب السجل الدائم أولاً
-      const auditRes  = await fetch(
-        `${API}/api/audit-logs/user/${user._id}?page=${page}&limit=15`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      const auditData = await auditRes.json()
-
-      if (auditData.success && auditData.logs?.length > 0) {
-        setLogs(auditData.logs)
-        setPagination(auditData.pagination)
-        return
-      }
-
-      // fallback: جلب الطلبات العادية
-      const ordersRes  = await fetch(
+      const ordersRes = await fetch(
         `${API}/api/orders/my?page=${page}&limit=15`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       const ordersData = await ordersRes.json()
-      if (ordersData.success) {
-        // تحويل الطلبات إلى صيغة AuditLog مؤقتة
-        const mapped = (ordersData.orders || []).map(o => ({
-          _id: o._id,
-          action: STATUS_TO_ACTION[o.status] || 'IN_PROGRESS',
-          status: o.status,
-          userName: o.customerName,
-          userEmail: o.customerEmail,
-          timestamp: o.updatedAt || o.createdAt,
-          performedBy: 'system',
-          requestDetails: {
-            orderNumber: o.orderNumber,
-            orderType:   o.orderType,
-            payment:     o.payment,
-            moneygo:     o.moneygo,
-            exchangeRate: o.exchangeRate,
-            createdAt:   o.createdAt,
-          },
-        }))
-        setLogs(mapped)
-        setPagination(ordersData.pagination || { page: 1, total: mapped.length, pages: 1 })
-      } else {
-        setError(ordersData.message || 'حدث خطأ')
+
+      if (!ordersRes.ok || !ordersData.success) {
+        throw new Error(ordersData.message || 'Unable to load orders')
       }
+
+      const mapped = (ordersData.orders || []).map(o => ({
+        _id: o._id,
+        action: STATUS_TO_ACTION[o.status] || 'IN_PROGRESS',
+        status: o.status,
+        timestamp: o.updatedAt || o.createdAt,
+        requestDetails: {
+          orderNumber: o.orderNumber,
+          orderType:   o.orderType,
+          payment:     o.payment,
+          moneygo:     o.moneygo,
+          exchangeRate: o.exchangeRate,
+          createdAt:   o.createdAt,
+        },
+      }))
+      setLogs(mapped)
+      setPagination(ordersData.pagination || { page, total: mapped.length, pages: 1 })
     } catch {
       setError(isAr ? 'تعذر الاتصال بالخادم' : 'Unable to connect to server')
     } finally {

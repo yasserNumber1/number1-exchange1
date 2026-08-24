@@ -45,7 +45,7 @@ function Footer() {
 
   const supportLinks = [
     { label: isAr ? 'الأسعار'     : 'Rates',       path: '/rates'   },
-    { label: isAr ? 'تتبع الطلب'  : 'Track Order', path: '/track'   },
+    { label: isAr ? 'تتبع الطلبات' : 'Track Orders', path: '/track'   },
     { label: isAr ? 'الدعم الفني' : 'Help Center', path: '/contact' },
   ]
 

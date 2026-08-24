@@ -262,6 +262,7 @@ export function ReviewFloatingBtn() {
   return (
     <>
       <button
+        className="review-floating-btn"
         onClick={() => setOpen(true)}
         title={tr('قيّم خدمتنا', 'Rate our service')}
         style={{
