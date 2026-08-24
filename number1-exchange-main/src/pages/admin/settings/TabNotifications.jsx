@@ -202,7 +202,7 @@ export default function TabNotifications({ settings, set }) {
               style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
               value={settings.resendFromEmail || ''}
               onChange={e => set('resendFromEmail', e.target.value)}
-              placeholder="Number1 Exchange <onboarding@resend.dev>"
+                placeholder="Number1 Exchange <no-reply@yasser-number1.com>"
             />
           </Field>
         </div>

@@ -217,7 +217,7 @@ router.post('/forgot-password', async (req, res) => {
       user.resetPasswordExpires = null;
       await user.save({ validateBeforeSave: false });
       console.error('Password reset email was not sent:', emailResult.error);
-      return res.status(503).json({ success: false, message: 'Unable to send reset email. Please try again later.' });
+      return res.status(503).json({ success: false, message: 'Password reset email delivery is unavailable. Configure a verified Resend sender or SMTP credentials.' });
     }
 
     // TODO: إرسال إيميل إعادة التعيين

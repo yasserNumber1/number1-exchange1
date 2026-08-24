@@ -40,7 +40,7 @@ const settingSchema = new mongoose.Schema({
 
   // Resend (HTTPS email API; works on Railway Free/Hobby)
   resendApiKey:    { type: String, default: '' },
-  resendFromEmail: { type: String, default: 'Number1 Exchange <onboarding@resend.dev>' },
+  resendFromEmail: { type: String, default: 'Number1 Exchange <no-reply@yasser-number1.com>' },
 
   // ── الطلبات ───────────────────────────────────
   minOrderUsdt:    { type: Number, default: 10   },

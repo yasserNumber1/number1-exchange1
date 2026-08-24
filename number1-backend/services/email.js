@@ -3,14 +3,18 @@ const axios = require('axios')
 const Setting = require('../models/Setting')
 
 const DEFAULT_CONTACT_EMAIL = 'nimbeerr1@gmail.com'
+const DEFAULT_RESEND_FROM = 'Number1 Exchange <no-reply@yasser-number1.com>'
 
 const getConfig = async () => {
   const settings = await Setting.getSingleton()
   const port = Number(settings.smtpPort || process.env.SMTP_PORT || 587)
+  const configuredResendFrom = String(settings.resendFromEmail || '').trim()
+  const isLegacyTestSender = !configuredResendFrom || configuredResendFrom.includes('onboarding@resend.dev')
 
   return {
     resendApiKey: settings.resendApiKey || process.env.RESEND_API_KEY || '',
-    resendFrom: settings.resendFromEmail || process.env.RESEND_FROM_EMAIL || 'Number1 Exchange <onboarding@resend.dev>',
+    // Deployment env must be able to override the database's legacy test sender.
+    resendFrom: process.env.RESEND_FROM_EMAIL || (isLegacyTestSender ? DEFAULT_RESEND_FROM : configuredResendFrom),
     host: settings.smtpHost || process.env.SMTP_HOST || '',
     port,
     user: settings.smtpEmail || process.env.SMTP_EMAIL || process.env.SMTP_USER || '',
@@ -160,7 +164,16 @@ exports.sendPasswordResetEmail = async ({ name, email, resetUrl }) => {
     ].join('\n')
 
     if (config.resendApiKey) {
-      return await sendTransactionalWithResend(config, { to: email, subject, text })
+      let resendResult
+      try {
+        resendResult = await sendTransactionalWithResend(config, { to: email, subject, text })
+      } catch (error) {
+        resendResult = { success: false, error: error.response?.data?.message || error.message }
+      }
+      if (resendResult.success || !config.host || !config.user || !config.pass) {
+        return resendResult
+      }
+      console.warn('Resend password email failed; trying SMTP fallback:', resendResult.error)
     }
     return await sendTransactionalWithSmtp(config, { to: email, subject, text })
   } catch (error) {

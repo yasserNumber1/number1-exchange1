@@ -52,7 +52,7 @@ const DEFAULT = {
   smtpEmail:             '',
   smtpPassword:          '',
   resendApiKey:          '',
-  resendFromEmail:       'Number1 Exchange <onboarding@resend.dev>',
+  resendFromEmail:       'Number1 Exchange <no-reply@yasser-number1.com>',
 
   // Integrations
   moneygoApiKey:      '',
