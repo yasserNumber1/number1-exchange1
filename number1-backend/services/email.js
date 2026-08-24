@@ -100,6 +100,76 @@ const sendWithSmtp = async (config, emailContent) => {
   return { success: true, provider: 'smtp', messageId: info.messageId }
 }
 
+const sendTransactionalWithResend = async (config, { to, subject, text, html }) => {
+  const response = await axios.post(
+    'https://api.resend.com/emails',
+    { from: config.resendFrom, to: [to], subject, text, ...(html ? { html } : {}) },
+    {
+      headers: {
+        Authorization: `Bearer ${config.resendApiKey}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'number1-exchange/1.0',
+      },
+      timeout: 15000,
+    },
+  )
+
+  return { success: true, provider: 'resend', messageId: response.data.id }
+}
+
+const sendTransactionalWithSmtp = async (config, { to, subject, text, html }) => {
+  if (!config.host || !config.user || !config.pass) {
+    return { success: false, error: 'Email provider not configured' }
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.port === 465,
+    auth: { user: config.user, pass: config.pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  })
+
+  const info = await transporter.sendMail({
+    from: `"Number1 Exchange" <${config.user}>`,
+    to,
+    subject,
+    text,
+    ...(html ? { html } : {}),
+  })
+
+  return { success: true, provider: 'smtp', messageId: info.messageId }
+}
+
+exports.sendPasswordResetEmail = async ({ name, email, resetUrl }) => {
+  try {
+    const config = await getConfig()
+    const recipientName = String(name || 'there').trim() || 'there'
+    const subject = 'Reset your Number1 Exchange password'
+    const text = [
+      `Hello ${recipientName},`,
+      '',
+      'We received a request to reset your Number1 Exchange password.',
+      `Open this link to choose a new password: ${resetUrl}`,
+      '',
+      'This link expires in 1 hour. If you did not request this, you can ignore this email.',
+      '',
+      'Number1 Exchange',
+    ].join('\n')
+
+    if (config.resendApiKey) {
+      return await sendTransactionalWithResend(config, { to: email, subject, text })
+    }
+    return await sendTransactionalWithSmtp(config, { to: email, subject, text })
+  } catch (error) {
+    const providerMessage = error.response?.data?.message || error.message
+    console.error('Password reset email delivery error:', providerMessage)
+    return { success: false, error: providerMessage }
+  }
+}
+
 exports.sendContactMessage = async ({ name, email, subject, message, lang, page, ip, idempotencyKey }) => {
   try {
     const config = await getConfig()

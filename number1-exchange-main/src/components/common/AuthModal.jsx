@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import useLang  from '../../context/useLang'
 import useAuth  from '../../context/useAuth'
 import useTheme from '../../context/useTheme'
+import { authAPI } from '../../services/api'
 
 /* ─────────────────────────────── CSS ─────────────────────────────── */
 const AUTH_CSS = `
@@ -202,7 +203,179 @@ function SuccessScreen({ titleAr, titleEn, descAr, descEn, btnAr, btnEn, onClose
 }
 
 /* ──────────────────────────── LOGIN ───────────────────────────────── */
-function LoginSection({ onClose, lang }) {
+function ForgotPasswordSection({ onBack, lang }) {
+  const ar = lang === 'ar'
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [apiErr, setApiErr] = useState('')
+  const [emailErr, setEmailErr] = useState('')
+  const [done, setDone] = useState(false)
+
+  const handleSubmit = async () => {
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!normalizedEmail || !/\S+@\S+\.\S+/.test(normalizedEmail)) {
+      setEmailErr(ar ? 'أدخل بريداً إلكترونياً صحيحاً' : 'Enter a valid email address')
+      return
+    }
+
+    setEmailErr('')
+    setApiErr('')
+    setLoading(true)
+    try {
+      await authAPI.forgotPassword({ email: normalizedEmail })
+      setDone(true)
+    } catch (err) {
+      setApiErr(err.response?.data?.message || (ar ? 'تعذر إرسال رابط إعادة التعيين' : 'Unable to send the reset link'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (done) return (
+    <SuccessScreen
+      titleAr="تحقق من بريدك الإلكتروني"
+      titleEn="Check your email"
+      descAr="إذا كان البريد مسجلاً، ستصلك رسالة تحتوي على رابط لإعادة تعيين كلمة المرور."
+      descEn="If this email is registered, you will receive a link to reset your password."
+      btnAr="العودة لتسجيل الدخول"
+      btnEn="Back to sign in"
+      onClose={onBack}
+      lang={lang}
+    />
+  )
+
+  return (
+    <div style={{ animation:'n1-fade .28s ease' }}>
+      <div style={{ fontSize:'1.4rem', fontWeight:900, color:'#e8f4ff', marginBottom:5 }}>
+        {ar ? 'إعادة تعيين كلمة المرور' : 'Reset your password'}
+      </div>
+      <div style={{ fontSize:'.8rem', color:'rgba(120,152,180,0.55)', marginBottom:22, lineHeight:1.6 }}>
+        {ar ? 'أدخل بريدك الإلكتروني لنرسل لك رابط إعادة التعيين.' : 'Enter your email and we’ll send you a reset link.'}
+      </div>
+
+      <ApiError msg={apiErr}/>
+      <Field
+        type="email"
+        label={ar ? 'البريد الإلكتروني' : 'Email Address'}
+        value={email}
+        placeholder="example@email.com"
+        onChange={e => { setEmail(e.target.value); setEmailErr(''); setApiErr('') }}
+        icon={<IcEmail/>}
+        error={emailErr}
+        ltr
+        autoFocus
+      />
+      <Btn onClick={handleSubmit} loading={loading} icon={<IcEmail/>}>
+        {ar ? 'إرسال رابط التعيين' : 'Send reset link'}
+      </Btn>
+      <button
+        type="button"
+        onClick={onBack}
+        style={{ width:'100%', marginTop:14, background:'none', border:'none', color:'rgba(0,210,255,0.75)', fontFamily:"'Tajawal',sans-serif", fontSize:'.8rem', cursor:'pointer' }}
+      >
+        {ar ? 'العودة لتسجيل الدخول' : 'Back to sign in'}
+      </button>
+    </div>
+  )
+}
+
+function ResetPasswordSection({ token, onBack, lang }) {
+  const ar = lang === 'ar'
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [showPw, setShowPw] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [apiErr, setApiErr] = useState('')
+  const [errors, setErrors] = useState({})
+  const [done, setDone] = useState(false)
+
+  const handleSubmit = async () => {
+    const nextErrors = {}
+    if (!token) nextErrors.form = ar ? 'رابط إعادة التعيين غير صالح' : 'This reset link is invalid'
+    if (password.length < 6) nextErrors.password = ar ? 'كلمة المرور يجب أن تكون 6 أحرف أو أكثر' : 'Password must be at least 6 characters'
+    if (password !== confirm) nextErrors.confirm = ar ? 'كلمتا المرور لا تتطابقان' : 'Passwords do not match'
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) return
+
+    setApiErr('')
+    setLoading(true)
+    try {
+      await authAPI.resetPassword({ token, password })
+      setDone(true)
+    } catch (err) {
+      setApiErr(err.response?.data?.message || (ar ? 'تعذر إعادة تعيين كلمة المرور' : 'Unable to reset your password'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (done) return (
+    <SuccessScreen
+      titleAr="تم تغيير كلمة المرور"
+      titleEn="Password updated"
+      descAr="يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة."
+      descEn="You can now sign in with your new password."
+      btnAr="العودة لتسجيل الدخول"
+      btnEn="Back to sign in"
+      onClose={onBack}
+      lang={lang}
+    />
+  )
+
+  return (
+    <div style={{ animation:'n1-fade .28s ease' }}>
+      <div style={{ fontSize:'1.4rem', fontWeight:900, color:'#e8f4ff', marginBottom:5 }}>
+        {ar ? 'اختر كلمة مرور جديدة' : 'Choose a new password'}
+      </div>
+      <div style={{ fontSize:'.8rem', color:'rgba(120,152,180,0.55)', marginBottom:22, lineHeight:1.6 }}>
+        {ar ? 'يجب أن تتكون كلمة المرور من 6 أحرف أو أكثر.' : 'Your password must be at least 6 characters.'}
+      </div>
+
+      <ApiError msg={apiErr || errors.form}/>
+      <Field
+        type="password"
+        label={ar ? 'كلمة المرور الجديدة' : 'New Password'}
+        value={password}
+        placeholder="••••••••••••"
+        onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password:'', form:'' })) }}
+        icon={<IcLock/>}
+        error={errors.password}
+        ltr
+        showToggle
+        showPw={showPw}
+        onTogglePw={() => setShowPw(v => !v)}
+        autoFocus
+      />
+      <PwStrength value={password} lang={lang}/>
+      <Field
+        type="password"
+        label={ar ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+        value={confirm}
+        placeholder="••••••••••••"
+        onChange={e => { setConfirm(e.target.value); setErrors(p => ({ ...p, confirm:'', form:'' })) }}
+        icon={<IcLock/>}
+        error={errors.confirm}
+        ltr
+        showToggle
+        showPw={showConfirm}
+        onTogglePw={() => setShowConfirm(v => !v)}
+      />
+      <Btn onClick={handleSubmit} loading={loading} icon={<IcCheck/>}>
+        {ar ? 'تغيير كلمة المرور' : 'Update password'}
+      </Btn>
+      <button
+        type="button"
+        onClick={onBack}
+        style={{ width:'100%', marginTop:14, background:'none', border:'none', color:'rgba(0,210,255,0.75)', fontFamily:"'Tajawal',sans-serif", fontSize:'.8rem', cursor:'pointer' }}
+      >
+        {ar ? 'العودة لتسجيل الدخول' : 'Back to sign in'}
+      </button>
+    </div>
+  )
+}
+
+function LoginSection({ onClose, onForgot, lang }) {
   const { login, clearError } = useAuth()
   const ar = lang === 'ar'
   const [email, setEmail]       = useState('')
@@ -280,7 +453,7 @@ function LoginSection({ onClose, lang }) {
           </div>
           <span style={{ fontSize:'.74rem', color:'rgba(120,150,175,0.55)' }}>{ar?'تذكرني':'Remember me'}</span>
         </label>
-        <button style={{ background:'none', border:'none', cursor:'pointer', fontSize:'.74rem', color:'rgba(0,210,255,0.65)', fontFamily:"'Tajawal',sans-serif", transition:'color .2s' }}
+        <button type="button" onClick={onForgot} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'.74rem', color:'rgba(0,210,255,0.65)', fontFamily:"'Tajawal',sans-serif", transition:'color .2s' }}
           onMouseEnter={e=>e.currentTarget.style.color='#00d2ff'} onMouseLeave={e=>e.currentTarget.style.color='rgba(0,210,255,0.65)'}>
           {ar?'نسيت كلمة المرور؟':'Forgot password?'}
         </button>
@@ -418,7 +591,7 @@ function RegisterSection({ onClose, lang }) {
 }
 
 /* ─────────────────────── MAIN MODAL ───────────────────────────────── */
-function AuthModal({ isOpen, type, initialTab, onClose }) {
+function AuthModal({ isOpen, type, initialTab, onClose, resetToken }) {
   const { lang } = useLang()
   const activeTab = type || initialTab || 'login'
   const [tab, setTab] = useState(activeTab)
@@ -463,25 +636,32 @@ function AuthModal({ isOpen, type, initialTab, onClose }) {
           <Logo3D/>
 
           {/* tabs */}
-          <div style={{ display:'flex', background:'rgba(255,255,255,0.022)', borderRadius:12, padding:3, marginBottom:22, border:'1px solid var(--n1-border)' }}>
+          {!['forgot', 'reset'].includes(tab) && (
+            <div style={{ display:'flex', background:'rgba(255,255,255,0.022)', borderRadius:12, padding:3, marginBottom:22, border:'1px solid var(--n1-border)' }}>
             {['login','register'].map(t=>(
               <button key={t} onClick={()=>setTab(t)}
                 style={{ flex:1, padding:'9px 0', borderRadius:10, background:tab===t?'rgba(0,210,255,0.1)':'transparent', border:tab===t?'1px solid rgba(0,210,255,0.2)':'1px solid transparent', fontFamily:"'Tajawal',sans-serif", fontSize:'.86rem', fontWeight:700, color:tab===t?'#00d2ff':'rgba(100,135,162,0.38)', cursor:'pointer', transition:'all .22s' }}>
                 {t==='login'?(ar?'تسجيل الدخول':'Sign In'):(ar?'حساب جديد':'Register')}
               </button>
             ))}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* ── Body ── */}
         <div className="n1-sb" style={{ padding:'0 28px 28px', overflowY:'auto', flex:1, position:'relative', zIndex:2 }}>
-          {tab==='login'
-            ? <LoginSection    onClose={onClose} lang={lang} key="login"    />
-            : <RegisterSection onClose={onClose} lang={lang} key="register" />
+          {tab === 'forgot'
+            ? <ForgotPasswordSection onBack={() => setTab('login')} lang={lang} key="forgot" />
+            : tab === 'reset'
+              ? <ResetPasswordSection token={resetToken} onBack={() => setTab('login')} lang={lang} key="reset" />
+              : tab === 'login'
+                ? <LoginSection onClose={onClose} onForgot={() => setTab('forgot')} lang={lang} key="login" />
+                : <RegisterSection onClose={onClose} lang={lang} key="register" />
           }
 
           {/* switch */}
-          <div style={{ textAlign:'center', marginTop:18, fontSize:'.76rem', color:'rgba(100,135,162,0.42)' }}>
+          {!['forgot', 'reset'].includes(tab) && (
+            <div style={{ textAlign:'center', marginTop:18, fontSize:'.76rem', color:'rgba(100,135,162,0.42)' }}>
             {tab==='login'
               ? <>{ar?'ليس لديك حساب؟ ':"Don't have an account? "}
                   <button onClick={()=>setTab('register')} style={{ background:'none', border:'none', color:'rgba(0,210,255,0.75)', fontFamily:"'Tajawal',sans-serif", fontSize:'.76rem', fontWeight:700, cursor:'pointer' }} onMouseEnter={e=>e.currentTarget.style.color='#00d2ff'} onMouseLeave={e=>e.currentTarget.style.color='rgba(0,210,255,0.75)'}>
@@ -492,7 +672,8 @@ function AuthModal({ isOpen, type, initialTab, onClose }) {
                     {ar?'سجّل دخولك':'Sign in'}
                   </button></>
             }
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

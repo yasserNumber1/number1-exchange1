@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const emailService = require('../services/email');
 
 // ─── Helper: توليد JWT ────────────────────────
 const generateToken = (id) => {
@@ -184,9 +185,12 @@ router.put('/update-profile', protect, async (req, res) => {
 // طلب إعادة تعيين كلمة المرور
 router.post('/forgot-password', async (req, res) => {
   try {
-    const { email } = req.body;
+    const normalizedEmail = String(req.body.email || '').trim().toLowerCase();
+    if (!normalizedEmail) {
+      return res.status(400).json({ success: false, message: 'Email is required.' });
+    }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       // نرجع نفس الرسالة لعدم الكشف عن الإيميلات المسجلة
       return res.json({
@@ -200,8 +204,23 @@ router.post('/forgot-password', async (req, res) => {
     user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // ساعة
     await user.save({ validateBeforeSave: false });
 
+    const frontendUrl = (process.env.FRONTEND_URL || process.env.CLIENT_URL || 'https://www.yasser-number1.com').replace(/\/+$/, '');
+    const resetUrl = `${frontendUrl}/?resetToken=${encodeURIComponent(resetToken)}`;
+    const emailResult = await emailService.sendPasswordResetEmail({
+      name: user.name,
+      email: normalizedEmail,
+      resetUrl,
+    });
+
+    if (!emailResult.success) {
+      user.resetPasswordToken = null;
+      user.resetPasswordExpires = null;
+      await user.save({ validateBeforeSave: false });
+      console.error('Password reset email was not sent:', emailResult.error);
+      return res.status(503).json({ success: false, message: 'Unable to send reset email. Please try again later.' });
+    }
+
     // TODO: إرسال إيميل إعادة التعيين
-    console.log(`Reset token for ${email}: ${resetToken}`);
 
     res.json({
       success: true,
@@ -217,6 +236,10 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, password } = req.body;
+
+    if (!token || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'A valid token and a password of at least 6 characters are required.' });
+    }
 
     const user = await User.findOne({
       resetPasswordToken: token,

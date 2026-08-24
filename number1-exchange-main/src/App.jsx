@@ -274,6 +274,7 @@ function AdminRoute({ children }) {
 // ── App ────────────────────────────────────────────────────
 function App() {
   const location    = useLocation()
+  const resetToken  = useMemo(() => new URLSearchParams(location.search).get('resetToken') || '', [location.search])
   const isAdminPage = location.pathname.startsWith('/admin')
   const { user }    = useAuth()
   const { lang }    = useLang()
@@ -330,9 +331,22 @@ function App() {
   const [, setSiteSettings] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+  useEffect(() => {
+    if (!resetToken) return
+    setAuthTab('reset')
+    setAuthOpen(true)
+  }, [resetToken])
+
   const openAuth = (tab = 'login') => {
     setAuthTab(tab)
     setAuthOpen(true)
+  }
+
+  const closeAuth = () => {
+    setAuthOpen(false)
+    if (resetToken) {
+      window.history.replaceState({}, document.title, `${location.pathname}${location.hash}`)
+    }
   }
 
   // ── جلب إعدادات المنصة ──────────────────────
@@ -416,7 +430,7 @@ function App() {
       </main>
       <Footer />
       <MobileBottomNav onOpenMenu={() => setMobileMenuOpen(true)} />
-      <AuthModal isOpen={authOpen} type={authTab} onClose={() => setAuthOpen(false)} />
+      <AuthModal isOpen={authOpen} type={authTab} resetToken={resetToken} onClose={closeAuth} />
       <SupportFAB />
       <ReviewFloatingBtn />
       <ReturnToOrderBanner />
