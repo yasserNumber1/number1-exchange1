@@ -65,7 +65,7 @@ const FAB_CSS = `
 `
 
 /* ─── Robot SVG Avatar ───────────────────────────────────── */
-function RobotAvatar({ size = 48, anim = 'idle', glow = true }) {
+function RobotAvatar({ size = 48, anim = 'idle', glow = true }) { 
   const css = {
     idle:    'n1RobotIdle 3.5s ease-in-out infinite',
     wave:    'n1RobotWave .7s ease-in-out 3',
