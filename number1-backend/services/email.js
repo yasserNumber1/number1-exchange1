@@ -12,7 +12,8 @@ const getConfig = async () => {
   const isLegacyTestSender = !configuredResendFrom || configuredResendFrom.includes('onboarding@resend.dev')
 
   return {
-    resendApiKey: settings.resendApiKey || process.env.RESEND_API_KEY || '',
+    // Deployment env must be able to override a stale key saved in admin settings.
+    resendApiKey: process.env.RESEND_API_KEY || settings.resendApiKey || '',
     // Deployment env must be able to override the database's legacy test sender.
     resendFrom: process.env.RESEND_FROM_EMAIL || (isLegacyTestSender ? DEFAULT_RESEND_FROM : configuredResendFrom),
     host: settings.smtpHost || process.env.SMTP_HOST || '',
