@@ -1,7 +1,48 @@
 // src/pages/admin/settings/TabSecurity.jsx
+import { useState } from 'react'
 import { S, Toggle, Field, SectionCard, NumberField } from './SettingsShared'
+import { authAPI } from '../../../services/api'
+import useAuth from '../../../context/useAuth'
+
+const REQUESTED_ADMIN_EMAIL = 'nimbeerr1@gmail.com'
 
 export default function TabSecurity({ settings, set, confirm, showToast }) {
+  const { user, updateUser } = useAuth()
+  const [adminEmail, setAdminEmail] = useState(REQUESTED_ADMIN_EMAIL)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [changingEmail, setChangingEmail] = useState(false)
+
+  const handleChangeAdminEmail = async () => {
+    const email = adminEmail.trim().toLowerCase()
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      showToast('error', '✗ أدخل بريداً إلكترونياً صحيحاً')
+      return
+    }
+    if (!currentPassword) {
+      showToast('error', '✗ أدخل كلمة المرور الحالية للتأكيد')
+      return
+    }
+
+    setChangingEmail(true)
+    try {
+      const { data } = await authAPI.changeEmail({ email, currentPassword })
+      updateUser(data.user)
+      setAdminEmail(data.user.email)
+      setCurrentPassword('')
+      showToast('success', `✓ تم تغيير بريد المشرف إلى ${data.user.email}`)
+    } catch (error) {
+      const code = error.response?.data?.code
+      const messages = {
+        INVALID_EMAIL: '✗ البريد الإلكتروني غير صحيح',
+        PASSWORD_REQUIRED: '✗ كلمة المرور الحالية مطلوبة',
+        INVALID_PASSWORD: '✗ كلمة المرور الحالية غير صحيحة',
+        EMAIL_IN_USE: '✗ البريد الإلكتروني مستخدم في حساب آخر',
+      }
+      showToast('error', messages[code] || '✗ تعذر تغيير بريد المشرف')
+    } finally {
+      setChangingEmail(false)
+    }
+  }
 
   const handleClearSessions = () => {
     confirm(
@@ -24,6 +65,53 @@ export default function TabSecurity({ settings, set, confirm, showToast }) {
 
   return (
     <div style={S.tabWrap}>
+
+      {/* ── حساب المشرف ──────────────────────── */}
+      <SectionCard title="تغيير بريد المشرف" icon="📧">
+        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 14, lineHeight: 1.7 }}>
+          البريد الحالي: <strong style={{ color: '#e2e8f0', direction: 'ltr', display: 'inline-block' }}>{user?.email || '—'}</strong>
+        </div>
+        <div style={S.fieldsGrid}>
+          <Field label="البريد الإلكتروني الجديد">
+            <input
+              style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
+              type="email"
+              value={adminEmail}
+              onChange={event => setAdminEmail(event.target.value)}
+              placeholder={REQUESTED_ADMIN_EMAIL}
+              autoComplete="email"
+            />
+          </Field>
+          <Field label="كلمة المرور الحالية للتأكيد">
+            <input
+              style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
+              type="password"
+              value={currentPassword}
+              onChange={event => setCurrentPassword(event.target.value)}
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
+          </Field>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginTop: 14 }}>
+          <div style={S.hint}>بعد التغيير استخدم البريد الجديد في تسجيل الدخول. ستبقى الجلسة الحالية نشطة.</div>
+          <button
+            type="button"
+            onClick={handleChangeAdminEmail}
+            disabled={changingEmail || !adminEmail.trim() || !currentPassword}
+            style={{
+              ...S.outlineBtn,
+              color: '#fff',
+              borderColor: 'rgba(59,130,246,0.45)',
+              background: 'linear-gradient(135deg,#2563eb,#1d4ed8)',
+              opacity: changingEmail || !adminEmail.trim() || !currentPassword ? 0.55 : 1,
+              cursor: changingEmail || !adminEmail.trim() || !currentPassword ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {changingEmail ? '⏳ جاري التغيير...' : '📧 تغيير بريد المشرف'}
+          </button>
+        </div>
+      </SectionCard>
 
       {/* ── ميزات الأمان ─────────────────────── */}
       <SectionCard title="ميزات الأمان" icon="🛡️">

@@ -99,6 +99,11 @@ export function AuthProvider({ children }) {
   saveSession(token, user)
   setUser(user)
 }, [])
+
+  const updateUser = useCallback((nextUser) => {
+    localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
+    setUser(nextUser)
+  }, [])
   
   const logout = useCallback(() => {
     clearSession()
@@ -110,7 +115,7 @@ export function AuthProvider({ children }) {
   const clearError = useCallback(() => setError(null), [])
 
   return (
-<AuthContext.Provider value={{ user, loading, error, register, login, loginDirect, logout, clearError }}>
+<AuthContext.Provider value={{ user, loading, error, register, login, loginDirect, updateUser, logout, clearError }}>
       {children}
     </AuthContext.Provider>
   )

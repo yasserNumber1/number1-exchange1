@@ -181,6 +181,61 @@ router.put('/update-profile', protect, async (req, res) => {
   }
 });
 
+// ─── PATCH /api/auth/email ───────────────────
+// تغيير بريد الحساب الحالي بعد تأكيد كلمة المرور
+router.patch('/email', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, code: 'ADMIN_ONLY', message: 'Admins only.' });
+    }
+
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const currentPassword = String(req.body?.currentPassword || '');
+    const validEmail = /^\S+@\S+\.\S+$/.test(email);
+
+    if (!validEmail || email.length > 254) {
+      return res.status(400).json({ success: false, code: 'INVALID_EMAIL', message: 'A valid email is required.' });
+    }
+    if (!currentPassword) {
+      return res.status(400).json({ success: false, code: 'PASSWORD_REQUIRED', message: 'Current password is required.' });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', message: 'User not found.' });
+    }
+
+    const passwordMatches = await user.comparePassword(currentPassword);
+    if (!passwordMatches) {
+      return res.status(401).json({ success: false, code: 'INVALID_PASSWORD', message: 'Current password is incorrect.' });
+    }
+
+    const emailOwner = await User.findOne({ email, _id: { $ne: user._id } }).select('_id');
+    if (emailOwner) {
+      return res.status(409).json({ success: false, code: 'EMAIL_IN_USE', message: 'Email is already registered.' });
+    }
+
+    const previousEmail = user.email;
+    user.email = email;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    console.info(`Admin email changed for user ${user._id}: ${previousEmail} -> ${email}`);
+    res.json({
+      success: true,
+      message: 'Admin email changed successfully.',
+      user: user.toSafeObject(),
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ success: false, code: 'EMAIL_IN_USE', message: 'Email is already registered.' });
+    }
+    console.error('Change admin email error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
 // ─── POST /api/auth/forgot-password ──────────
 // طلب إعادة تعيين كلمة المرور
 router.post('/forgot-password', async (req, res) => {
