@@ -95,7 +95,7 @@ export default function TabGeneral({ settings, set, togglePlatform }) {
               style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
               value={settings.contactWhatsapp || ''}
               onChange={e => set('contactWhatsapp', e.target.value)}
-              placeholder="+20XXXXXXXXXX"
+              placeholder="+201080835986"
             />
           </Field>
           <Field label="البريد الإلكتروني">

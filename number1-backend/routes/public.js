@@ -178,7 +178,7 @@ router.get("/settings", async (req, res) => {
       platformActive:  s.platformActive,
       maintenanceMode: s.maintenanceMode,
       contactTelegram: s.contactTelegram,
-      contactWhatsapp: s.contactWhatsapp,
+      contactWhatsapp: s.contactWhatsapp || "+201080835986",
       contactEmail:    s.contactEmail,
       contactWebsite:  s.contactWebsite,
     });

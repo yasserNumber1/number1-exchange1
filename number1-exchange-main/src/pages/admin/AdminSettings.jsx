@@ -32,6 +32,7 @@ const DEFAULT = {
   platformUrl:         '',
   supportEmail:        '',
   supportTelegram:     '',
+  contactWhatsapp:     '+201080835986',
 
   // Orders
   usdtOrdersEnabled:    true,

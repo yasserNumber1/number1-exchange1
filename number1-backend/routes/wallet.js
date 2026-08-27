@@ -261,7 +261,7 @@ router.get('/withdraw-info', async (req, res) => {
     res.json({
       success: true,
       withdrawInfo: {
-        whatsapp:  settings.contactWhatsapp  || '',
+        whatsapp:  settings.contactWhatsapp  || '+201080835986',
         telegram:  settings.contactTelegram  || '',
       }
     })

@@ -154,7 +154,7 @@ function ExchangeForm() {
         }
 
         if (ratesRes.success)     setRates(ratesRes)
-        if (settingsRes?.success) setContactInfo(settingsRes)
+        if (settingsRes?.success) setContactInfo({ ...settingsRes, contactWhatsapp: settingsRes.contactWhatsapp || '+201080835986' })
 
       } catch {
         setApiError(true)

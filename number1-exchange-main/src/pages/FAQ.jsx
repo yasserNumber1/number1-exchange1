@@ -936,7 +936,7 @@ export default function FAQ() {
               {lang === 'ar' ? 'تيليجرام' : 'Telegram'}
             </a>
             <a
-              href="https://wa.me/967700000001"
+              href="https://wa.me/201080835986"
               target="_blank"
               rel="noopener noreferrer"
               style={{

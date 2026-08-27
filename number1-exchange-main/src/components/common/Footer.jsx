@@ -10,16 +10,17 @@ function Footer() {
   const navigate = useNavigate()
   const isAr = lang === 'ar'
 
-  const [contacts, setContacts] = useState({ telegram: '', whatsapp: '', email: '' })
+  const [contacts, setContacts] = useState({ telegram: '', whatsapp: '201080835986', email: '' })
   useEffect(() => {
     fetch(`${API}/api/public/settings`)
       .then(r => r.json())
       .then(d => {
-        if (d.success && d.data) {
+        const settings = d.data || d
+        if (d.success && settings) {
           setContacts({
-            telegram: d.data.contactTelegram || '',
-            whatsapp: d.data.contactWhatsapp?.replace(/\D/g, '') || '',
-            email:    d.data.contactEmail    || 'support@number1.exchange',
+            telegram: settings.contactTelegram || '',
+            whatsapp: settings.contactWhatsapp?.replace(/\D/g, '') || '201080835986',
+            email:    settings.contactEmail || 'support@number1.exchange',
           })
         }
       })

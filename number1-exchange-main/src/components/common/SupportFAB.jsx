@@ -6,7 +6,7 @@ const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 const SUPPORT_SESSION_KEY = 'n1_support_session'
 
 /* ─── constants ─────────────────────────────────────────── */
-const WA_NUMBER  = '9647XXXXXXXXX'
+const WA_NUMBER  = '201080835986'
 const TG_USER    = 'nimber1'
 
 const BOT_QS = {

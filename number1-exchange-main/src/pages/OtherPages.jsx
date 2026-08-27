@@ -504,7 +504,7 @@ export function Support() {
       desc: t('support_wa_desc'),
       badge: lang==='ar'?'مباشر':'Direct',
       badgeColor: '#25D366',
-      action: () => window.open('https://wa.me/967700000001','_blank'),
+      action: () => window.open('https://wa.me/201080835986','_blank'),
       actionLabel: lang==='ar'?'فتح واتساب':'Open WhatsApp',
     },
   ]
