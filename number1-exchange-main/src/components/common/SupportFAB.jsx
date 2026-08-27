@@ -195,6 +195,7 @@ function Panel({ onClose, lang }) {
   const [faqOpen,  setFaqOpen]   = useState(false)
   const bottomRef = useRef(null)
   const seenSupportIdsRef = useRef(new Set())
+  const hydratedSupportSessionRef = useRef('')
   const qs = BOT_QS[ar?'ar':'en']
 
   const now = () => { const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` }
@@ -221,12 +222,14 @@ function Panel({ onClose, lang }) {
         const response = await fetch(`${API}/api/public/support-messages/${encodeURIComponent(sessionId)}`)
         const data = await response.json().catch(()=>({}))
         if(!response.ok||!data.success||!Array.isArray(data.messages)||stopped)return
+        const shouldHydrateTranscript = hydratedSupportSessionRef.current !== sessionId
         data.messages
-          .filter(m=>m.sender==='admin'&&!seenSupportIdsRef.current.has(m.id))
+          .filter(m=>(shouldHydrateTranscript||m.sender==='admin')&&!seenSupportIdsRef.current.has(m.id))
           .forEach(m=>{
             seenSupportIdsRef.current.add(m.id)
-            addMsg(m.text,false,'wave')
+            addMsg(m.text,m.sender==='customer',m.sender==='admin'?'wave':'idle')
           })
+        hydratedSupportSessionRef.current = sessionId
       } catch {
         // Polling is best-effort; the send path still shows delivery errors.
       }
@@ -266,13 +269,15 @@ function Panel({ onClose, lang }) {
         }),
       })
       const data = await response.json().catch(()=>({}))
-      if(!response.ok||!data.success) throw new Error(data.message||'Telegram delivery failed')
+      if(!response.ok||!data.success) throw new Error(data.message||'Support delivery failed')
       if(data.sessionId){
+        if(data.message?.id) seenSupportIdsRef.current.add(data.message.id)
+        if(!sessionId) hydratedSupportSessionRef.current=data.sessionId
         setSessionId(data.sessionId)
         if(typeof window!=='undefined') localStorage.setItem(SUPPORT_SESSION_KEY,data.sessionId)
       }
       setTyping(false);setRobAnim('wave')
-      addMsg(ar?'تم إرسال رسالتك إلى فريق الدعم على تيليجرام. سنرد عليك في أقرب وقت.':'Your message was sent to support on Telegram. We will reply as soon as possible.',false,'wave')
+      addMsg(ar?'تم إرسال رسالتك إلى فريق الدعم. سيظهر رد موظف الدعم هنا في نفس المحادثة.':'Your message was sent to support. A support agent’s reply will appear here in this conversation.',false,'wave')
     } catch {
       setTyping(false);setRobAnim('blink')
       addMsg(ar?'تعذر إرسال الرسالة الآن. يمكنك استخدام روابط الدعم المباشر بالأسفل.':'Could not send the message right now. You can use the direct support links below.',false,'blink')

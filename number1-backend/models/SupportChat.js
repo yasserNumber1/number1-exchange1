@@ -17,6 +17,7 @@ const supportChatSchema = new mongoose.Schema({
   messages:           [supportMessageSchema],
   lastCustomerAt:     { type: Date, default: null },
   lastAdminAt:        { type: Date, default: null },
+  lastReadByAdminAt:  { type: Date, default: null },
 }, { timestamps: true })
 
 module.exports = mongoose.model('SupportChat', supportChatSchema)

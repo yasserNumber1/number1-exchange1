@@ -4,13 +4,15 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ArrowLeftRight, Wallet, TrendingUp,
   CreditCard, Users, Settings, Menu, X,
-  LogOut, ChevronRight, ChevronLeft, Home, ShieldCheck,
+  LogOut, ChevronRight, ChevronLeft, Home, ShieldCheck, MessagesSquare,
 } from 'lucide-react'
 import useAuth from '../../context/useAuth'
+import { adminAPI } from '../../services/api'
 
 const NAV = [
   { path: '/admin',                 label: 'الرئيسية',           icon: LayoutDashboard, exact: true },
   { path: '/admin/orders',          label: 'الطلبات',            icon: ArrowLeftRight },
+  { path: '/admin/support-chats',   label: 'محادثات العملاء',    icon: MessagesSquare },
   { path: '/admin/wallets',         label: 'المحافظ والإيداعات', icon: Wallet },
   { path: '/admin/rates',           label: 'الأسعار',            icon: TrendingUp },
   { path: '/admin/payment-methods', label: 'وسائل الدفع',        icon: CreditCard },
@@ -22,11 +24,25 @@ const NAV = [
 export default function AdminLayout({ children, title }) {
   const [collapsed,   setCollapsed]   = useState(false)
   const [mobileOpen,  setMobileOpen]  = useState(false)
+  const [unreadChats, setUnreadChats] = useState(0)
   const location  = useLocation()
   const navigate  = useNavigate()
   const { user, logout } = useAuth()
 
-  useEffect(() => { setMobileOpen(false) }, [location.pathname])
+  useEffect(() => {
+    let stopped = false
+    const loadUnreadChats = async () => {
+      try {
+        const { data } = await adminAPI.getSupportChats({ status: 'open', limit: 100 })
+        if (!stopped) setUnreadChats((data.chats || []).reduce((sum, chat) => sum + (chat.unreadCount || 0), 0))
+      } catch {
+        // Keep navigation usable when chat notifications are temporarily unavailable.
+      }
+    }
+    loadUnreadChats()
+    const timer = setInterval(loadUnreadChats, 10000)
+    return () => { stopped = true; clearInterval(timer) }
+  }, [location.pathname])
 
   const isActive = (item) =>
     item.exact
@@ -37,7 +53,7 @@ export default function AdminLayout({ children, title }) {
 
   const handleLogout = () => { logout(); navigate('/') }
 
-  const SidebarContent = ({ isMobile = false }) => (
+  const renderSidebarContent = (isMobile = false) => (
     <>
       <div className="al-logo-wrap" style={isMobile ? { justifyContent: 'space-between' } : {}}>
         {(!collapsed || isMobile) ? (
@@ -60,7 +76,7 @@ export default function AdminLayout({ children, title }) {
 
       <nav className="al-nav">
         {(!collapsed || isMobile) && <div className="al-section-label">القائمة الرئيسية</div>}
-        {NAV.slice(0, 4).map(item => {
+        {NAV.slice(0, 5).map(item => {
           const active = isActive(item)
           const Icon   = item.icon
           return (
@@ -69,10 +85,14 @@ export default function AdminLayout({ children, title }) {
               to={item.path}
               title={collapsed && !isMobile ? item.label : undefined}
               className={`al-nav-item${active ? ' active' : ''}`}
+              onClick={() => setMobileOpen(false)}
               style={{ justifyContent: collapsed && !isMobile ? 'center' : 'flex-start' }}
             >
               <Icon size={17} style={{ flexShrink: 0, opacity: active ? 1 : 0.65 }} />
               {(!collapsed || isMobile) && <span style={{ flex: 1 }}>{item.label}</span>}
+              {item.path === '/admin/support-chats' && unreadChats > 0 && (
+                <span className="al-chat-count">{unreadChats > 99 ? '99+' : unreadChats}</span>
+              )}
               {active && <span className="al-active-bar" />}
             </Link>
           )
@@ -85,7 +105,7 @@ export default function AdminLayout({ children, title }) {
           </>
         )}
 
-        {NAV.slice(4).map(item => {
+        {NAV.slice(5).map(item => {
           const active = isActive(item)
           const Icon   = item.icon
           return (
@@ -94,6 +114,7 @@ export default function AdminLayout({ children, title }) {
               to={item.path}
               title={collapsed && !isMobile ? item.label : undefined}
               className={`al-nav-item${active ? ' active' : ''}`}
+              onClick={() => setMobileOpen(false)}
               style={{ justifyContent: collapsed && !isMobile ? 'center' : 'flex-start' }}
             >
               <Icon size={17} style={{ flexShrink: 0, opacity: active ? 1 : 0.65 }} />
@@ -270,6 +291,12 @@ export default function AdminLayout({ children, title }) {
           border-radius: 3px 0 0 3px;
           box-shadow: 0 0 8px rgba(59,130,246,0.5);
         }
+        .al-chat-count {
+          min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px;
+          display: inline-flex; align-items: center; justify-content: center;
+          background: #ef4444; color: #fff; font: 700 10px 'JetBrains Mono',monospace;
+          box-shadow: 0 0 10px rgba(239,68,68,0.35); flex-shrink: 0;
+        }
 
         /* ── Bottom / User card ── */
         .al-sidebar-bottom { border-top: 1px solid var(--al-divider); padding-top: 10px; }
@@ -406,14 +433,14 @@ export default function AdminLayout({ children, title }) {
 
       {/* ── Mobile sidebar drawer ── */}
       <aside className={`al-mobile-sidebar${mobileOpen ? ' open' : ''}`}>
-        <SidebarContent isMobile />
+        {renderSidebarContent(true)}
       </aside>
 
       <div className="al-root">
 
         {/* ── Desktop sidebar ── */}
         <aside className="al-sidebar" style={{ width: collapsed ? 64 : 235 }}>
-          <SidebarContent />
+          {renderSidebarContent()}
         </aside>
 
         {/* ── Main ── */}

@@ -56,6 +56,15 @@ export const adminAPI = {
   saveWalletDepositAddresses:  (body) => request('/admin/wallet-deposit-addresses', { method: 'PUT', body: JSON.stringify(body) }),
   getExchangeMethods:          ()     => request('/admin/exchange-methods'),
   saveExchangeMethods:         (body) => request('/admin/exchange-methods',         { method: 'PUT', body: JSON.stringify(body) }),
+  getSupportChats: (params = {}) => request(`/admin/support-chats?${new URLSearchParams(params)}`),
+  getSupportChat:  (sessionId)   => request(`/admin/support-chats/${encodeURIComponent(sessionId)}`),
+  sendSupportReply: (sessionId, message) => request(`/admin/support-chats/${encodeURIComponent(sessionId)}/messages`, {
+    method: 'POST', body: JSON.stringify({ message }),
+  }),
+  markSupportChatRead: (sessionId) => request(`/admin/support-chats/${encodeURIComponent(sessionId)}/read`, { method: 'PATCH' }),
+  updateSupportChatStatus: (sessionId, status) => request(`/admin/support-chats/${encodeURIComponent(sessionId)}/status`, {
+    method: 'PATCH', body: JSON.stringify({ status }),
+  }),
 }
 
 export const walletAPI = {

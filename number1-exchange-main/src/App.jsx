@@ -127,6 +127,7 @@ import AdminSettings       from './pages/admin/AdminSettings'
 import AdminDeposits   from './pages/admin/AdminDeposits'
 import AdminLogin       from './pages/admin/AdminLogin'
 import AdminAuditLogs   from './pages/admin/AdminAuditLogs'
+import AdminSupportChats from './pages/admin/AdminSupportChats'
 
 import useAuth from './context/useAuth'
 import useLang from './context/useLang'
@@ -379,6 +380,7 @@ function App() {
         <Routes key={`admin-${lang}`}>
           <Route path="/admin"                 element={<AdminRoute><AdminDashboard      /></AdminRoute>} />
           <Route path="/admin/orders"          element={<AdminRoute><AdminOrders         /></AdminRoute>} />
+          <Route path="/admin/support-chats"   element={<AdminRoute><AdminSupportChats   /></AdminRoute>} />
           <Route path="/admin/rates"           element={<AdminRoute><AdminRates          /></AdminRoute>} />
           <Route path="/admin/payment-methods" element={<AdminRoute><AdminPaymentMethods /></AdminRoute>} />
           <Route path="/admin/users"           element={<AdminRoute><AdminUsers          /></AdminRoute>} />

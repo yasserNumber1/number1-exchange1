@@ -249,6 +249,7 @@ router.post("/support-message", contactFormLimiter, async (req, res) => {
       : rawMessage;
     chat.messages.push({ sender: "customer", text: storedMessage, source: isContactForm ? "contact-form" : "web" });
     await chat.save();
+    const savedCustomerMessage = chat.messages[chat.messages.length - 1];
 
     const text = [
       "<b>New support chat message</b>",
@@ -281,20 +282,30 @@ router.post("/support-message", contactFormLimiter, async (req, res) => {
           })
         : Promise.resolve({ success: true, skipped: true }),
     ]);
-    if (!telegramResult.success || !emailResult.success) {
+    if (!emailResult.success) {
       return res.status(502).json({
         success: false,
-        message: !telegramResult.success ? "Telegram delivery failed." : "Email delivery failed.",
+        message: "Email delivery failed.",
       });
     }
 
-    chat.telegramMessageIds.addToSet(telegramResult.messageId);
-    await chat.save();
+    if (telegramResult.success && telegramResult.messageId) {
+      chat.telegramMessageIds.addToSet(telegramResult.messageId);
+      await chat.save();
+    } else if (!telegramResult.success) {
+      console.warn("Support message saved to inbox, but Telegram notification failed:", telegramResult.error);
+    }
 
     res.json({
       success: true,
       sessionId: chat.sessionId,
-      deliveries: { telegram: true, email: isContactForm },
+      message: {
+        id: String(savedCustomerMessage._id),
+        sender: savedCustomerMessage.sender,
+        text: savedCustomerMessage.text,
+        createdAt: savedCustomerMessage.createdAt,
+      },
+      deliveries: { inbox: true, telegram: telegramResult.success, email: isContactForm },
     });
   } catch (error) {
     console.error("Support message error:", error);

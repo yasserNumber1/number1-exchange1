@@ -9,6 +9,7 @@ const User = require("../models/User");
 const { protect, adminOnly } = require("../middleware/auth");
 const telegramService = require("../services/telegram");
 const Rate = require("../models/Rate");
+const SupportChat = require("../models/SupportChat");
 const mongoose = require("mongoose");
 const { completeOrder, processTransaction } = require("../services/balanceEngine");
 const { logOrderEvent } = require("../services/auditService");
@@ -16,6 +17,144 @@ const { logOrderEvent } = require("../services/auditService");
 const SECRET_MASK = "••••••••";
 
 router.use(protect, adminOnly);
+
+const serializeSupportMessage = (message) => ({
+  id: String(message._id),
+  sender: message.sender,
+  text: message.text,
+  source: message.source,
+  createdAt: message.createdAt,
+});
+
+const serializeSupportChat = (chat, includeMessages = false) => {
+  const messages = chat.messages || [];
+  const lastMessage = messages[messages.length - 1] || null;
+  const lastReadAt = chat.lastReadByAdminAt ? new Date(chat.lastReadByAdminAt) : null;
+  const unreadCount = messages.filter((message) => (
+    message.sender === "customer"
+    && (!lastReadAt || new Date(message.createdAt) > lastReadAt)
+  )).length;
+
+  return {
+    id: String(chat._id),
+    sessionId: chat.sessionId,
+    lang: chat.lang,
+    page: chat.page,
+    status: chat.status,
+    unreadCount,
+    messageCount: messages.length,
+    lastMessage: lastMessage ? serializeSupportMessage(lastMessage) : null,
+    lastCustomerAt: chat.lastCustomerAt,
+    lastAdminAt: chat.lastAdminAt,
+    lastReadByAdminAt: chat.lastReadByAdminAt,
+    createdAt: chat.createdAt,
+    updatedAt: chat.updatedAt,
+    ...(includeMessages && { messages: messages.map(serializeSupportMessage) }),
+  };
+};
+
+// ─── Support chat inbox ───────────────────────
+router.get("/support-chats", async (req, res) => {
+  try {
+    const status = String(req.query.status || "").trim();
+    const search = String(req.query.search || "").trim().slice(0, 120);
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
+    const filter = { "messages.source": { $ne: "contact-form" } };
+
+    if (["open", "closed"].includes(status)) filter.status = status;
+    if (search) filter.sessionId = { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
+
+    const [chats, total] = await Promise.all([
+      SupportChat.find(filter)
+        .sort({ updatedAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      SupportChat.countDocuments(filter),
+    ]);
+
+    res.json({
+      success: true,
+      chats: chats.map((chat) => serializeSupportChat(chat)),
+      pagination: { page, limit, total, pages: Math.max(Math.ceil(total / limit), 1) },
+    });
+  } catch (error) {
+    console.error("Support chat list error:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
+router.get("/support-chats/:sessionId", async (req, res) => {
+  try {
+    const chat = await SupportChat.findOne({ sessionId: req.params.sessionId });
+    if (!chat) return res.status(404).json({ success: false, message: "Chat session not found." });
+    res.json({ success: true, chat: serializeSupportChat(chat, true) });
+  } catch (error) {
+    console.error("Support chat load error:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
+router.post("/support-chats/:sessionId/messages", async (req, res) => {
+  try {
+    const text = String(req.body?.message || "").trim();
+    if (!text) return res.status(400).json({ success: false, message: "Message is required." });
+    if (text.length > 1500) return res.status(400).json({ success: false, message: "Message is too long." });
+
+    const chat = await SupportChat.findOne({ sessionId: req.params.sessionId });
+    if (!chat) return res.status(404).json({ success: false, message: "Chat session not found." });
+
+    chat.messages.push({ sender: "admin", text, source: "admin-web" });
+    chat.lastAdminAt = new Date();
+    chat.lastReadByAdminAt = new Date();
+    chat.status = "open";
+    await chat.save();
+
+    res.json({
+      success: true,
+      message: serializeSupportMessage(chat.messages[chat.messages.length - 1]),
+      chat: serializeSupportChat(chat),
+    });
+  } catch (error) {
+    console.error("Support chat reply error:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
+router.patch("/support-chats/:sessionId/read", async (req, res) => {
+  try {
+    const chat = await SupportChat.findOneAndUpdate(
+      { sessionId: req.params.sessionId },
+      { $set: { lastReadByAdminAt: new Date() } },
+      { new: true },
+    );
+    if (!chat) return res.status(404).json({ success: false, message: "Chat session not found." });
+    res.json({ success: true, chat: serializeSupportChat(chat) });
+  } catch (error) {
+    console.error("Support chat read error:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
+router.patch("/support-chats/:sessionId/status", async (req, res) => {
+  try {
+    const status = String(req.body?.status || "").trim();
+    if (!["open", "closed"].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid chat status." });
+    }
+
+    const chat = await SupportChat.findOneAndUpdate(
+      { sessionId: req.params.sessionId },
+      { $set: { status, lastReadByAdminAt: new Date() } },
+      { new: true },
+    );
+    if (!chat) return res.status(404).json({ success: false, message: "Chat session not found." });
+    res.json({ success: true, chat: serializeSupportChat(chat) });
+  } catch (error) {
+    console.error("Support chat status error:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+});
 
 // ─── GET /api/admin/orders ────────────────────
 router.get("/orders", async (req, res) => {
