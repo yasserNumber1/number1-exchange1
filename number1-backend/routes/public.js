@@ -360,27 +360,29 @@ router.get("/exchange-methods", async (req, res) => {
       MGO:  { min: rateDoc.minMgo  || 10,  max: availableMgo,  available: availableMgo  },
     };
 
-    const enrichMethod = (m) => {
+    const enrichMethod = (m, direction) => {
       const g = limitsMap[m.symbol] || { min: 0, max: 0, available: 0 };
+      const explicitMax = m.maxAmount > 0 ? m.maxAmount : 0;
+      const isReceiveMethod = direction === "receive";
       return {
         ...(m.toObject ? m.toObject() : m),
         limits: {
           min:       m.minAmount > 0 ? m.minAmount : g.min,
-          max:       m.maxAmount > 0 ? m.maxAmount : g.max,
-          available: g.available,
+          max:       explicitMax || (isReceiveMethod ? g.max : 0),
+          available: isReceiveMethod ? g.available : null,
         },
       };
     };
 
-    const sendMethods    = doc.sendMethods.filter(m => m.enabled).sort((a,b) => (a.sortOrder||0)-(b.sortOrder||0)).map(enrichMethod);
-    const receiveMethods = doc.receiveMethods.filter(m => m.enabled).sort((a,b) => (a.sortOrder||0)-(b.sortOrder||0)).map(enrichMethod);
+    const sendMethods    = doc.sendMethods.filter(m => m.enabled).sort((a,b) => (a.sortOrder||0)-(b.sortOrder||0)).map(m => enrichMethod(m, "send"));
+    const receiveMethods = doc.receiveMethods.filter(m => m.enabled).sort((a,b) => (a.sortOrder||0)-(b.sortOrder||0)).map(m => enrichMethod(m, "receive"));
 
     res.json({
       success:           true,
       sendMethods,
       receiveMethods,
-      allSendMethods:    doc.sendMethods.map(enrichMethod),
-      allReceiveMethods: doc.receiveMethods.map(enrichMethod),
+      allSendMethods:    doc.sendMethods.map(m => enrichMethod(m, "send")),
+      allReceiveMethods: doc.receiveMethods.map(m => enrichMethod(m, "receive")),
       limitsMap,
     });
   } catch (error) {

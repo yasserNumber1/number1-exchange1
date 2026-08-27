@@ -253,7 +253,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
 
     const getLimits = (minKey, maxKey, availKey, unit) => ({
       min: rates[minKey] || 10,
-      max: Math.min(rates[maxKey] || Infinity, rates[availKey] ?? rates[maxKey] ?? Infinity),
+      max: Math.min(rates[maxKey] ?? Infinity, rates[availKey] ?? rates[maxKey] ?? Infinity),
       available: rates[availKey] ?? rates[maxKey] ?? Infinity,
       unit
     })
@@ -261,9 +261,9 @@ export default function ExchangeFormPage({ onOpenAuth }) {
     // Use recv method limits if available from API
     if (recvMethod?.limits) {
       return {
-        min: recvMethod.limits.min || 10,
-        max: recvMethod.limits.max || 5000,
-        available: recvMethod.limits.available || recvMethod.limits.max || 5000,
+        min: recvMethod.limits.min ?? 10,
+        max: recvMethod.limits.max ?? 5000,
+        available: recvMethod.limits.available ?? recvMethod.limits.max ?? 5000,
         unit: recvSymbol
       }
     }
@@ -538,7 +538,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
           {/* المبلغان المتزامنان */}
           <div className="ef-card" id="field-amount">
             <label className="ef-label">{tr('المبلغ المُرسَل', 'Amount Sent')} <span style={{ color: 'var(--red)' }}>*</span></label>
-            <div className={`ef-amount-row ${fieldErrors.amount && lastEdited === 'send' ? 'ef-amount-row--error' : ''} ${sendAmount && parseFloat(sendAmount) > limits.available * 0.9 ? 'ef-amount-row--near-max' : ''}`}>
+            <div className={`ef-amount-row ${fieldErrors.amount && lastEdited === 'send' ? 'ef-amount-row--error' : ''} ${receiveAmount && parseFloat(receiveAmount) > limits.available * 0.9 ? 'ef-amount-row--near-max' : ''}`}>
               <input type="number" min="0" step="any" value={sendAmount} onChange={e => handleSendChange(e.target.value)} placeholder="0.00" className="ef-input ef-amount-input" />
               <div className="ef-currency-badge">
                 <MethodIcon method={sendMethod} size={20} />

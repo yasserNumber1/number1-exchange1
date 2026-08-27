@@ -39,15 +39,16 @@ paymentMethodSchema.statics.getLimits = async function (methodId, currency) {
     (m) => m.methodId === methodId && m.enabled,
   );
   if (!method || method.maxAmount <= 0) {
-    // Fallback to Rate
+    // Fallback only supplies the inbound minimum. Platform liquidity belongs
+    // to the receive side and must not cap what a customer is sending us.
     const Rate = require("./Rate");
     const rateDoc = await Rate.getSingleton();
     if (currency === "EGP")
-      return { min: rateDoc.minEgp,  max: rateDoc.availableEgp  ?? 0 };
+      return { min: rateDoc.minEgp,  max: 0 };
     if (currency === "USDT")
-      return { min: rateDoc.minUsdt, max: rateDoc.availableUsdt ?? 0 };
+      return { min: rateDoc.minUsdt, max: 0 };
     if (currency === "MGO")
-      return { min: rateDoc.minMgo,  max: rateDoc.availableMgo  ?? 0 };
+      return { min: rateDoc.minMgo,  max: 0 };
     return { min: 0, max: 0 };
   }
   return { min: method.minAmount, max: method.maxAmount };

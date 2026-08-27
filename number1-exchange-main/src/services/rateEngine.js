@@ -265,7 +265,8 @@ export function getDynamicLimits(sendMethod, recvMethod, ratesData) {
 
   // Use per-method limits if set, otherwise global
   const sendMin = sendMethod.limits?.min || sendMethod.minAmount || limits[sendSymbol]?.min || 0;
-  let sendMax = sendMethod.limits?.max || sendMethod.maxAmount || limits[sendSymbol]?.max || Infinity;
+  const explicitSendMax = sendMethod.limits?.max || sendMethod.maxAmount || 0;
+  let sendMax = explicitSendMax > 0 ? explicitSendMax : Infinity;
 
   // Dynamic max adjustment:
   // When sending (withdrawal from platform's perspective for recv currency):
@@ -280,14 +281,6 @@ export function getDynamicLimits(sendMethod, recvMethod, ratesData) {
         : recvAvailable / rateInfo.rate; // USDT = recvAmount / rate
       sendMax = Math.min(sendMax, maxFromRecv);
     }
-  }
-
-  // Also cap by send currency available (platform receives this, so it's ok)
-  // But for withdrawal (send to user), cap by available
-  const sendAvailable = available[sendSymbol];
-  if (sendAvailable !== undefined && sendSymbol !== 'EGP') {
-    // If user is sending crypto/mgo, platform receives it - no cap needed
-    // If user is receiving crypto/mgo, platform sends it - cap by available
   }
 
   return {

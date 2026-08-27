@@ -12,6 +12,7 @@ const { protect, optionalProtect } = require("../middleware/auth");
 const { upload } = require("../services/cloudinary");
 const telegramService = require("../services/telegram");
 const { logOrderEvent } = require("../services/auditService");
+const { getCurrencies } = require("../services/balanceEngine");
 
 const ORDER_LIFETIME_MS = 30 * 60 * 1000; // 30 دقيقة
 
@@ -418,30 +419,25 @@ router.post("/", optionalProtect, async (req, res) => {
           .json({ success: false, message: "المبلغ يجب أن يكون أكبر من صفر." });
       }
 
-      // Per-method min/max (0 = use global)
+      // Per-method limits (0 max = no explicit inbound ceiling)
       const sendMin = sendMethodObj?.minAmount || 0;
       const sendMax = sendMethodObj?.maxAmount || 0;
 
       const currency = payment.currencySent || "EGP";
 
-      // Global limits — max is capped by available liquidity for the SENT currency
-      // (using ?? so that 0 is treated as a real value, not a missing value)
-      const availableByCurrency = {
-        EGP: rateDoc.availableEgp ?? rateDoc.maxEgp ?? 300000,
-        USDT: rateDoc.availableUsdt ?? rateDoc.maxUsdt ?? 10000,
-        MGO: rateDoc.availableMgo ?? rateDoc.maxMgo ?? 10000,
-      };
-      // max = available liquidity directly — no separate ceiling
-      const globalLimits = {
-        EGP: { min: rateDoc.minEgp || 100, max: availableByCurrency.EGP },
-        USDT: { min: rateDoc.minUsdt || 10, max: availableByCurrency.USDT },
-        MGO: { min: rateDoc.minMgo || 10, max: availableByCurrency.MGO },
+      // The platform receives the sent currency, so its current liquidity must
+      // never cap an inbound customer payment. Only an explicit per-method max
+      // may limit the sent amount; platform liquidity is checked on the payout.
+      const globalMinimums = {
+        EGP: rateDoc.minEgp || 100,
+        USDT: rateDoc.minUsdt || 10,
+        MGO: rateDoc.minMgo || 10,
       };
 
       const effectiveMin =
-        sendMin > 0 ? sendMin : globalLimits[currency]?.min || 0;
+        sendMin > 0 ? sendMin : globalMinimums[currency] || 0;
       const effectiveMax =
-        sendMax > 0 ? sendMax : globalLimits[currency]?.max || Infinity;
+        sendMax > 0 ? sendMax : Infinity;
 
       if (effectiveMin > 0 && sendAmt < effectiveMin) {
         return res.status(400).json({
@@ -464,18 +460,18 @@ router.post("/", optionalProtect, async (req, res) => {
       const recvAmt = parseFloat(
         moneygo.amountUSD || exchangeRate.finalAmountUSD || 0,
       );
-      if (recvMethodObj && recvAmt > 0) {
-        const recvSymbol = recvMethodObj.symbol;
+      const { currencyRecv } = getCurrencies({ orderType, payment });
+      if (currencyRecv && recvAmt > 0) {
         const recvAvailable = {
           EGP: rateDoc.availableEgp ?? rateDoc.maxEgp ?? 300000,
           USDT: rateDoc.availableUsdt ?? rateDoc.maxUsdt ?? 10000,
           MGO: rateDoc.availableMgo ?? rateDoc.maxMgo ?? 10000,
-        }[recvSymbol];
+        }[currencyRecv];
 
         if (recvAvailable !== undefined && recvAmt > recvAvailable) {
           return res.status(400).json({
             success: false,
-            message: `الرصيد المتاح من ${recvSymbol} غير كافٍ. المتاح: ${recvAvailable.toLocaleString()} ${recvSymbol}`,
+            message: `الرصيد المتاح من ${currencyRecv} غير كافٍ. المتاح: ${recvAvailable.toLocaleString()} ${currencyRecv}`,
           });
         }
       }
