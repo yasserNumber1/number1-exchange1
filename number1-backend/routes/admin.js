@@ -218,6 +218,28 @@ router.put("/orders/:id/status", async (req, res) => {
     if (!order)
       return res.status(404).json({ success: false, message: "Order not found." });
 
+    if (
+      order.orderType === "WALLET_TO_MONEYGO" &&
+      order.status === "processing" &&
+      !["completed", "rejected", "cancelled"].includes(status)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "This auto-accepted order must be completed, rejected, or cancelled.",
+      });
+    }
+
+    if (
+      status === "completed" &&
+      order.orderType === "WALLET_TO_MONEYGO" &&
+      order.status !== "processing"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "This MoneyGo payout can only be completed while it is processing.",
+      });
+    }
+
     // ── "completed" uses the balanceEngine for atomic transaction ──
     if (status === "completed") {
       if (order.status === "completed") {
@@ -259,6 +281,20 @@ router.put("/orders/:id/status", async (req, res) => {
         const { releaseLiquidity } = require("../services/balanceEngine");
         await releaseLiquidity(order);
       } catch (e) { console.error("releaseLiquidity on reject failed:", e.message); }
+    }
+
+    if (
+      (status === "rejected" || status === "cancelled") &&
+      (order.orderType === "WALLET_TO_USDT" || order.orderType === "WALLET_TO_MONEYGO")
+    ) {
+      const { refundWallet } = require("../services/balanceEngine");
+      const refundResult = await refundWallet(order);
+      if (!refundResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: `Order ${status}, but the internal wallet refund failed: ${refundResult.reason}`,
+        });
+      }
     }
 
     await logOrderEvent(order, `admin:${req.user.email}`, note || `تم تغيير الحالة إلى ${status}`);
@@ -327,7 +363,7 @@ router.post("/telegram-webhook-internal", async (req, res) => {
 
     const allowedTransitions = {
       approve: ["pending","verifying"],
-      reject:  ["pending","verifying"],
+      reject:  ["pending","verifying","verified","processing"],
       complete: ["verified","processing"],
     };
 
@@ -407,6 +443,21 @@ router.post("/telegram-webhook-internal", async (req, res) => {
         const { releaseLiquidity } = require("../services/balanceEngine");
         await releaseLiquidity(order);
       } catch (e) { console.error("releaseLiquidity on internal reject failed:", e.message); }
+    }
+
+    if (
+      newStatus === "rejected" &&
+      (order.orderType === "WALLET_TO_USDT" || order.orderType === "WALLET_TO_MONEYGO")
+    ) {
+      const { refundWallet } = require("../services/balanceEngine");
+      const refundResult = await refundWallet(order);
+      if (!refundResult.success) {
+        await telegramService.answerCallbackQuery(
+          callbackQueryId,
+          `Order rejected, but wallet refund failed: ${refundResult.reason}`,
+        );
+        return res.json({ success: true });
+      }
     }
 
     await telegramService.answerCallbackQuery(callbackQueryId, message_text);

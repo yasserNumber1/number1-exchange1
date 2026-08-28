@@ -483,7 +483,6 @@ router.post("/", optionalProtect, async (req, res) => {
     const WALLET_OUTFLOW_TYPES = [
       "WALLET_TO_USDT",
       "WALLET_TO_MONEYGO",
-      "EGP_WALLET_TO_MONEYGO",
     ];
     if (WALLET_OUTFLOW_TYPES.includes(orderType)) {
       if (!req.user) {
@@ -494,13 +493,23 @@ router.post("/", optionalProtect, async (req, res) => {
             message: "يجب تسجيل الدخول لاستخدام المحفظة الداخلية.",
           });
       }
-      const { debitWallet } = require("../services/balanceEngine");
+      if (
+        ["WALLET_TO_USDT", "WALLET_TO_MONEYGO"].includes(orderType) &&
+        (payment.method !== "WALLET" || payment.currencySent !== "USDT")
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Internal wallet orders must use the customer's USDT wallet.",
+        });
+      }
+
+      const { checkWalletBalance } = require("../services/balanceEngine");
       const mockOrderData = {
         user: req.user._id,
         payment: { amountSent: payment.amountSent },
         orderType,
       };
-      const debitResult = await debitWallet({ ...mockOrderData, _id: "temp" }); // Use full debit logic early
+      const debitResult = await checkWalletBalance(mockOrderData);
       if (!debitResult.success) {
         return res.status(400).json({
           success: false,
@@ -512,14 +521,13 @@ router.post("/", optionalProtect, async (req, res) => {
                 : "خطأ في المحفظة.",
         });
       }
-      // Note: Actual debit will be re-called after Order.create, but this prevents invalid creation
+      // The real debit happens once, after the order has a valid database ID.
     }
 
     // ── التحقق من معرّف الاستلام (ليس مطلوباً للحساب الداخلي) ──
     const NO_RECIPIENT_TYPES = [
       "USDT_TO_WALLET",
       "WALLET_TO_USDT",
-      "WALLET_TO_MONEYGO",
       "MONEYGO_TO_WALLET",
       "EGP_WALLET_TO_MONEYGO", // القديم — يمكن إزالته لاحقاً
     ];
@@ -611,11 +619,13 @@ router.post("/", optionalProtect, async (req, res) => {
 
     // ── إشعار التليغرام ───────────────────────
     let telegramMessageId = null;
-    try {
-      const tgResult = await telegramService.notifyNewOrder(order);
-      if (tgResult.success) telegramMessageId = tgResult.messageId;
-    } catch (tgError) {
-      console.error("Telegram notification failed:", tgError.message);
+    if (!WALLET_OUTFLOW_TYPES.includes(orderType)) {
+      try {
+        const tgResult = await telegramService.notifyNewOrder(order);
+        if (tgResult.success) telegramMessageId = tgResult.messageId;
+      } catch (tgError) {
+        console.error("Telegram notification failed:", tgError.message);
+      }
     }
 
     // ── خصم رصيد المحفظة فوراً لطلبات WALLET_TO_* ──
@@ -637,8 +647,28 @@ router.post("/", optionalProtect, async (req, res) => {
             message: `رصيد المحفظة غير كافٍ. رصيدك الحالي: ${debitResult.balance ?? 0} USDT`,
           });
         }
+
+        // Internal USDT -> MoneyGo orders are funded immediately and therefore
+        // do not wait for payment verification. They go straight to payout.
+        if (orderType === "WALLET_TO_MONEYGO") {
+          order.status = "processing";
+          order.moneygo.transferStatus = "processing";
+          order.expiresAt = null;
+          order.addTimeline(
+            "processing",
+            "Automatically accepted after internal USDT wallet debit.",
+            "system",
+          );
+        }
       } catch (debitErr) {
         console.error("Wallet debit failed:", debitErr.message);
+        order.status = "cancelled";
+        order.addTimeline("cancelled", "Internal wallet debit failed.", "system");
+        await order.save();
+        return res.status(500).json({
+          success: false,
+          message: "Could not deduct the internal wallet. Please try again.",
+        });
       }
     }
 
@@ -651,14 +681,74 @@ router.post("/", optionalProtect, async (req, res) => {
       console.error("Liquidity reservation failed:", reserveErr.message);
     }
 
+    if (orderType === "WALLET_TO_MONEYGO" && !liquidityReserved) {
+      const { refundWallet } = require("../services/balanceEngine");
+      const refundResult = await refundWallet(order);
+      order.status = "cancelled";
+      order.moneygo.transferStatus = "failed";
+      order.addTimeline(
+        "cancelled",
+        refundResult.success
+          ? "MoneyGo liquidity could not be reserved; internal USDT was refunded."
+          : "MoneyGo liquidity could not be reserved; wallet refund needs administrator review.",
+        "system",
+      );
+      await order.save();
+      return res.status(409).json({
+        success: false,
+        message: refundResult.success
+          ? "MoneyGo is temporarily unavailable. Your USDT was returned to your wallet."
+          : "MoneyGo is temporarily unavailable and the automatic wallet refund needs administrator review.",
+      });
+    }
+
     // حفظ telegramMessageId و liquidityReserved دفعة واحدة
-    if (telegramMessageId || liquidityReserved) {
+    if (telegramMessageId || liquidityReserved || orderType === "WALLET_TO_MONEYGO") {
       if (telegramMessageId) order.telegramMessageId = telegramMessageId;
       if (liquidityReserved) order.liquidityReserved = true;
       try {
         await order.save();
       } catch (saveErr) {
         console.error("Order post-create save failed:", saveErr.message);
+        if (orderType === "WALLET_TO_MONEYGO") {
+          const { releaseLiquidity, refundWallet } = require("../services/balanceEngine");
+          if (liquidityReserved) await releaseLiquidity(order);
+          const refundResult = await refundWallet(order);
+          order.status = "cancelled";
+          order.moneygo.transferStatus = "failed";
+          order.liquidityReserved = false;
+          order.addTimeline(
+            "cancelled",
+            refundResult.success
+              ? "The accepted order could not be saved; internal USDT was refunded."
+              : "The accepted order could not be saved; wallet refund needs administrator review.",
+            "system",
+          );
+          try { await order.save(); } catch (rollbackSaveErr) {
+            console.error("Order rollback save failed:", rollbackSaveErr.message);
+          }
+          return res.status(500).json({
+            success: false,
+            message: refundResult.success
+              ? "The order could not be accepted. Your USDT was returned to your wallet."
+              : "The order could not be accepted and the wallet refund needs administrator review.",
+          });
+        }
+      }
+    }
+
+    // Notify the administrator only after an internal-wallet order has been
+    // funded, reserved, and saved with its automatic processing status.
+    if (WALLET_OUTFLOW_TYPES.includes(orderType)) {
+      try {
+        const tgResult = await telegramService.notifyNewOrder(order);
+        if (tgResult.success) {
+          telegramMessageId = tgResult.messageId;
+          order.telegramMessageId = telegramMessageId;
+          await order.save();
+        }
+      } catch (tgError) {
+        console.error("Telegram notification failed:", tgError.message);
       }
     }
 
@@ -679,7 +769,9 @@ router.post("/", optionalProtect, async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Order created successfully.",
+      message: orderType === "WALLET_TO_MONEYGO"
+        ? "Order automatically accepted and sent for MoneyGo payout."
+        : "Order created successfully.",
       order: {
         _id: order._id,
         orderNumber: order.orderNumber,

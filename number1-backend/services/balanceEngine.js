@@ -209,12 +209,18 @@ async function reserveLiquidity(order) {
     if (amountRecv <= 0) return false
 
     const inc = {}
-    if (currencyRecv === 'USDT') inc.availableUsdt = -amountRecv
-    if (currencyRecv === 'MGO')  inc.availableMgo  = -amountRecv
-    if (currencyRecv === 'EGP')  inc.availableEgp  = -amountRecv
+    let balanceField = null
+    if (currencyRecv === 'USDT') { inc.availableUsdt = -amountRecv; balanceField = 'availableUsdt' }
+    if (currencyRecv === 'MGO')  { inc.availableMgo  = -amountRecv; balanceField = 'availableMgo' }
+    if (currencyRecv === 'EGP')  { inc.availableEgp  = -amountRecv; balanceField = 'availableEgp' }
+    if (!balanceField) return false
 
     try { await Rate.getSingleton() } catch (e) {}
-    await Rate.findOneAndUpdate({}, { $inc: inc })
+    const reserved = await Rate.findOneAndUpdate(
+      { [balanceField]: { $gte: amountRecv } },
+      { $inc: inc },
+    )
+    if (!reserved) return false
 
     console.log(`[BalanceEngine] 🔒 Reserved ${amountRecv} ${currencyRecv} for order ${order.orderNumber}`)
     return true
@@ -253,86 +259,215 @@ async function releaseLiquidity(order) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// debitWallet — خصم رصيد المحفظة عند إنشاء طلب WALLET_TO_*
-//   يُستدعى فور إنشاء الطلب لحجز المبلغ ومنع الإنفاق المزدوج
-// ═══════════════════════════════════════════════════════════════
-async function debitWallet(order) {
+// Read-only validation used before creating an internal-wallet order. The real
+// deduction still performs its own atomic balance check to handle concurrency.
+async function checkWalletBalance(order) {
+  const Wallet = require('../models/Wallet')
+  const userId = order.user?._id || order.user
+  const amount = Math.round((parseFloat(order.payment?.amountSent) || 0) * 1e6) / 1e6
+
+  if (!userId) return { success: false, reason: 'no_user_linked' }
+  if (amount <= 0) return { success: false, reason: 'invalid_amount' }
+
   try {
-    const Wallet      = require('../models/Wallet')
-    const Transaction = require('../models/Transaction')
-
-    if (!order.user) return { success: false, reason: 'no_user_linked' }
-
-    const amount = parseFloat(order.payment?.amountSent)
-    if (!amount || amount <= 0) return { success: false, reason: 'invalid_amount' }
-
-    const wallet = await Wallet.findOne({ user: order.user })
+    const wallet = await Wallet.findOne({ user: userId })
     if (!wallet) return { success: false, reason: 'wallet_not_found' }
     if (!wallet.isActive) return { success: false, reason: 'wallet_inactive' }
-
     if (wallet.balance < amount) {
       return { success: false, reason: 'insufficient_balance', balance: wallet.balance }
     }
-
-    const balanceBefore = wallet.balance
-    wallet.balance -= amount
-    wallet.totalWithdrawn += amount
-    await wallet.save()
-
-    await Transaction.create({
-      user: order.user, wallet: wallet._id, type: 'exchange_debit',
-      amount, balanceBefore, balanceAfter: wallet.balance,
-      status: 'completed', performedBy: 'system', order: order._id,
-      note: `خصم تلقائي — طلب ${order.orderNumber} (${order.orderType})`
-    })
-
-    console.log(`[BalanceEngine] 💸 Wallet -${amount} USDT → user ${order.user} | balance: ${wallet.balance}`)
-    return { success: true, amountDebited: amount, newBalance: wallet.balance }
+    return { success: true, balance: wallet.balance }
   } catch (err) {
-    console.error(`[BalanceEngine] ❌ debitWallet failed:`, err.message)
+    console.error('[BalanceEngine] checkWalletBalance failed:', err.message)
     return { success: false, reason: err.message }
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// refundWallet — إعادة رصيد المحفظة عند إلغاء طلب WALLET_TO_*
-// ═══════════════════════════════════════════════════════════════
-async function refundWallet(order) {
+// Atomically deduct an internal wallet once for a real order. The wallet update
+// is compensated if the corresponding audit transaction cannot be persisted.
+async function debitWallet(order) {
+  const Wallet      = require('../models/Wallet')
+  const Transaction = require('../models/Transaction')
+  const userId      = order.user?._id || order.user
+  const orderId     = order._id
+  const amount      = Math.round((parseFloat(order.payment?.amountSent) || 0) * 1e6) / 1e6
+
+  if (!userId) return { success: false, reason: 'no_user_linked' }
+  if (!orderId) return { success: false, reason: 'order_required' }
+  if (amount <= 0) return { success: false, reason: 'invalid_amount' }
+
+  const idempotencyKey = `wallet-debit:${orderId}`
+
   try {
-    const Wallet      = require('../models/Wallet')
-    const Transaction = require('../models/Transaction')
-
-    if (!order.user) return { success: false, reason: 'no_user_linked' }
-
-    const amount = parseFloat(order.payment?.amountSent)
-    if (!amount || amount <= 0) return { success: false, reason: 'invalid_amount' }
-
-    // منع الاسترداد المزدوج
-    const alreadyRefunded = await Transaction.findOne({
-      order: order._id, type: 'refund', status: 'completed'
+    const existingDebit = await Transaction.findOne({
+      $or: [
+        { idempotencyKey },
+        { order: orderId, type: 'exchange_debit', status: 'completed' },
+      ],
     })
-    if (alreadyRefunded) return { success: false, reason: 'already_refunded' }
+    if (existingDebit) {
+      return {
+        success: true,
+        alreadyDebited: true,
+        amountDebited: existingDebit.amount,
+        newBalance: existingDebit.balanceAfter,
+      }
+    }
 
-    let wallet = await Wallet.findOne({ user: order.user })
-    if (!wallet) wallet = await Wallet.create({ user: order.user })
+    const wallet = await Wallet.findOneAndUpdate(
+      { user: userId, isActive: true, balance: { $gte: amount } },
+      { $inc: { balance: -amount, totalWithdrawn: amount } },
+      { new: true },
+    )
 
-    const balanceBefore = wallet.balance
-    wallet.balance += amount
-    wallet.totalWithdrawn = Math.max(0, wallet.totalWithdrawn - amount)
-    await wallet.save()
+    if (!wallet) {
+      const currentWallet = await Wallet.findOne({ user: userId })
+      if (!currentWallet) return { success: false, reason: 'wallet_not_found' }
+      if (!currentWallet.isActive) return { success: false, reason: 'wallet_inactive' }
+      return {
+        success: false,
+        reason: 'insufficient_balance',
+        balance: currentWallet.balance,
+      }
+    }
 
-    await Transaction.create({
-      user: order.user, wallet: wallet._id, type: 'refund',
-      amount, balanceBefore, balanceAfter: wallet.balance,
-      status: 'completed', performedBy: 'system', order: order._id,
-      note: `استرداد تلقائي — إلغاء طلب ${order.orderNumber} (${order.orderType})`
-    })
+    const balanceAfter = wallet.balance
+    const balanceBefore = balanceAfter + amount
 
-    console.log(`[BalanceEngine] 🔄 Wallet refund +${amount} USDT → user ${order.user} | balance: ${wallet.balance}`)
-    return { success: true, amountRefunded: amount, newBalance: wallet.balance }
+    try {
+      await Transaction.create({
+        user: userId,
+        wallet: wallet._id,
+        type: 'exchange_debit',
+        amount,
+        balanceBefore,
+        balanceAfter,
+        status: 'completed',
+        performedBy: 'system',
+        order: orderId,
+        idempotencyKey,
+        note: `Automatic wallet debit - order ${order.orderNumber} (${order.orderType})`,
+      })
+    } catch (transactionErr) {
+      await Wallet.updateOne(
+        { _id: wallet._id },
+        { $inc: { balance: amount, totalWithdrawn: -amount } },
+      )
+
+      if (transactionErr?.code === 11000) {
+        const concurrentDebit = await Transaction.findOne({
+          $or: [{ idempotencyKey }, { order: orderId, type: 'exchange_debit' }],
+        })
+        if (concurrentDebit) {
+          return {
+            success: true,
+            alreadyDebited: true,
+            amountDebited: concurrentDebit.amount,
+            newBalance: concurrentDebit.balanceAfter,
+          }
+        }
+      }
+
+      throw transactionErr
+    }
+
+    console.log(`[BalanceEngine] Wallet -${amount} USDT -> user ${userId} | balance: ${balanceAfter}`)
+    return { success: true, amountDebited: amount, newBalance: balanceAfter }
   } catch (err) {
-    console.error(`[BalanceEngine] ❌ refundWallet failed:`, err.message)
+    console.error('[BalanceEngine] debitWallet failed:', err.message)
+    return { success: false, reason: err.message }
+  }
+}
+
+// Return an internal-wallet debit once. A refund is allowed only when the order
+// has a completed debit transaction, which prevents creating wallet funds.
+async function refundWallet(order) {
+  const Wallet      = require('../models/Wallet')
+  const Transaction = require('../models/Transaction')
+  const userId      = order.user?._id || order.user
+  const orderId     = order._id
+  const amount      = Math.round((parseFloat(order.payment?.amountSent) || 0) * 1e6) / 1e6
+
+  if (!userId) return { success: false, reason: 'no_user_linked' }
+  if (!orderId) return { success: false, reason: 'order_required' }
+  if (amount <= 0) return { success: false, reason: 'invalid_amount' }
+
+  const idempotencyKey = `wallet-refund:${orderId}`
+
+  try {
+    const alreadyRefunded = await Transaction.findOne({
+      $or: [
+        { idempotencyKey },
+        { order: orderId, type: 'refund', status: 'completed' },
+      ],
+    })
+    if (alreadyRefunded) {
+      return {
+        success: true,
+        alreadyRefunded: true,
+        amountRefunded: alreadyRefunded.amount,
+        newBalance: alreadyRefunded.balanceAfter,
+      }
+    }
+
+    const originalDebit = await Transaction.findOne({
+      order: orderId,
+      type: 'exchange_debit',
+      status: 'completed',
+    })
+    if (!originalDebit) return { success: false, reason: 'debit_not_found' }
+
+    const wallet = await Wallet.findOneAndUpdate(
+      { user: userId },
+      { $inc: { balance: amount, totalWithdrawn: -amount } },
+      { new: true },
+    )
+    if (!wallet) return { success: false, reason: 'wallet_not_found' }
+
+    const balanceAfter = wallet.balance
+    const balanceBefore = balanceAfter - amount
+
+    try {
+      await Transaction.create({
+        user: userId,
+        wallet: wallet._id,
+        type: 'refund',
+        amount,
+        balanceBefore,
+        balanceAfter,
+        status: 'completed',
+        performedBy: 'system',
+        order: orderId,
+        idempotencyKey,
+        note: `Automatic wallet refund - order ${order.orderNumber} (${order.orderType})`,
+      })
+    } catch (transactionErr) {
+      await Wallet.updateOne(
+        { _id: wallet._id },
+        { $inc: { balance: -amount, totalWithdrawn: amount } },
+      )
+
+      if (transactionErr?.code === 11000) {
+        const concurrentRefund = await Transaction.findOne({
+          $or: [{ idempotencyKey }, { order: orderId, type: 'refund' }],
+        })
+        if (concurrentRefund) {
+          return {
+            success: true,
+            alreadyRefunded: true,
+            amountRefunded: concurrentRefund.amount,
+            newBalance: concurrentRefund.balanceAfter,
+          }
+        }
+      }
+
+      throw transactionErr
+    }
+
+    console.log(`[BalanceEngine] Wallet refund +${amount} USDT -> user ${userId} | balance: ${balanceAfter}`)
+    return { success: true, amountRefunded: amount, newBalance: balanceAfter }
+  } catch (err) {
+    console.error('[BalanceEngine] refundWallet failed:', err.message)
     return { success: false, reason: err.message }
   }
 }
@@ -342,6 +477,7 @@ module.exports = {
   completeOrder,
   reserveLiquidity,
   releaseLiquidity,
+  checkWalletBalance,
   debitWallet,
   refundWallet,
   getCurrencies,

@@ -84,6 +84,10 @@ exports.notifyNewOrder = async (order) => {
   const isMoneyGoRecv  = order.orderType?.includes('MONEYGO') && !order.orderType?.startsWith('MONEYGO')
   const recipientIcon  = isMoneyGoRecv ? '🎯' : '🔑'
   const recipientLabel = isMoneyGoRecv ? 'معرّف MoneyGo للاستلام' : 'عنوان/رقم الاستلام'
+  const isAutoAccepted = order.orderType === 'WALLET_TO_MONEYGO' && order.status === 'processing'
+  const statusLine = isAutoAccepted
+    ? '\n✅ <b>Status:</b> Automatically accepted — MoneyGo payout required'
+    : ''
 
   const cairoTime = new Date(order.createdAt || Date.now())
     .toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', hour12: true })
@@ -97,6 +101,7 @@ exports.notifyNewOrder = async (order) => {
 ${order.customerPhone ? `📞 <b>هاتف الإرسال:</b>  <code>${order.customerPhone}</code>` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━
 🔄 <b>نوع العملية:</b>  ${pairLabel}
+${statusLine}
 ${emoji} <b>وسيلة الدفع:</b>  ${methodName}
 ${network ? `🌐 <b>الشبكة:</b>  <code>${network}</code>` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━
@@ -111,12 +116,15 @@ ${recipientIcon} <b>${recipientLabel}:</b>
 🕐 <b>التوقيت (القاهرة):</b>  ${cairoTime}
   `.trim()
 
-  const inline_keyboard = [
-    [
-      { text: '✅ موافقة',  callback_data: `approve_${order._id}` },
-      { text: '❌ رفض',     callback_data: `reject_${order._id}`  },
-    ]
-  ]
+  const inline_keyboard = isAutoAccepted
+    ? [[
+        { text: '✅ Complete payout', callback_data: `complete_${order._id}` },
+        { text: '❌ Reject & refund', callback_data: `reject_${order._id}` },
+      ]]
+    : [[
+        { text: '✅ موافقة', callback_data: `approve_${order._id}` },
+        { text: '❌ رفض', callback_data: `reject_${order._id}` },
+      ]]
 
   return await exports.sendMessage(text, { reply_markup: { inline_keyboard } })
 }

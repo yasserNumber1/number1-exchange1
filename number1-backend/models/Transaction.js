@@ -22,7 +22,7 @@ const transactionSchema = new mongoose.Schema({
   // ─── نوع المعاملة ─────────────────────────
   type: {
     type: String,
-    enum: ['deposit', 'withdraw', 'exchange_debit', 'admin_adjust'],
+    enum: ['deposit', 'withdraw', 'exchange_debit', 'refund', 'admin_adjust'],
     // deposit        = إيداع أدمن بعد موافقته على طلب USDT
     // withdraw       = سحب (يدوي عبر واتساب/تيليجرام)
     // exchange_debit = خصم عند استخدام الرصيد في طلب تحويل
@@ -53,6 +53,13 @@ const transactionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Order',
     default: null
+  },
+
+  // Unique key for financial operations that must only happen once per order.
+  idempotencyKey: {
+    type: String,
+    unique: true,
+    sparse: true
   },
 
   // ─── من نفّذ العملية ──────────────────────
