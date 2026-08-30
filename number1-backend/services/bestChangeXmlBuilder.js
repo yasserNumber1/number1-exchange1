@@ -125,6 +125,21 @@ function buildBestChangeXML(rateDoc) {
       );
     }
 
+    if (sellRate > 0) {
+      const { reserveAmount, minAmount, maxAmount } = resolvePairAmounts(rateDoc, toGroup, fromGroup);
+      items.push(
+        buildItemXml({
+          fromCode: mappedTo,
+          toCode: mappedFrom,
+          inAmount: 1,
+          outAmount: roundAmount(sellRate),
+          reserveAmount,
+          minAmount,
+          maxAmount,
+        })
+      );
+    }
+
   }
 
   return ['<?xml version="1.0" encoding="UTF-8"?>', '<rates>', ...items, '</rates>'].join('\n');
