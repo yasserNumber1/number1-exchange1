@@ -144,6 +144,51 @@ function Footer() {
           transition: color 0.18s; letter-spacing: 0.5px;
         }
         .footer-bottom-link:hover { color: var(--cyan); }
+        .footer-presence-section {
+          display: flex; flex-direction: column; align-items: center;
+          gap: 14px; margin-bottom: 28px;
+        }
+        .footer-presence-title {
+          margin: 0;
+          color: var(--text-2);
+          font-family: 'Tajawal', sans-serif;
+          font-size: 0.82rem;
+          font-weight: 700;
+          letter-spacing: 0.4px;
+        }
+        .footer-presence-logos {
+          display: flex; align-items: center; justify-content: center;
+          flex-wrap: wrap; gap: 12px;
+        }
+        .footer-presence-link {
+          display: flex; align-items: center; justify-content: center;
+          width: 148px; height: 64px; padding: 10px 16px;
+          border: 1px solid var(--border-1); border-radius: 12px;
+          background: rgba(255,255,255,0.025);
+          box-sizing: border-box;
+          text-decoration: none;
+          transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+        }
+        .footer-presence-link:hover {
+          border-color: rgba(0,212,255,0.45);
+          background: rgba(0,212,255,0.05);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        .footer-presence-link--kurs { background: #fff; }
+        .footer-presence-link--kurs:hover { background: #f8fafc; }
+        .footer-presence-link:focus-visible {
+          outline: 2px solid var(--cyan);
+          outline-offset: 3px;
+        }
+        .footer-presence-kurs {
+          display: block; width: 100px; height: 31px;
+          object-fit: contain;
+        }
+        .footer-presence-moneygo {
+          display: block; width: 44px; height: 44px;
+          object-fit: contain;
+        }
 
         @media (max-width: 768px) {
           .footer-grid { grid-template-columns: 1fr 1fr !important; }
@@ -151,6 +196,10 @@ function Footer() {
         }
         @media (max-width: 480px) {
           .footer-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 360px) {
+          .footer-presence-logos { width: 100%; }
+          .footer-presence-link { width: 100%; }
         }
       `}</style>
 
@@ -264,6 +313,47 @@ function Footer() {
               </div>
             </div>
           </div>
+
+          {/* External presence */}
+          <section className="footer-presence-section" aria-labelledby="footer-presence-title">
+            <h4 id="footer-presence-title" className="footer-presence-title">
+              {isAr ? 'متواجدون علي' : 'We are on'}
+            </h4>
+
+            <div className="footer-presence-logos">
+              <a
+                className="footer-presence-link footer-presence-link--kurs"
+                href="https://kurs.expert/ru/obmennik/yasser-number1-com/feedbacks.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={isAr ? 'صفحة Number 1 Exchange على Kurs.Expert' : 'Number 1 Exchange on Kurs.Expert'}
+              >
+                <img
+                  className="footer-presence-kurs"
+                  src="/images/kurs-expert.png"
+                  width="100"
+                  height="31"
+                  alt="Kurs.Expert"
+                />
+              </a>
+
+              <a
+                className="footer-presence-link"
+                href="https://money-go.com/en"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={isAr ? 'الموقع الرسمي لـ MoneyGo' : 'Official MoneyGo website'}
+              >
+                <img
+                  className="footer-presence-moneygo"
+                  src="/images/moneygo.png"
+                  width="44"
+                  height="44"
+                  alt="MoneyGo"
+                />
+              </a>
+            </div>
+          </section>
 
           {/* Divider */}
           <div style={{
