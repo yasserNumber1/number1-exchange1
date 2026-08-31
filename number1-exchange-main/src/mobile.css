@@ -781,6 +781,28 @@
   }
 }
 
+/* Keep the desktop footer compact on phones while exposing partner badges. */
+@media (max-width: 767px) {
+  .n1-site-footer {
+    display: block !important;
+    padding: 24px 0 calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .n1-site-footer .footer-shell {
+    padding: 0 18px !important;
+  }
+
+  .n1-site-footer .footer-grid,
+  .n1-site-footer .footer-divider,
+  .n1-site-footer .footer-bottom-bar {
+    display: none !important;
+  }
+
+  .n1-site-footer .footer-presence-section {
+    margin-bottom: 0;
+  }
+}
+
 @media (max-width: 380px) {
   .wallet-banner-mob__features {
     justify-content: flex-start !important;

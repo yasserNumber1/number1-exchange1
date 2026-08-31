@@ -209,7 +209,7 @@ function Footer() {
         padding: '52px 0 24px',
         direction: isAr ? 'rtl' : 'ltr',
       }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
+        <div className="footer-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
 
           {/* Grid */}
           <div className="footer-grid" style={{
@@ -356,14 +356,14 @@ function Footer() {
           </section>
 
           {/* Divider */}
-          <div style={{
+          <div className="footer-divider" style={{
             height: 1,
             background: 'linear-gradient(90deg, transparent, var(--border-1) 20%, var(--border-1) 80%, transparent)',
             marginBottom: 20,
           }} />
 
           {/* Bottom bar */}
-          <div style={{
+          <div className="footer-bottom-bar" style={{
             display: 'flex', alignItems: 'center',
             justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
           }}>
