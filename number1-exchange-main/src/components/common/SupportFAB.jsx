@@ -4,6 +4,26 @@ import useLang from '../../context/useLang'
 
 const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 const SUPPORT_SESSION_KEY = 'n1_support_session'
+const CHAT_GREETING_KEY = 'n1_chat_greeting_shown'
+let chatGreetingShownInMemory = false
+
+const hasShownChatGreeting = () => {
+  if (chatGreetingShownInMemory) return true
+  try {
+    return typeof window !== 'undefined' && localStorage.getItem(CHAT_GREETING_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+const markChatGreetingShown = () => {
+  chatGreetingShownInMemory = true
+  try {
+    if (typeof window !== 'undefined') localStorage.setItem(CHAT_GREETING_KEY, '1')
+  } catch {
+    // The in-memory flag still prevents repeats while this page is open.
+  }
+}
 
 /* ─── constants ─────────────────────────────────────────── */
 const WA_NUMBER  = '201080835986'
@@ -191,7 +211,7 @@ function Panel({ onClose, lang, isOpen }) {
     return localStorage.getItem(SUPPORT_SESSION_KEY) || ''
   })
   const [robAnim, setRobAnim]   = useState('idle')
-  const [greeted, setGreeted]   = useState(false)
+  const [greeted, setGreeted]   = useState(() => Boolean(sessionId) || hasShownChatGreeting())
   const [faqOpen,  setFaqOpen]   = useState(false)
   const bottomRef = useRef(null)
   const seenSupportIdsRef = useRef(new Set())
@@ -203,7 +223,7 @@ function Panel({ onClose, lang, isOpen }) {
 
   useEffect(()=>{
     if(greeted||tab!=='chat') return
-    setGreeted(true); setRobAnim('wave'); setTyping(true)
+    setGreeted(true); markChatGreetingShown(); setRobAnim('wave'); setTyping(true)
     setTimeout(()=>{
       setTyping(false)
       addMsg(ar?'مرحباً! أنا **N1-BOT** مساعدك الذكي في Number 1 Exchange.\nكيف يمكنني مساعدتك اليوم؟':'Hello! I\'m **N1-BOT**, your smart assistant at Number 1 Exchange.\nHow can I help you today?',false,'wave')
