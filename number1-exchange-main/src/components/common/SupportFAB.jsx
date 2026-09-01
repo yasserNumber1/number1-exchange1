@@ -4,6 +4,26 @@ import useLang from '../../context/useLang'
 
 const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 const SUPPORT_SESSION_KEY = 'n1_support_session'
+const SUPPORT_NOTICE_KEY = 'n1_support_notice_shown'
+let supportNoticeShownInMemory = false
+
+const hasShownSupportNotice = () => {
+  if (supportNoticeShownInMemory) return true
+  try {
+    return typeof window !== 'undefined' && localStorage.getItem(SUPPORT_NOTICE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+const markSupportNoticeShown = () => {
+  supportNoticeShownInMemory = true
+  try {
+    if (typeof window !== 'undefined') localStorage.setItem(SUPPORT_NOTICE_KEY, '1')
+  } catch {
+    // The in-memory flag still prevents repeats while this page is open.
+  }
+}
 
 /* ─── constants ─────────────────────────────────────────── */
 const WA_NUMBER  = '201080835986'
@@ -196,6 +216,7 @@ function Panel({ onClose, lang }) {
   const bottomRef = useRef(null)
   const seenSupportIdsRef = useRef(new Set())
   const hydratedSupportSessionRef = useRef('')
+  const supportNoticeShownRef = useRef(hasShownSupportNotice())
   const qs = BOT_QS[ar?'ar':'en']
 
   const now = () => { const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` }
@@ -270,7 +291,6 @@ function Panel({ onClose, lang }) {
       })
       const data = await response.json().catch(()=>({}))
       if(!response.ok||!data.success) throw new Error(data.message||'Support delivery failed')
-      const isFirstSupportMessage=!sessionId||data.sessionId!==sessionId
       if(data.sessionId){
         if(data.message?.id) seenSupportIdsRef.current.add(data.message.id)
         if(!sessionId) hydratedSupportSessionRef.current=data.sessionId
@@ -278,7 +298,9 @@ function Panel({ onClose, lang }) {
         if(typeof window!=='undefined') localStorage.setItem(SUPPORT_SESSION_KEY,data.sessionId)
       }
       setTyping(false);setRobAnim('wave')
-      if(isFirstSupportMessage){
+      if(!supportNoticeShownRef.current){
+        supportNoticeShownRef.current=true
+        markSupportNoticeShown()
         addMsg(ar?'تم إرسال رسالتك إلى فريق الدعم. سيظهر رد موظف الدعم هنا في نفس المحادثة.':'Your message was sent to support. A support agent’s reply will appear here in this conversation.',false,'wave')
       }
     } catch {
