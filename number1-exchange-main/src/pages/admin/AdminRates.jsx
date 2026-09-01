@@ -253,8 +253,8 @@ export default function AdminRates() {
 
       <RateSection icon="💼" iconBg="rgba(0,193,124,0.12)" title="المحفظة الداخلية ↔ MoneyGo" subtitle="تحويل بين المحفظة الداخلية و MoneyGo — سعر مستقل"
         margin={calcMargin(rates.walletMgoBuyRate, rates.walletMgoSellRate)}
-        buyLabel="سعر شراء MoneyGo (محفظة → MGO)" buyHint="المستخدم يحول من محفظته ← نرسل MoneyGo" buyValue={rates.walletMgoBuyRate} onBuyChange={v => set('walletMgoBuyRate', v)}
-        sellLabel="سعر بيع MoneyGo (MGO → محفظة)" sellHint="المستخدم يرسل MoneyGo ← نضيف لمحفظته" sellValue={rates.walletMgoSellRate} onSellChange={v => set('walletMgoSellRate', v)} unit="USDT" />
+        buyLabel="سعر شراء MoneyGo (محفظة → MNG USD)" buyHint="المستخدم يحول من محفظته ← نرسل MoneyGo" buyValue={rates.walletMgoBuyRate} onBuyChange={v => set('walletMgoBuyRate', v)}
+        sellLabel="سعر بيع MoneyGo (MNG USD → محفظة)" sellHint="المستخدم يرسل MoneyGo ← نضيف لمحفظته" sellValue={rates.walletMgoSellRate} onSellChange={v => set('walletMgoSellRate', v)} unit="USDT" />
 
       {/* حدود المعاملات */}
       <div className="ar-card">
@@ -268,7 +268,7 @@ export default function AdminRates() {
           {[
             { label: '🇪🇬 جنيه مصري', unit: 'EGP',  minKey: 'minEgp',  badge: 'rgba(0,180,100,0.12)',  badgeColor: '#34d399', badgeBorder: 'rgba(5,150,105,0.25)'  },
             { label: '💵 USDT / دولار', unit: 'USDT', minKey: 'minUsdt', badge: 'rgba(38,161,123,0.12)', badgeColor: '#26a17b', badgeBorder: 'rgba(38,161,123,0.25)' },
-            { label: '💚 MoneyGo USD', unit: 'MGO',  minKey: 'minMgo',  badge: 'rgba(0,193,124,0.12)',  badgeColor: '#00c17c', badgeBorder: 'rgba(0,193,124,0.25)'  },
+            { label: '💚 MoneyGo USD', unit: 'MNG USD',  minKey: 'minMgo',  badge: 'rgba(0,193,124,0.12)',  badgeColor: '#00c17c', badgeBorder: 'rgba(0,193,124,0.25)'  },
           ].map(({ label, unit, minKey, badge, badgeColor, badgeBorder }) => (
             <div key={unit} className="ar-limit-box">
               <div style={{ fontSize: 13, fontWeight: 700, color: '#c9d1d9', fontFamily: 'Cairo, sans-serif', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -311,7 +311,7 @@ export default function AdminRates() {
           {[
             { label: '🇪🇬 EGP', unit: 'EGP',  key: 'availableEgp'  },
             { label: '💵 USDT', unit: 'USDT', key: 'availableUsdt' },
-            { label: '💚 MGO',  unit: 'MGO',  key: 'availableMgo'  },
+            { label: '💚 MNG USD',  unit: 'MNG USD',  key: 'availableMgo'  },
           ].map(({ label, unit, key }) => {
             const col = liquidityColor(rates[key])
             return (

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { adminAPI } from '../../services/api'
 import { uid } from '../../components/admin/adminConstants'
+import { displayCurrencySymbol, displayMethodSymbol } from '../../utils/currencyDisplay'
 
 // ── Presets for quick-add (Send) ──────────────────────────────────
 const SEND_PRESETS = [
@@ -328,12 +329,12 @@ function ExchangeMethodCard({ method, direction, otherMethods, onToggle, onEdit,
               ? <img src={m.img} alt={m.name} style={{ width: '70%', height: '70%', objectFit: 'contain' }} onError={e => e.target.style.display='none'} />
               : m.icon
                 ? <span style={{ fontSize: 17 }}>{m.icon}</span>
-                : <span style={{ fontSize: 12, fontWeight: 800, color: m.color }}>{m.symbol}</span>
+                : <span style={{ fontSize: 10, fontWeight: 800, color: m.color }}>{displayMethodSymbol(m)}</span>
             }
           </div>
           <div className="emc-meta">
             <div className="emc-name" style={{ color: m.enabled ? m.color : '#64748b' }}>{m.name}</div>
-            <div className="emc-sub">{m.symbol} {'\u00b7'} {m.type} {'\u00b7'} {m.mode === 'custom' ? '\u0645\u062e\u0635\u0635' : '\u0627\u0641\u062a\u0631\u0627\u0636\u064a'}</div>
+            <div className="emc-sub">{displayMethodSymbol(m)} {'\u00b7'} {m.type} {'\u00b7'} {m.mode === 'custom' ? '\u0645\u062e\u0635\u0635' : '\u0627\u0641\u062a\u0631\u0627\u0636\u064a'}</div>
           </div>
           <StatusBadge enabled={m.enabled} />
         </div>
@@ -345,7 +346,7 @@ function ExchangeMethodCard({ method, direction, otherMethods, onToggle, onEdit,
           {m.rateKey && <>
             <span className="emc-info-sep">{'\u00b7'}</span>
             <span className="emc-info-label">Rate:</span>
-            <span className="emc-info-val">{m.rateKey}</span>
+            <span className="emc-info-val">{displayCurrencySymbol(m.rateKey)}</span>
           </>}
         </div>
 
@@ -495,12 +496,12 @@ function AddMethodMenu({ presets, existingIds, onSelect, onCustom, onClose }) {
                         <img src={item.img} alt={item.name} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
                       </div>
                     : <div style={{ width: 24, height: 24, borderRadius: '50%', background: `${item.color}20`, border: `1.5px solid ${item.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <span style={{ fontSize: 12, color: item.color, fontWeight: 800 }}>{item.icon || item.symbol}</span>
+                        <span style={{ fontSize: 12, color: item.color, fontWeight: 800 }}>{item.icon || displayMethodSymbol(item)}</span>
                       </div>
                   }
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="pm-suggest-name">{item.name}</div>
-                    <div className="pm-suggest-sub">{item.symbol} {'\u00b7'} {item.type}</div>
+                    <div className="pm-suggest-sub">{displayMethodSymbol(item)} {'\u00b7'} {item.type}</div>
                   </div>
                 </div>
               </button>

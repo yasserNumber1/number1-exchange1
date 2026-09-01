@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import useAuth  from '../context/useAuth'
 import useLang from '../context/useLang'
 import FlowDots from '../components/shared/FlowDots'
+import { displayCurrencySymbol, displayMethodSymbol } from '../utils/currencyDisplay'
 import {
   getRate,
   getRateDisplay,
@@ -26,7 +27,7 @@ function MethodIcon({ method, size = 32 }) {
   }
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: method?.color || '#26a17b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: size * 0.38, fontWeight: 700, color: '#fff' }}>
-      {method?.symbol}
+      {displayMethodSymbol(method)}
     </div>
   )
 }
@@ -249,13 +250,13 @@ export default function ExchangeFormPage({ onOpenAuth }) {
 // ── حدود العملة + المتاح (dynamic) ─────────────────────────
   const limits = useMemo(() => {
     const recvSymbol = recvMethod?.symbol || 'USDT'
-    if (!rates || !recvMethod) return { min: 10, max: 5000, unit: recvSymbol, available: 5000 }
+    if (!rates || !recvMethod) return { min: 10, max: 5000, unit: displayCurrencySymbol(recvSymbol), available: 5000 }
 
     const getLimits = (minKey, maxKey, availKey, unit) => ({
       min: rates[minKey] || 10,
       max: Math.min(rates[maxKey] ?? Infinity, rates[availKey] ?? rates[maxKey] ?? Infinity),
       available: rates[availKey] ?? rates[maxKey] ?? Infinity,
-      unit
+      unit: displayCurrencySymbol(unit)
     })
 
     // Use recv method limits if available from API
@@ -264,7 +265,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
         min: recvMethod.limits.min ?? 10,
         max: recvMethod.limits.max ?? 5000,
         available: recvMethod.limits.available ?? recvMethod.limits.max ?? 5000,
-        unit: recvSymbol
+        unit: displayCurrencySymbol(recvSymbol)
       }
     }
 
@@ -542,7 +543,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
               <input type="number" min="0" step="any" value={sendAmount} onChange={e => handleSendChange(e.target.value)} placeholder="0.00" className="ef-input ef-amount-input" />
               <div className="ef-currency-badge">
                 <MethodIcon method={sendMethod} size={20} />
-                <span>{sendMethod.symbol}</span>
+                <span>{displayMethodSymbol(sendMethod)}</span>
               </div>
             </div>
             <div className="ef-swap-divider">
@@ -557,7 +558,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
               <input type="number" min="0" step="any" value={receiveAmount} onChange={e => handleReceiveChange(e.target.value)} placeholder="0.00" className="ef-input ef-amount-input ef-amount-input--recv" disabled={isWalletRecv} />
               <div className="ef-currency-badge ef-currency-badge--recv">
                 <MethodIcon method={recvMethod} size={20} />
-                <span>{recvMethod.symbol}</span>
+                <span>{displayMethodSymbol(recvMethod)}</span>
               </div>
             </div>
             <FieldError msg={fieldErrors.amount} />
@@ -687,11 +688,11 @@ export default function ExchangeFormPage({ onOpenAuth }) {
             <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginBottom: 8, letterSpacing: 0.5 }}>{tr('ملخص الطلب', 'Order Summary')}</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
               <span style={{ color: 'var(--text-2)' }}>{tr('ترسل', 'You Send')}</span>
-              <strong style={{ color: 'var(--text-1)', fontFamily: "'JetBrains Mono',monospace" }}>{sendAmount} {sendMethod.symbol}</strong>
+              <strong style={{ color: 'var(--text-1)', fontFamily: "'JetBrains Mono',monospace" }}>{sendAmount} {displayMethodSymbol(sendMethod)}</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem', marginTop: 6 }}>
               <span style={{ color: 'var(--text-2)' }}>{tr('تستلم (تقريباً)', 'You Receive (estimated)')}</span>
-              <strong style={{ color: 'var(--green)', fontFamily: "'JetBrains Mono',monospace" }}>{receiveAmount} {recvMethod.symbol}</strong>
+              <strong style={{ color: 'var(--green)', fontFamily: "'JetBrains Mono',monospace" }}>{receiveAmount} {displayMethodSymbol(recvMethod)}</strong>
             </div>
           </div>
 

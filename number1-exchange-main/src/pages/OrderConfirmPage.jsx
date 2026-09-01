@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import useLang from '../context/useLang'
+import { displayMethodSymbol } from '../utils/currencyDisplay'
 
 const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 
@@ -278,13 +279,13 @@ function TransferSection({ orderData, navigate, lang, onSuccess }) {
           <div style={styles.summaryRow}>
             <span style={{ color: 'var(--text-2)' }}>ترسل</span>
             <span style={{ fontWeight: 700, fontFamily: "'JetBrains Mono',monospace", color: 'var(--red)' }}>
-              {orderData.sendAmount} {orderData.sendMethod?.symbol || ''}
+              {orderData.sendAmount} {displayMethodSymbol(orderData.sendMethod)}
             </span>
           </div>
           <div style={styles.summaryRow}>
             <span style={{ color: 'var(--text-2)' }}>تستلم</span>
             <span style={{ fontWeight: 700, fontFamily: "'JetBrains Mono',monospace", color: 'var(--green)' }}>
-              {orderData.receiveAmount} {orderData.receiveMethod?.symbol || ''}
+              {orderData.receiveAmount} {displayMethodSymbol(orderData.receiveMethod)}
             </span>
           </div>
           {isWalletTransfer && (
@@ -545,8 +546,8 @@ function TrackingSection({ orderNumber, orderId, orderData, navigate, lang }) {
         {/* ── ملخص الطلب ── */}
         <div style={styles.summaryCard}>
           <div style={styles.sectionLabel}>ملخص الطلب</div>
-          <InfoRow label="ترسل"    value={`${orderData.sendAmount} ${orderData.sendMethod?.symbol || ''}`}    valueColor="var(--red)" />
-          <InfoRow label="تستلم"   value={`${orderData.receiveAmount} ${orderData.receiveMethod?.symbol || ''}`} valueColor="var(--green)" />
+          <InfoRow label="ترسل"    value={`${orderData.sendAmount} ${displayMethodSymbol(orderData.sendMethod)}`}    valueColor="var(--red)" />
+          <InfoRow label="تستلم"   value={`${orderData.receiveAmount} ${displayMethodSymbol(orderData.receiveMethod)}`} valueColor="var(--green)" />
           {orderData.recipientId && (
             <InfoRow label="معرّف الاستلام" value={orderData.recipientId} valueColor="var(--cyan)" mono />
           )}

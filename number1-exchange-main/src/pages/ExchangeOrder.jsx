@@ -6,6 +6,7 @@ import FlowDots from '../components/shared/FlowDots'
 import { readOrderSession, clearOrderSession, getTimeRemaining } from '../services/orderSession'
 import { ReviewModal } from '../components/shared/ReviewPrompt'
 import useLang from '../context/useLang'
+import { displayMethodSymbol } from '../utils/currencyDisplay'
 
 const API            = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 const ORDER_LIFETIME = 30 * 60
@@ -43,7 +44,7 @@ function MethodIcon({ method, size = 34 }) {
   )
   return (
     <div style={{ width:size, height:size, borderRadius:'50%', background:method.color||'#26a17b', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontFamily:"'JetBrains Mono',monospace", fontSize:size*0.38, fontWeight:700, color:'#fff' }}>
-      {method.symbol}
+      {displayMethodSymbol(method)}
     </div>
   )
 }
@@ -439,7 +440,7 @@ export default function ExchangeOrder() {
                 <div>
                   <div style={{ fontSize:'0.62rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:'0.7px', textTransform:'uppercase' }}>{tr('ترسل', 'SEND')}</div>
                   <div style={{ fontSize:'0.9rem', fontWeight:800, color:'var(--text-1)', marginTop:2 }}>{sendMethod?.name}</div>
-                  {displaySendAmt && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'1.05rem', fontWeight:700, color:'var(--text-1)', marginTop:3 }}>{displaySendAmt} <span style={{ fontSize:'0.75rem', color:'var(--text-3)' }}>{sendMethod?.symbol}</span></div>}
+                  {displaySendAmt && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'1.05rem', fontWeight:700, color:'var(--text-1)', marginTop:3 }}>{displaySendAmt} <span style={{ fontSize:'0.75rem', color:'var(--text-3)' }}>{displayMethodSymbol(sendMethod)}</span></div>}
                 </div>
               </div>
               <div className="eo-pair-arrow"><FlowDots /></div>
@@ -447,7 +448,7 @@ export default function ExchangeOrder() {
                 <div style={{ textAlign:'right' }}>
                   <div style={{ fontSize:'0.62rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:'0.7px', textTransform:'uppercase' }}>{tr('تستلم', 'RECEIVE')}</div>
                   <div style={{ fontSize:'0.9rem', fontWeight:800, color:'var(--text-1)', marginTop:2 }}>{recvMethod?.name}</div>
-                  {displayRecvAmt && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'1.05rem', fontWeight:700, color:'var(--green)', marginTop:3 }}>{displayRecvAmt} <span style={{ fontSize:'0.75rem', color:'var(--text-3)' }}>{recvMethod?.symbol}</span></div>}
+                  {displayRecvAmt && <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'1.05rem', fontWeight:700, color:'var(--green)', marginTop:3 }}>{displayRecvAmt} <span style={{ fontSize:'0.75rem', color:'var(--text-3)' }}>{displayMethodSymbol(recvMethod)}</span></div>}
                 </div>
                 <MethodIcon method={recvMethod} size={38} />
               </div>

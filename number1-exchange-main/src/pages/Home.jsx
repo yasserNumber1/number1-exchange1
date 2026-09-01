@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 import useLang from "../context/useLang"
 import useAuth from "../context/useAuth"
 import { GooeyText } from "../components/ui/gooey-text-morphing"
+import { displayMethodSymbol } from '../utils/currencyDisplay'
 
 const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 
@@ -51,7 +52,7 @@ function CurrencyIcon({ method, size = 36 }) {
           <line x1="1" y1="10" x2="23" y2="10" />
           <circle cx="17" cy="16" r="1.5" fill="#fff" stroke="none" />
         </svg>
-      ) : method.symbol}
+      ) : displayMethodSymbol(method)}
     </div>
   )
 }
@@ -139,7 +140,7 @@ function MethodCard({ method, selected, disabled, onClick, locked, onLockedClick
             ? (lang === 'ar' ? 'محفظة داخلية' : 'Internal Wallet')
             : method.type === 'moneygo'
             ? 'MoneyGo USD'
-            : `${method.symbol} · ${lang === 'ar' ? 'رقمي' : 'Crypto'}`}
+            : `${displayMethodSymbol(method)} · ${lang === 'ar' ? 'رقمي' : 'Crypto'}`}
         </div>
       </div>
       {locked ? <LockBadge /> : isSelected && (
@@ -263,7 +264,7 @@ function MobileMethodCard({ method, selected, disabled, onClick, locked, onLocke
     ? (lang === 'ar' ? 'داخلي' : 'Internal')
     : method.type === "moneygo"
     ? "MoneyGo USD"
-    : `${method.symbol}${method.network ? " · " + method.network : ""}`
+    : `${displayMethodSymbol(method)}${method.network ? " · " + method.network : ""}`
 
   return (
     <div

@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import useLang from '../context/useLang'
 import { RATES_DATA } from '../data/currencies'
+import { displayCurrencySymbol } from '../utils/currencyDisplay'
 
 const COIN_COLORS = {
   BTC:'#f7931a', ETH:'#627eea', USDT:'#26a17b', MGO:'#e91e63',
@@ -90,7 +91,7 @@ function RateCard({ rate, flashing }) {
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-1)' }}>{rate.name}</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginTop: 1 }}>{rate.symbol}</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace", marginTop: 1 }}>{displayCurrencySymbol(rate.symbol)}</div>
           </div>
         </div>
         <div style={{
@@ -246,14 +247,14 @@ export default function Rates() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, marginBottom: 28 }}>
           <MarketStat
             label="TOP GAINER 24H"
-            value={topGainer ? `${topGainer.symbol} +${topGainer.change.toFixed(2)}%` : '—'}
+            value={topGainer ? `${displayCurrencySymbol(topGainer.symbol)} +${topGainer.change.toFixed(2)}%` : '—'}
             sub={topGainer?.name}
             color="var(--green)"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
           />
           <MarketStat
             label="TOP LOSER 24H"
-            value={topLoser ? `${topLoser.symbol} -${topLoser.change.toFixed(2)}%` : '—'}
+            value={topLoser ? `${displayCurrencySymbol(topLoser.symbol)} -${topLoser.change.toFixed(2)}%` : '—'}
             sub={topLoser?.name}
             color="var(--red)"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>}
@@ -358,7 +359,7 @@ export default function Rates() {
                           }}>{sym}</div>
                           <div>
                             <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-1)' }}>{r.name}</div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>{r.symbol}</div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>{displayCurrencySymbol(r.symbol)}</div>
                           </div>
                         </div>
                       </td>

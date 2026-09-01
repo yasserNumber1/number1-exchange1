@@ -130,7 +130,7 @@ export default function MoneyGoExchange() {
             <div className="mgo-field"><div className="mgo-field-label"><span>{t('أنت ترسل', 'You send')}</span><span>{t('الحد الأدنى 10 USDT', 'Minimum 10 USDT')}</span></div><div className="mgo-field-row"><input value={amount} onChange={event => setAmount(event.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" aria-label="USDT amount" /><Token method={sendMethod} label="USDT" /></div></div>
             <div className="mgo-equals">↓</div>
             <div className="mgo-field"><div className="mgo-field-label"><span>{t('أنت تستلم', 'You receive')}</span><span>USD</span></div><div className="mgo-field-row"><input value={receiveAmount} readOnly aria-label="MoneyGo amount" /><Token method={receiveMethod} label="MoneyGo" /></div></div>
-            <div className="mgo-rate"><span>{t('سعر الصرف الحالي', 'Current exchange rate')}</span><strong>1 USDT = {rate.toFixed(4)} MGO</strong></div>
+            <div className="mgo-rate"><span>{t('سعر الصرف الحالي', 'Current exchange rate')}</span><strong>1 USDT = {rate.toFixed(4)} MNG USD</strong></div>
             <button className="mgo-primary mgo-order" onClick={goToOrder}>{t('متابعة الطلب', 'Continue to order')} <Icon name="arrow" size={16} /></button>
             <p className="mgo-note"><Icon name="shield" size={14} />{t('السعر النهائي يظهر قبل تأكيد الطلب، وقد يتغير حسب السيولة والوقت.', 'The final rate is shown before you confirm and may change with liquidity and timing.')}</p>
           </div> */}
