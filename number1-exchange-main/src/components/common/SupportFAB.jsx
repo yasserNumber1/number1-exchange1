@@ -197,7 +197,7 @@ function SupportLinks({ ar }) {
 }
 
 /* ─── Panel ──────────────────────────────────────────────── */
-function Panel({ onClose, lang }) {
+function Panel({ onClose, lang, isOpen }) {
   const ar = lang === 'ar'
   const [tab, setTab]           = useState('chat')
   const [messages, setMessages] = useState([])
@@ -321,7 +321,7 @@ function Panel({ onClose, lang }) {
   ]
 
   return (
-    <div style={{ position:'fixed', bottom:92, left:22, zIndex:500, width:355, maxHeight:580, background:'var(--card)', border:'1px solid rgba(0,210,255,0.18)', borderRadius:24, overflow:'hidden', boxShadow:'0 28px 70px rgba(0,0,0,.7), 0 0 0 1px rgba(0,210,255,0.06)', display:'flex', flexDirection:'column', animation:'n1SlideUp .28s cubic-bezier(.22,1,.36,1)' }}>
+    <div aria-hidden={!isOpen} style={{ position:'fixed', bottom:92, left:22, zIndex:500, width:355, maxHeight:580, background:'var(--card)', border:'1px solid rgba(0,210,255,0.18)', borderRadius:24, overflow:'hidden', boxShadow:'0 28px 70px rgba(0,0,0,.7), 0 0 0 1px rgba(0,210,255,0.06)', display:isOpen?'flex':'none', flexDirection:'column', animation:'n1SlideUp .28s cubic-bezier(.22,1,.36,1)' }}>
 
       {/* top accent */}
       <div style={{ position:'absolute', top:0, left:20, right:20, height:2, background:'linear-gradient(90deg,transparent,#00d2ff 40%,#7c5cfc,transparent)', borderRadius:2 }}/>
@@ -454,12 +454,14 @@ export default function SupportFAB() {
   const { lang } = useLang()
   const ar = lang === 'ar'
   const [open, setOpen]       = useState(false)
+  const [hasOpened, setHasOpened] = useState(false)
   const [unread, setUnread]   = useState(1)
   const [tooltip, setTooltip] = useState(true)
 
   useEffect(()=>{ const t=setTimeout(()=>setTooltip(false),5000); return()=>clearTimeout(t) },[])
 
-  const toggle=()=>{ setOpen(o=>!o); setUnread(0); setTooltip(false) }
+  const openPanel=()=>{ setHasOpened(true); setOpen(true); setUnread(0); setTooltip(false) }
+  const closePanel=()=>setOpen(false)
 
   return (
     <>
@@ -472,11 +474,11 @@ export default function SupportFAB() {
         </div>
       )}
 
-      {open && <Panel onClose={toggle} lang={lang}/>}
+      {hasOpened && <Panel isOpen={open} onClose={closePanel} lang={lang}/>}
 
       {!open && (
         <div className="support-fab-anchor" style={{ position:'fixed', bottom:24, left:22, zIndex:500 }}>
-          <button type="button" onClick={toggle} className="support-fab-btn" style={{ width:62, height:62, borderRadius:'50%', background:'linear-gradient(135deg,#00d2ff,#005fa3)', border:'2px solid rgba(255,255,255,0.18)', cursor:'pointer', padding:0, overflow:'hidden', boxShadow:'0 6px 24px rgba(0,210,255,.6)', animation:'n1FabPulse 2.5s infinite', transition:'background .3s, box-shadow .3s', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+          <button type="button" onClick={openPanel} className="support-fab-btn" style={{ width:62, height:62, borderRadius:'50%', background:'linear-gradient(135deg,#00d2ff,#005fa3)', border:'2px solid rgba(255,255,255,0.18)', cursor:'pointer', padding:0, overflow:'hidden', boxShadow:'0 6px 24px rgba(0,210,255,.6)', animation:'n1FabPulse 2.5s infinite', transition:'background .3s, box-shadow .3s', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
             <div style={{ animation:'n1FabFloat 2.8s ease-in-out infinite' }}><RobotAvatar size={50} anim="idle" glow={false}/></div>
             {unread>0 && (
               <div className="support-fab-badge" style={{ position:'absolute', top:-2, right:-2, width:20, height:20, borderRadius:'50%', background:'#ff3d5a', color:'#fff', fontSize:'.63rem', fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid var(--bg)', fontFamily:"'JetBrains Mono',monospace" }}>{unread}</div>
