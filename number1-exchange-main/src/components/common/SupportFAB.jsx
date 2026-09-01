@@ -270,6 +270,7 @@ function Panel({ onClose, lang }) {
       })
       const data = await response.json().catch(()=>({}))
       if(!response.ok||!data.success) throw new Error(data.message||'Support delivery failed')
+      const isFirstSupportMessage=!sessionId||data.sessionId!==sessionId
       if(data.sessionId){
         if(data.message?.id) seenSupportIdsRef.current.add(data.message.id)
         if(!sessionId) hydratedSupportSessionRef.current=data.sessionId
@@ -277,7 +278,9 @@ function Panel({ onClose, lang }) {
         if(typeof window!=='undefined') localStorage.setItem(SUPPORT_SESSION_KEY,data.sessionId)
       }
       setTyping(false);setRobAnim('wave')
-      addMsg(ar?'تم إرسال رسالتك إلى فريق الدعم. سيظهر رد موظف الدعم هنا في نفس المحادثة.':'Your message was sent to support. A support agent’s reply will appear here in this conversation.',false,'wave')
+      if(isFirstSupportMessage){
+        addMsg(ar?'تم إرسال رسالتك إلى فريق الدعم. سيظهر رد موظف الدعم هنا في نفس المحادثة.':'Your message was sent to support. A support agent’s reply will appear here in this conversation.',false,'wave')
+      }
     } catch {
       setTyping(false);setRobAnim('blink')
       addMsg(ar?'تعذر إرسال الرسالة الآن. يمكنك استخدام روابط الدعم المباشر بالأسفل.':'Could not send the message right now. You can use the direct support links below.',false,'blink')
@@ -449,17 +452,16 @@ export default function SupportFAB() {
 
       {open && <Panel onClose={toggle} lang={lang}/>}
 
-      <div className="support-fab-anchor" style={{ position:'fixed', bottom:24, left:22, zIndex:500 }}>
-        <button type="button" onClick={toggle} className="support-fab-btn" style={{ width:62, height:62, borderRadius:'50%', background:open?'linear-gradient(135deg,#ff3d5a,#b0002a)':'linear-gradient(135deg,#00d2ff,#005fa3)', border:'2px solid rgba(255,255,255,0.18)', cursor:'pointer', padding:0, overflow:'hidden', boxShadow:open?'0 6px 24px rgba(255,61,90,.6)':'0 6px 24px rgba(0,210,255,.6)', animation:!open?'n1FabPulse 2.5s infinite':'none', transition:'background .3s, box-shadow .3s', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
-          {open
-            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            : <div style={{ animation:'n1FabFloat 2.8s ease-in-out infinite' }}><RobotAvatar size={50} anim="idle" glow={false}/></div>
-          }
-          {!open && unread>0 && (
-            <div className="support-fab-badge" style={{ position:'absolute', top:-2, right:-2, width:20, height:20, borderRadius:'50%', background:'#ff3d5a', color:'#fff', fontSize:'.63rem', fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid var(--bg)', fontFamily:"'JetBrains Mono',monospace" }}>{unread}</div>
-          )}
-        </button>
-      </div>
+      {!open && (
+        <div className="support-fab-anchor" style={{ position:'fixed', bottom:24, left:22, zIndex:500 }}>
+          <button type="button" onClick={toggle} className="support-fab-btn" style={{ width:62, height:62, borderRadius:'50%', background:'linear-gradient(135deg,#00d2ff,#005fa3)', border:'2px solid rgba(255,255,255,0.18)', cursor:'pointer', padding:0, overflow:'hidden', boxShadow:'0 6px 24px rgba(0,210,255,.6)', animation:'n1FabPulse 2.5s infinite', transition:'background .3s, box-shadow .3s', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+            <div style={{ animation:'n1FabFloat 2.8s ease-in-out infinite' }}><RobotAvatar size={50} anim="idle" glow={false}/></div>
+            {unread>0 && (
+              <div className="support-fab-badge" style={{ position:'absolute', top:-2, right:-2, width:20, height:20, borderRadius:'50%', background:'#ff3d5a', color:'#fff', fontSize:'.63rem', fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid var(--bg)', fontFamily:"'JetBrains Mono',monospace" }}>{unread}</div>
+            )}
+          </button>
+        </div>
+      )}
     </>
   )
 }

@@ -32,6 +32,15 @@ const clearSession = () => {
   localStorage.removeItem(USER_KEY)
 }
 
+const readSavedUser = () => {
+  try {
+    const savedUser = localStorage.getItem(USER_KEY)
+    return savedUser ? JSON.parse(savedUser) : null
+  } catch {
+    return null
+  }
+}
+
 // ── Context ───────────────────────────────────────────────────
 export const AuthContext = createContext(null)
 
@@ -55,9 +64,17 @@ export function AuthProvider({ children }) {
       .then(({ data }) => {
         setUser(data.user)
       })
-      .catch(() => {
-        // Token expired or invalid → clean up
-        clearSession()
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          // Only an explicit authentication rejection invalidates the session.
+          clearSession()
+          setUser(null)
+          return
+        }
+
+        // Keep the signed-in UI available during temporary 429/network/server errors.
+        // Protected API endpoints still validate the saved token on every request.
+        setUser(readSavedUser())
       })
       .finally(() => {
         setLoading(false)

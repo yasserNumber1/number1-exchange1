@@ -11,10 +11,10 @@ const request = async (endpoint, options = {}) => {
     ...options,
   }
   const response = await fetch(`${BASE_URL}${endpoint}`, config)
-  const data = await response.json()
+  const data = await response.json().catch(() => ({}))
   if (!response.ok) {
     const error = new Error(data.message || 'Something went wrong')
-    error.response = { data }
+    error.response = { data, status: response.status, headers: response.headers }
     throw error
   }
   return { data }

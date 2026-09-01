@@ -31,15 +31,26 @@ const publicLimiter = rateLimit({
   max: 1000,
   message: { success: false, message: 'Too many requests, please try again later.' }
 });
-const strictLimiter = rateLimit({
+const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: { success: false, message: 'Too many requests, please try again later.' }
 });
+const ordersLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { success: false, message: 'Too many requests, please try again later.' }
+});
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  // The admin UI polls live rates and support conversations while it is open.
+  max: 2000,
+  message: { success: false, message: 'Too many requests, please try again later.' }
+});
 app.use('/api/public/', publicLimiter);
-app.use('/api/auth/',   strictLimiter);
-app.use('/api/orders/', strictLimiter);
-app.use('/api/admin/',  strictLimiter);
+app.use('/api/auth/',   authLimiter);
+app.use('/api/orders/', ordersLimiter);
+app.use('/api/admin/',  adminLimiter);
 
 // ─── Database ─────────────────────────────────
 mongoose.connect(process.env.MONGODB_URI)
