@@ -562,7 +562,8 @@ router.put("/settings", async (req, res) => {
     const allowed = [
       "platformName","platformActive","maintenanceMode","platformNameAr","platformNameEn","platformUrl",
       "platformEnabled","registrationEnabled","supportEmail","supportTelegram","contactTelegram",
-      "contactWhatsapp","contactEmail","contactWebsite","telegramNotifications","emailNotifications",
+      "contactWhatsapp","whatsappEnabled","whatsappUnavailableMessageAr","whatsappUnavailableMessageEn",
+      "contactEmail","contactWebsite","telegramNotifications","emailNotifications",
       "telegramBotToken","telegramChatId","smtpHost","smtpPort","smtpEmail","smtpPassword",
       "resendApiKey","resendFromEmail",
       "minOrderUsdt","maxOrderUsdt","orderExpiryMins","minOrderUsd","maxOrderUsd","orderExpiryMinutes",

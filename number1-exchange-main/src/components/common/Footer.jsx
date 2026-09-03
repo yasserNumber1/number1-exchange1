@@ -1,31 +1,20 @@
 // src/components/common/Footer.jsx — Enhanced v2
-import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useLang from '../../context/useLang'
-
-const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
+import usePublicSettings from '../../context/usePublicSettings'
+import { getWhatsappHref, getWhatsappUnavailableText } from '../../utils/whatsapp'
 
 function Footer() {
   const { t, lang } = useLang()
+  const { settings } = usePublicSettings()
   const navigate = useNavigate()
   const isAr = lang === 'ar'
 
-  const [contacts, setContacts] = useState({ telegram: '', whatsapp: '201080835986', email: '' })
-  useEffect(() => {
-    fetch(`${API}/api/public/settings`)
-      .then(r => r.json())
-      .then(d => {
-        const settings = d.data || d
-        if (d.success && settings) {
-          setContacts({
-            telegram: settings.contactTelegram || '',
-            whatsapp: settings.contactWhatsapp?.replace(/\D/g, '') || '201080835986',
-            email:    settings.contactEmail || 'support@number1.exchange',
-          })
-        }
-      })
-      .catch(() => {})
-  }, [])
+  const contacts = {
+    telegram: settings.contactTelegram || '',
+    email: settings.contactEmail || 'support@number1.exchange',
+  }
+  const whatsappHref = getWhatsappHref(settings)
 
   const companyLinks = [
     { label: isAr ? 'من نحن'          : 'About Us',     path: '/about'        },
@@ -61,8 +50,9 @@ function Footer() {
       ),
     },
     {
-      label: 'WhatsApp',
-      href: contacts.whatsapp ? `https://wa.me/${contacts.whatsapp}` : '#',
+      label: whatsappHref ? 'WhatsApp' : `WhatsApp — ${getWhatsappUnavailableText(settings, lang)}`,
+      href: whatsappHref,
+      disabled: !whatsappHref,
       icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
@@ -251,8 +241,11 @@ function Footer() {
               {/* Socials */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                 {socials.map(s => (
-                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                    className="footer-social-btn" title={s.label}>
+                  <a key={s.label} href={s.href || undefined} target={s.href ? '_blank' : undefined} rel={s.href ? 'noopener noreferrer' : undefined}
+                    aria-disabled={s.disabled || undefined}
+                    onClick={e => { if (s.disabled) e.preventDefault() }}
+                    className="footer-social-btn" title={s.label}
+                    style={s.disabled ? { opacity: 0.5, cursor: 'default' } : undefined}>
                     {s.icon}
                   </a>
                 ))}

@@ -172,13 +172,17 @@ router.get("/settings", async (req, res) => {
   try {
     const Setting = require("../models/Setting");
     const s = await Setting.getSingleton();
+    res.set("Cache-Control", "no-store");
     res.json({
       success:         true,
       platformName:    s.platformName,
       platformActive:  s.platformActive,
       maintenanceMode: s.maintenanceMode,
       contactTelegram: s.contactTelegram,
-      contactWhatsapp: s.contactWhatsapp || "+201080835986",
+      contactWhatsapp: s.contactWhatsapp || "",
+      whatsappEnabled: s.whatsappEnabled !== false,
+      whatsappUnavailableMessageAr: s.whatsappUnavailableMessageAr || "متاح قريبًا",
+      whatsappUnavailableMessageEn: s.whatsappUnavailableMessageEn || "Coming soon",
       contactEmail:    s.contactEmail,
       contactWebsite:  s.contactWebsite,
     });

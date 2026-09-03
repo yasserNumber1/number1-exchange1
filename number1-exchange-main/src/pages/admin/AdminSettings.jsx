@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { adminAPI } from '../../services/api'
+import usePublicSettings from '../../context/usePublicSettings'
 
 import TabGeneral       from './settings/TabGeneral'
 import TabOrders        from './settings/TabOrders'
@@ -33,6 +34,9 @@ const DEFAULT = {
   supportEmail:        '',
   supportTelegram:     '',
   contactWhatsapp:     '+201080835986',
+  whatsappEnabled:     true,
+  whatsappUnavailableMessageAr: 'متاح قريبًا',
+  whatsappUnavailableMessageEn: 'Coming soon',
 
   // Orders
   usdtOrdersEnabled:    true,
@@ -72,6 +76,7 @@ const DEFAULT = {
 }
 
 export default function AdminSettings() {
+  const { applyPublicSettings } = usePublicSettings()
   const [activeTab, setActiveTab] = useState('general')
   const [settings,  setSettings]  = useState(DEFAULT)
   const [loading,   setLoading]   = useState(true)
@@ -111,7 +116,8 @@ export default function AdminSettings() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      await adminAPI.saveSettings(settings)
+      const { data } = await adminAPI.saveSettings(settings)
+      applyPublicSettings(data)
       showToast('success', '✓ تم حفظ الإعدادات بنجاح')
     } catch {
       showToast('error', '✗ فشل الحفظ — تحقق من الاتصال')

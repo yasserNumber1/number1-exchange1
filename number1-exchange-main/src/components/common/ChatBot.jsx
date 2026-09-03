@@ -1,6 +1,8 @@
 // src/components/common/ChatBot.jsx
 import { useState, useRef, useEffect } from 'react'
 import { ROBOT_IMG } from '../RobotImg'
+import usePublicSettings from '../../context/usePublicSettings'
+import { getWhatsappHref, getWhatsappUnavailableText } from '../../utils/whatsapp'
 
 const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 
@@ -84,6 +86,7 @@ function Msg({ text, isUser, time, robAnim }) {
 }
 
 export default function ChatBot() {
+  const { settings } = usePublicSettings()
   const [open, setOpen]         = useState(false)
   const [greeted, setGreeted]   = useState(false)
   const [messages, setMessages] = useState([])
@@ -94,23 +97,11 @@ export default function ChatBot() {
   const [fabAnim, setFabAnim]   = useState(true)
   const [showFaq, setShowFaq]   = useState(false)
   const [activeTab, setActiveTab] = useState('ai')   // 'ai' | 'human'
-  const [whatsapp, setWhatsapp] = useState('')
-  const [telegram, setTelegram] = useState('')
+  const whatsappHref = getWhatsappHref(settings)
+  const whatsappUnavailableText = getWhatsappUnavailableText(settings, 'ar')
+  const telegram = String(settings.contactTelegram || '').replace(/^@/, '')
   const bottomRef = useRef(null)
   const faqRef    = useRef(null)
-
-  // جلب إعدادات التواصل من لوحة الإدارة
-  useEffect(() => {
-    fetch(`${API}/api/public/settings`)
-      .then(r => r.json())
-      .then(d => {
-        if (d.success && d.data) {
-          if (d.data.contactWhatsapp) setWhatsapp(d.data.contactWhatsapp.replace(/\D/g, ''))
-          if (d.data.contactTelegram) setTelegram(d.data.contactTelegram.replace(/^@/, ''))
-        }
-      })
-      .catch(() => {})
-  }, [])
 
   const now = () => {
     const d = new Date()
@@ -437,12 +428,16 @@ export default function ChatBot() {
 
               {/* WhatsApp */}
               <a
-                href={whatsapp ? `https://wa.me/${whatsapp}` : '#'}
-                target="_blank" rel="noreferrer"
+                href={whatsappHref || undefined}
+                target={whatsappHref ? '_blank' : undefined} rel={whatsappHref ? 'noreferrer' : undefined}
+                aria-disabled={!whatsappHref || undefined}
+                onClick={e => { if (!whatsappHref) e.preventDefault() }}
                 className="n1-support-card"
                 style={{
                   background:'rgba(37,211,102,0.07)',
                   border:'1px solid rgba(37,211,102,0.3)',
+                  opacity:whatsappHref ? 1 : 0.7,
+                  cursor:whatsappHref ? 'pointer' : 'default',
                 }}
                 onMouseEnter={e => e.currentTarget.style.boxShadow='0 8px 24px rgba(37,211,102,0.18)'}
                 onMouseLeave={e => e.currentTarget.style.boxShadow='none'}
@@ -455,7 +450,7 @@ export default function ChatBot() {
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontWeight:800, fontSize:'0.9rem', color:'#25d366', marginBottom:2, fontFamily:"'Tajawal',sans-serif" }}>واتساب</div>
-                  <div style={{ fontSize:'0.72rem', color:'var(--text-2)', fontFamily:"'Tajawal',sans-serif" }}>تواصل فوري · 24/7</div>
+                  <div style={{ fontSize:'0.72rem', color:'var(--text-2)', fontFamily:"'Tajawal',sans-serif" }}>{whatsappHref ? 'تواصل فوري · 24/7' : whatsappUnavailableText}</div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
               </a>

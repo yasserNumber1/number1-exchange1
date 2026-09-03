@@ -98,6 +98,33 @@ export default function TabGeneral({ settings, set, togglePlatform }) {
               placeholder="+201080835986"
             />
           </Field>
+          <Field label="حالة WhatsApp">
+            <div style={{ paddingTop: 7 }}>
+              <Toggle
+                label="واتساب متاح"
+                desc="عند التعطيل تظهر رسالة متاح قريبًا بدل فتح رابط واتساب"
+                value={settings.whatsappEnabled !== false}
+                onChange={() => set('whatsappEnabled', settings.whatsappEnabled === false)}
+                color="#25d366"
+              />
+            </div>
+          </Field>
+          <Field label="رسالة عدم التوفر (عربي)">
+            <input
+              style={S.input}
+              value={settings.whatsappUnavailableMessageAr || ''}
+              onChange={e => set('whatsappUnavailableMessageAr', e.target.value)}
+              placeholder="متاح قريبًا"
+            />
+          </Field>
+          <Field label="Unavailable message (English)">
+            <input
+              style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
+              value={settings.whatsappUnavailableMessageEn || ''}
+              onChange={e => set('whatsappUnavailableMessageEn', e.target.value)}
+              placeholder="Coming soon"
+            />
+          </Field>
           <Field label="البريد الإلكتروني">
             <input
               style={{ ...S.input, direction: 'ltr', textAlign: 'left' }}
@@ -109,7 +136,7 @@ export default function TabGeneral({ settings, set, togglePlatform }) {
           </Field>
         </div>
         <div style={S.hint}>
-          💡 هذي البيانات تظهر في صفحة "تواصل معنا" للمستخدمين
+          💡 رقم واتساب وحالته يتحدثان في جميع صفحات الموقع بعد الحفظ
         </div>
       </SectionCard>
 

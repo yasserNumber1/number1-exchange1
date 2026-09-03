@@ -21,6 +21,9 @@ const settingSchema = new mongoose.Schema({
   // ── بيانات التواصل ────────────────────────────
   contactTelegram: { type: String, default: '@nimber1' },
   contactWhatsapp: { type: String, default: '+201080835986' },
+  whatsappEnabled: { type: Boolean, default: true },
+  whatsappUnavailableMessageAr: { type: String, default: 'متاح قريبًا' },
+  whatsappUnavailableMessageEn: { type: String, default: 'Coming soon' },
   contactEmail:    { type: String, default: 'nimbeerr1@gmail.com' },
   contactWebsite:  { type: String, default: '' },
 

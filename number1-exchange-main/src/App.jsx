@@ -131,6 +131,7 @@ import AdminSupportChats from './pages/admin/AdminSupportChats'
 
 import useAuth from './context/useAuth'
 import useLang from './context/useLang'
+import usePublicSettings from './context/usePublicSettings'
 
 import Terms   from './pages/legal/Terms'
 import Privacy from './pages/legal/Privacy'
@@ -279,6 +280,7 @@ function App() {
   const isAdminPage = location.pathname.startsWith('/admin')
   const { user }    = useAuth()
   const { lang }    = useLang()
+  const { settings: siteSettings } = usePublicSettings()
   const pageSeo = useMemo(() => {
     if (isAdminPage) {
       return {
@@ -328,8 +330,6 @@ function App() {
 
   const [authOpen,     setAuthOpen]     = useState(false)
   const [authTab,      setAuthTab]      = useState('login')
-  const [maintenance,  setMaintenance]  = useState(false)
-  const [, setSiteSettings] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -350,21 +350,8 @@ function App() {
     }
   }
 
-  // ── جلب إعدادات المنصة ──────────────────────
-  useEffect(() => {
-    fetch(`${API}/api/public/settings`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          setSiteSettings(data)
-          setMaintenance(data.maintenanceMode || false)
-        }
-      })
-      .catch(() => {})
-  }, [])
-
   // ── وضع الصيانة — يظهر لكل شيء ماعدا الأدمن ──
-  if (maintenance && !isAdminPage) {
+  if (siteSettings.maintenanceMode && !isAdminPage) {
     // الأدمن يقدر يدخل حتى في وضع الصيانة
     if (!user || user.role !== 'admin') {
       return <MaintenancePage />

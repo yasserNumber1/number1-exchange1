@@ -1,7 +1,9 @@
 // src/pages/OtherPages.jsx — Premium News + Support + About
 import { useState, useEffect, useRef } from 'react'
 import useLang from '../context/useLang'
+import usePublicSettings from '../context/usePublicSettings'
 import { NEWS, FAQS } from '../data/currencies'
+import { getWhatsappHref, getWhatsappUnavailableText } from '../utils/whatsapp'
 
 // ── Icon map ──
 const ICONS = {
@@ -354,24 +356,26 @@ export function News() {
 }
 
 // ══ Support Contact Card ══
-function ContactCard({ icon, img, title, desc, badge, badgeColor, action, actionLabel }) {
+function ContactCard({ icon, img, title, desc, badge, badgeColor, action, actionLabel, disabled = false }) {
   const [hov, setHov] = useState(false)
   const [imgErr, setImgErr] = useState(false)
   return (
     <div
-      onMouseEnter={() => setHov(true)}
+      onMouseEnter={() => { if (!disabled) setHov(true) }}
       onMouseLeave={() => setHov(false)}
       style={{
         background: hov ? 'linear-gradient(135deg,rgba(0,210,255,0.06),rgba(0,210,255,0.02))' : 'var(--card)',
         border:`1px solid ${hov ? 'rgba(0,210,255,0.35)' : 'var(--border-1)'}`,
         borderRadius:20, padding:'28px 24px',
         display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center',
-        cursor:'pointer', transition:'all 0.3s cubic-bezier(.22,1,.36,1)',
+        cursor:disabled?'default':'pointer', transition:'all 0.3s cubic-bezier(.22,1,.36,1)',
+        opacity:disabled?0.7:1,
         transform: hov ? 'translateY(-6px)' : 'none',
         boxShadow: hov ? '0 20px 50px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,210,255,0.1)' : '0 2px 8px rgba(0,0,0,0.1)',
         position:'relative', overflow:'hidden',
       }}
-      onClick={action}
+      onClick={disabled ? undefined : action}
+      aria-disabled={disabled || undefined}
     >
       {/* Glow */}
       <div style={{ position:'absolute', top:-40, left:'50%', transform:'translateX(-50%)', width:120, height:120, borderRadius:'50%', background:'radial-gradient(circle,rgba(0,210,255,0.15) 0%,transparent 70%)', pointerEvents:'none', opacity: hov ? 1 : 0, transition:'opacity 0.3s' }}/>
@@ -474,7 +478,10 @@ function FaqItem({ q, a, open, onToggle, index }) {
 // ══ SUPPORT PAGE ══
 export function Support() {
   const { t, lang } = useLang()
+  const { settings } = usePublicSettings()
   const [openFaq, setOpenFaq] = useState(null)
+  const whatsappHref = getWhatsappHref(settings)
+  const whatsappUnavailableText = getWhatsappUnavailableText(settings, lang)
 
   const contacts = [
     {
@@ -502,10 +509,11 @@ export function Support() {
       img: '/images/whatsapp.png',
       title: t('support_wa'),
       desc: t('support_wa_desc'),
-      badge: lang==='ar'?'مباشر':'Direct',
+      badge: whatsappHref ? (lang==='ar'?'مباشر':'Direct') : whatsappUnavailableText,
       badgeColor: '#25D366',
-      action: () => window.open('https://wa.me/201080835986','_blank'),
-      actionLabel: lang==='ar'?'فتح واتساب':'Open WhatsApp',
+      action: () => window.open(whatsappHref,'_blank'),
+      actionLabel: whatsappHref ? (lang==='ar'?'فتح واتساب':'Open WhatsApp') : whatsappUnavailableText,
+      disabled: !whatsappHref,
     },
   ]
 
@@ -530,7 +538,7 @@ export function Support() {
           {[
             { label: lang==='ar'?'المساعد الذكي':'AI Assistant',  status: lang==='ar'?'متاح':'Online',  color:'var(--green)' },
             { label: lang==='ar'?'تيليجرام':'Telegram',           status: lang==='ar'?'متاح':'Online',  color:'var(--cyan)'  },
-            { label: lang==='ar'?'واتساب':'WhatsApp',              status: lang==='ar'?'متاح':'Online',  color:'#25D366'      },
+            { label: lang==='ar'?'واتساب':'WhatsApp', status: whatsappHref ? (lang==='ar'?'متاح':'Online') : whatsappUnavailableText, color:whatsappHref?'#25D366':'var(--text-3)' },
             { label: lang==='ar'?'وقت الرد':'Response Time',       status: lang==='ar'?'< 5 دقائق':'< 5 min', color:'var(--gold)' },
           ].map((s,i) => (
             <div key={i} style={{ display:'flex', alignItems:'center', gap:7 }}>

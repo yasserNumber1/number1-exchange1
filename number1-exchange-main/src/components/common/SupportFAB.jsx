@@ -1,6 +1,8 @@
 // src/components/common/SupportFAB.jsx — N1 AI Assistant + Direct Support
 import { useState, useRef, useEffect, useCallback } from 'react'
 import useLang from '../../context/useLang'
+import usePublicSettings from '../../context/usePublicSettings'
+import { getWhatsappHref, getWhatsappUnavailableText } from '../../utils/whatsapp'
 
 const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 const SUPPORT_SESSION_KEY = 'n1_support_session'
@@ -26,7 +28,6 @@ const markChatGreetingShown = () => {
 }
 
 /* ─── constants ─────────────────────────────────────────── */
-const WA_NUMBER  = '201080835986'
 const TG_USER    = 'nimber1'
 
 const BOT_QS = {
@@ -167,9 +168,10 @@ function Msg({ text, isUser, time, anim }) {
 }
 
 /* ─── Support links ──────────────────────────────────────── */
-function SupportLinks({ ar }) {
+function SupportLinks({ ar, settings }) {
+  const whatsappHref = getWhatsappHref(settings)
   const items = [
-    { href:`https://wa.me/${WA_NUMBER}`, bg:'linear-gradient(135deg,rgba(37,211,102,.13),rgba(18,140,126,.09))', border:'rgba(37,211,102,0.38)', iconBg:'#25d366', name:ar?'واتساب':'WhatsApp', sub:ar?'تواصل فوري · 24/7':'Instant chat · 24/7', col:'#25d366',
+    { href:whatsappHref, disabled:!whatsappHref, bg:'linear-gradient(135deg,rgba(37,211,102,.13),rgba(18,140,126,.09))', border:'rgba(37,211,102,0.38)', iconBg:'#25d366', name:ar?'واتساب':'WhatsApp', sub:whatsappHref?(ar?'تواصل فوري · 24/7':'Instant chat · 24/7'):getWhatsappUnavailableText(settings, ar?'ar':'en'), col:'#25d366',
       icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.05 2C6.495 2 2 6.495 2 12.05c0 1.86.484 3.61 1.332 5.131L2 22l4.948-1.298A9.953 9.953 0 0012.05 22C17.605 22 22 17.505 22 11.95 22 6.495 17.505 2 12.05 2zm0 18.1a8.048 8.048 0 01-4.104-1.126l-.294-.175-3.056.802.817-2.977-.192-.306A8.053 8.053 0 013.9 11.95C3.9 7.54 7.54 3.9 12.05 3.9c4.41 0 8.05 3.64 8.05 8.05 0 4.41-3.64 8.15-8.05 8.15z"/></svg> },
     { href:`https://t.me/${TG_USER}`, bg:'linear-gradient(135deg,rgba(0,136,204,.13),rgba(0,100,180,.09))', border:'rgba(0,136,204,0.38)', iconBg:'#0088cc', name:ar?'تيليجرام':'Telegram', sub:`@${TG_USER}`, col:'#0088cc',
       icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg> },
@@ -180,9 +182,11 @@ function SupportLinks({ ar }) {
         {ar ? '— تواصل مباشر مع الفريق —' : '— Direct team contact —'}
       </div>
       {items.map((l,i) => (
-        <a key={i} href={l.href} target="_blank" rel="noreferrer"
-          style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', borderRadius:14, background:l.bg, border:`1px solid ${l.border}`, textDecoration:'none', transition:'all .22s' }}
-          onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow=`0 8px 22px ${l.col}25`}}
+        <a key={i} href={l.href || undefined} target={l.href ? '_blank' : undefined} rel={l.href ? 'noreferrer' : undefined}
+          aria-disabled={l.disabled || undefined}
+          onClick={e=>{if(l.disabled)e.preventDefault()}}
+          style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', borderRadius:14, background:l.bg, border:`1px solid ${l.border}`, textDecoration:'none', transition:'all .22s', opacity:l.disabled ? .7 : 1, cursor:l.disabled?'default':'pointer' }}
+          onMouseEnter={e=>{if(!l.disabled){e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow=`0 8px 22px ${l.col}25`}}}
           onMouseLeave={e=>{e.currentTarget.style.transform='none';e.currentTarget.style.boxShadow='none'}}>
           <div style={{ width:40, height:40, borderRadius:12, background:l.iconBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 14px ${l.col}50` }}>{l.icon}</div>
           <div style={{ flex:1 }}>
@@ -197,7 +201,7 @@ function SupportLinks({ ar }) {
 }
 
 /* ─── Panel ──────────────────────────────────────────────── */
-function Panel({ onClose, lang, isOpen }) {
+function Panel({ onClose, lang, isOpen, settings }) {
   const ar = lang === 'ar'
   const [tab, setTab]           = useState('chat')
   const [messages, setMessages] = useState([])
@@ -365,7 +369,7 @@ function Panel({ onClose, lang, isOpen }) {
             {/* FAQ options shown only when faqOpen — rendered above input bar */}
             {showSup && !typing && (
               <div style={{ marginBottom:10 }}>
-                <SupportLinks ar={ar}/>
+                <SupportLinks ar={ar} settings={settings}/>
                 <button onClick={()=>{setShowSup(false);setShowOpts(true)}} style={{ marginTop:10, width:'100%', padding:'8px', background:'transparent', border:'1px solid var(--border-1)', borderRadius:10, color:'var(--text-3)', fontSize:'.78rem', cursor:'pointer', fontFamily:"'Tajawal',sans-serif" }}>
                   {ar?'← العودة للأسئلة':'← Back to questions'}
                 </button>
@@ -432,7 +436,7 @@ function Panel({ onClose, lang, isOpen }) {
               {ar?'فريقنا متاح على مدار الساعة للإجابة على جميع استفساراتك':'Our team is available 24/7 to answer all your inquiries'}
             </div>
           </div>
-          <SupportLinks ar={ar}/>
+          <SupportLinks ar={ar} settings={settings}/>
           <div style={{ marginTop:16, padding:'12px 14px', borderRadius:12, background:'rgba(0,210,255,0.04)', border:'1px solid rgba(0,210,255,0.1)', display:'flex', alignItems:'center', gap:10 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <div style={{ fontSize:'.75rem', color:'var(--text-2)' }}>{ar?'متوسط وقت الرد: أقل من 5 دقائق':'Average response time: under 5 minutes'}</div>
@@ -446,6 +450,7 @@ function Panel({ onClose, lang, isOpen }) {
 /* ─── FAB ────────────────────────────────────────────────── */
 export default function SupportFAB() {
   const { lang } = useLang()
+  const { settings } = usePublicSettings()
   const ar = lang === 'ar'
   const [open, setOpen]       = useState(false)
   const [hasOpened, setHasOpened] = useState(false)
@@ -468,7 +473,7 @@ export default function SupportFAB() {
         </div>
       )}
 
-      {hasOpened && <Panel isOpen={open} onClose={closePanel} lang={lang}/>}
+      {hasOpened && <Panel isOpen={open} onClose={closePanel} lang={lang} settings={settings}/>}
 
       {!open && (
         <div className="support-fab-anchor" style={{ position:'fixed', bottom:24, left:22, zIndex:500 }}>

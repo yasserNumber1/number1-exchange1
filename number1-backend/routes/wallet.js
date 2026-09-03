@@ -261,7 +261,10 @@ router.get('/withdraw-info', async (req, res) => {
     res.json({
       success: true,
       withdrawInfo: {
-        whatsapp:  settings.contactWhatsapp  || '+201080835986',
+        whatsapp: settings.whatsappEnabled !== false ? (settings.contactWhatsapp || '') : '',
+        whatsappEnabled: settings.whatsappEnabled !== false,
+        whatsappUnavailableMessageAr: settings.whatsappUnavailableMessageAr || 'متاح قريبًا',
+        whatsappUnavailableMessageEn: settings.whatsappUnavailableMessageEn || 'Coming soon',
         telegram:  settings.contactTelegram  || '',
       }
     })

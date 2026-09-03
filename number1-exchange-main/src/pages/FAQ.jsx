@@ -5,6 +5,8 @@
 // ══════════════════════════════════════════════
 import { useState, useEffect, useRef, useCallback } from 'react'
 import useLang from '../context/useLang'
+import usePublicSettings from '../context/usePublicSettings'
+import { getWhatsappHref, getWhatsappUnavailableText } from '../utils/whatsapp'
 
 /* ─── useInView hook ─── */
 function useInView(threshold = 0.15) {
@@ -303,6 +305,8 @@ function TimelineItem({ item, index, isOpen, onToggle, inView, lang }) {
 ══════════════════════════════════════ */
 export default function FAQ() {
   const { lang } = useLang()
+  const { settings } = usePublicSettings()
+  const whatsappHref = getWhatsappHref(settings)
   const [activeSection, setActiveSection] = useState('exchange')
   const [openItem, setOpenItem] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -936,9 +940,11 @@ export default function FAQ() {
               {lang === 'ar' ? 'تيليجرام' : 'Telegram'}
             </a>
             <a
-              href="https://wa.me/201080835986"
-              target="_blank"
-              rel="noopener noreferrer"
+              href={whatsappHref || undefined}
+              target={whatsappHref ? '_blank' : undefined}
+              rel={whatsappHref ? 'noopener noreferrer' : undefined}
+              aria-disabled={!whatsappHref || undefined}
+              onClick={e => { if (!whatsappHref) e.preventDefault() }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -953,6 +959,8 @@ export default function FAQ() {
                 fontSize: '0.84rem',
                 fontWeight: 700,
                 transition: 'all 0.2s',
+                opacity: whatsappHref ? 1 : 0.65,
+                cursor: whatsappHref ? 'pointer' : 'default',
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,210,255,0.3)'; e.currentTarget.style.color = 'var(--cyan)' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-1)'; e.currentTarget.style.color = 'var(--text-1)' }}
@@ -960,7 +968,9 @@ export default function FAQ() {
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#25D366" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
               </svg>
-              {lang === 'ar' ? 'واتساب' : 'WhatsApp'}
+              {whatsappHref
+                ? (lang === 'ar' ? 'واتساب' : 'WhatsApp')
+                : getWhatsappUnavailableText(settings, lang)}
             </a>
           </div>
         </div>

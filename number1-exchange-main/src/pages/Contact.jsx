@@ -1,6 +1,12 @@
 // src/pages/Contact.jsx — Professional redesign
 import { useState, useEffect } from 'react'
 import useLang from '../context/useLang'
+import usePublicSettings from '../context/usePublicSettings'
+import {
+  getWhatsappDisplayText,
+  getWhatsappHref,
+  isWhatsappAvailable,
+} from '../utils/whatsapp'
 
 const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 
@@ -15,21 +21,19 @@ const IcArrow = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none
 
 export default function Contact() {
   const { lang } = useLang()
+  const { settings: contacts } = usePublicSettings()
   const isEn = lang === 'en'
   const [form, setForm]       = useState({ name:'', email:'', subject:'', message:'' })
   const [sent, setSent]       = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
-  const [contacts, setContacts] = useState(null)
   const [focused, setFocused] = useState(null)
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    fetch(`${API}/api/public/settings`)
-      .then(r => r.json())
-      .then(d => { if (d.success) setContacts(d) })
-      .catch(() => {})
   }, [])
+
+  const whatsappAvailable = isWhatsappAvailable(contacts)
 
   const CHANNELS = [
     {
@@ -53,9 +57,12 @@ export default function Contact() {
       border: 'rgba(37,211,102,0.3)',
       cardBg: 'rgba(37,211,102,0.07)',
       name: isEn ? 'WhatsApp' : 'واتساب',
-      value: contacts?.contactWhatsapp || '+201080835986',
-      link: `https://wa.me/${(contacts?.contactWhatsapp||'+201080835986').replace(/\D/g,'')}`,
-      badge: isEn ? 'Quick inquiries' : 'استفسارات سريعة',
+      value: getWhatsappDisplayText(contacts, lang),
+      link: getWhatsappHref(contacts),
+      disabled: !whatsappAvailable,
+      badge: whatsappAvailable
+        ? (isEn ? 'Quick inquiries' : 'استفسارات سريعة')
+        : getWhatsappDisplayText(contacts, lang),
       badgeCol: '#25d366',
     },
     {
@@ -161,9 +168,11 @@ export default function Contact() {
       {/* ── Channel Cards ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16, marginBottom:44 }}>
         {CHANNELS.map(ch => (
-          <a key={ch.key} href={ch.link} target="_blank" rel="noopener noreferrer"
-            style={{ background:'var(--card)', border:`1px solid ${ch.border}`, borderRadius:20, padding:'24px 20px', textDecoration:'none', display:'flex', flexDirection:'column', gap:14, transition:'all .22s', position:'relative', overflow:'hidden' }}
-            onMouseEnter={e=>{ e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.boxShadow=`0 16px 40px ${ch.glow}` }}
+          <a key={ch.key} href={ch.link || undefined} target={ch.link ? '_blank' : undefined} rel={ch.link ? 'noopener noreferrer' : undefined}
+            aria-disabled={ch.disabled || undefined}
+            onClick={e => { if (ch.disabled) e.preventDefault() }}
+            style={{ background:'var(--card)', border:`1px solid ${ch.border}`, borderRadius:20, padding:'24px 20px', textDecoration:'none', display:'flex', flexDirection:'column', gap:14, transition:'all .22s', position:'relative', overflow:'hidden', cursor:ch.disabled?'default':'pointer', opacity:ch.disabled?0.75:1 }}
+            onMouseEnter={e=>{ if (!ch.disabled) { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.boxShadow=`0 16px 40px ${ch.glow}` } }}
             onMouseLeave={e=>{ e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='none' }}>
 
             {/* top gradient */}

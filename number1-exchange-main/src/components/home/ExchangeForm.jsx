@@ -8,7 +8,9 @@ import { useState, useEffect, useMemo } from 'react'
 import ConfirmModal from './ConfirmModal'
 import useAuth from '../../context/useAuth'
 import useLang from '../../context/useLang'
+import usePublicSettings from '../../context/usePublicSettings'
 import FlowDots from '../shared/FlowDots'
+import { getWhatsappDisplayText, getWhatsappHref } from '../../utils/whatsapp'
 
 const API = import.meta.env.VITE_API_URL
 
@@ -72,12 +74,12 @@ function resolveRate(rates, sendType, recvType, sendItem, recvItem) {
 function ExchangeForm() {
   const { user } = useAuth()
   const { t, lang } = useLang()
+  const { settings: contactInfo } = usePublicSettings()
   const isAr = lang === 'ar'
 
   // ── بيانات من الـ API ──────────────────────────────
   const [methods,      setMethods]      = useState(null)
   const [rates,        setRates]        = useState(null)
-  const [contactInfo,  setContactInfo]  = useState(null)
   const [apiLoading,   setApiLoading]   = useState(true)
   const [apiError,     setApiError]     = useState(false)
 
@@ -118,19 +120,18 @@ function ExchangeForm() {
   const [rateDir,    setRateDir]    = useState(null)
 
   // ══════════════════════════════════════════════════
-  // جلب وسائل الدفع + الأسعار + معلومات التواصل
+  // جلب وسائل الدفع + الأسعار
   // ══════════════════════════════════════════════════
   useEffect(() => {
     const loadAll = async () => {
       try {
-        const [methodsRes, ratesRes, settingsRes] = await Promise.all([
+        const [methodsRes, ratesRes] = await Promise.all([
           fetch(`${API}/api/public/payment-methods`, {
             headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
           }).then(r => r.json()),
           fetch(`${API}/api/public/rates`, {
             headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
           }).then(r => r.json()),
-          fetch(`${API}/api/public/settings`).then(r => r.json()).catch(() => null),
         ])
 
         if (methodsRes.success) {
@@ -153,8 +154,7 @@ function ExchangeForm() {
           setMethods(FALLBACK)
         }
 
-        if (ratesRes.success)     setRates(ratesRes)
-        if (settingsRes?.success) setContactInfo({ ...settingsRes, contactWhatsapp: settingsRes.contactWhatsapp || '+201080835986' })
+        if (ratesRes.success) setRates(ratesRes)
 
       } catch {
         setApiError(true)
@@ -284,12 +284,11 @@ function ExchangeForm() {
     if (hasErr) return
 
     const msg = buildContactMessage()
-    const wa  = contactInfo?.contactWhatsapp
+    const wa  = getWhatsappHref(contactInfo)
     const tg  = contactInfo?.contactTelegram
 
     if (wa) {
-      const phone = wa.replace(/[^0-9]/g, '')
-      window.open(`https://wa.me/${phone}?text=${msg}`, '_blank')
+      window.open(`${wa}?text=${msg}`, '_blank')
     } else if (tg) {
       window.open(`https://t.me/${tg.replace('@', '')}?text=${msg}`, '_blank')
     } else {
@@ -540,10 +539,10 @@ function ExchangeForm() {
                 {isAr ? '💬 تواصل معنا لإتمام الطلب' : '💬 Contact us to complete order'}
               </button>
 
-              {(contactInfo?.contactWhatsapp || contactInfo?.contactTelegram) && (
+              {(getWhatsappDisplayText(contactInfo, lang) || contactInfo?.contactTelegram) && (
                 <div style={{ marginTop: 10, textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-3)', fontFamily: "'JetBrains Mono',monospace" }}>
-                  {contactInfo.contactWhatsapp && <span>WhatsApp: {contactInfo.contactWhatsapp}</span>}
-                  {contactInfo.contactWhatsapp && contactInfo.contactTelegram && <span style={{ margin: '0 8px' }}>·</span>}
+                  <span>WhatsApp: {getWhatsappDisplayText(contactInfo, lang)}</span>
+                  {contactInfo.contactTelegram && <span style={{ margin: '0 8px' }}>·</span>}
                   {contactInfo.contactTelegram && <span>Telegram: {contactInfo.contactTelegram}</span>}
                 </div>
               )}
