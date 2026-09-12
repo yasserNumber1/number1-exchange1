@@ -4,9 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useLang from '../context/useLang'
 import { readOrderSession, clearOrderSession, getTimeRemaining } from '../services/orderSession'
+import PaymentProof from '../components/shared/PaymentProof'
 
 const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
-const DONE_STATUSES = ['completed', 'rejected', 'cancelled']
+const DONE_STATUSES = ['completed', 'rejected', 'cancelled', 'expired']
 
 const IcClock   = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 const IcSearch  = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -25,6 +26,7 @@ const STATUS_CONFIG = {
   completed:  { ar: 'مكتمل ✓',       en: 'Completed ✓',color: '#00e5a0', icon: <IcCheck  />, descAr: 'تم إرسال المبلغ بنجاح 🎉',      descEn: 'Amount sent successfully 🎉',      steps: [true, true,  true,  true]  },
   rejected:   { ar: 'مرفوض',         en: 'Rejected',   color: '#f43f5e', icon: <IcX      />, descAr: 'تم رفض الطلب، تواصل مع الدعم',  descEn: 'Order rejected, contact support',  steps: [true, false, false, false] },
   cancelled:  { ar: 'ملغي',          en: 'Cancelled',  color: '#6e7681', icon: <IcX      />, descAr: 'تم إلغاء الطلب',                 descEn: 'Order cancelled',                  steps: [true, false, false, false] },
+  expired:    { ar: 'منتهي',         en: 'Expired',    color: '#f43f5e', icon: <IcX      />, descAr: 'انتهى الوقت المحدد، لا تقم بإرسال الأموال.', descEn: 'The time limit has expired. Do not send any funds.', steps: [true, false, false, false] },
 }
 const STEPS_AR = ['استلام الدفعة', 'مراجعة الطلب', 'معالجة التحويل', 'اكتمال الإرسال']
 const STEPS_EN = ['Payment Received', 'Order Review', 'Processing Transfer', 'Complete']
@@ -140,6 +142,7 @@ export default function OrderTrack() {
       }
       if (!res.ok || !data.success) { setNotFound(true); return }
       setOrder(data.order); setLastUpdated(new Date())
+      if (data.order.status === 'expired' || (data.order.status === 'pending' && data.order.expiresAt && getTimeRemaining(data.order.expiresAt) === 0)) setExpired(true)
       if (!DONE_STATUSES.includes(data.order.status)) connectSSE(token)
     } catch { setError(t('خطأ في الاتصال. حاول مرة أخرى.', 'Connection error. Try again.')) }
     finally { setLoading(false) }
@@ -151,12 +154,19 @@ export default function OrderTrack() {
     const clean = (idOverride || orderId).trim().toUpperCase()
     if (!clean) return
     cleanup(); setSseConn(false)
+    const ownSession = readOrderSession()
+    if (ownSession?.orderNumber === clean) {
+      setSessionInfo(ownSession); setHasSession(true)
+      await loadBySession(ownSession.sessionToken)
+      return
+    }
     setLoading(true); setOrder(null); setNotFound(false); setError(null); setExpired(false)
     try {
       const res  = await fetch(`${API}/api/orders/track/${clean}`)
       const data = await res.json()
       if (!res.ok || !data.success) { setNotFound(true); return }
       setOrder(data.order); setLastUpdated(new Date())
+      if (data.order.status === 'expired' || (data.order.status === 'pending' && data.order.expiresAt && getTimeRemaining(data.order.expiresAt) === 0)) setExpired(true)
       const sess = readOrderSession()
       if (sess && sess.orderNumber === clean && !DONE_STATUSES.includes(data.order.status)) {
         connectSSE(sess.sessionToken)
@@ -181,8 +191,9 @@ export default function OrderTrack() {
         if (msg.type === 'EXPIRED')        { setExpired(true); clearOrderSession(); setHasSession(false); es.close(); return }
         if (msg.type === 'NOT_FOUND')      { setNotFound(true); es.close(); return }
         if (msg.type === 'STATUS_UPDATE')  {
-          setOrder(prev => prev ? { ...prev, status: msg.status, updatedAt: msg.updatedAt } : prev)
+          setOrder(prev => prev ? { ...prev, status: msg.status, cancelledBy: msg.cancelledBy || prev.cancelledBy, expiresAt: msg.status === 'pending' ? prev.expiresAt : null, updatedAt: msg.updatedAt } : prev)
           setLastUpdated(new Date())
+          if (msg.status === 'expired') setExpired(true)
           if (DONE_STATUSES.includes(msg.status)) { es.close(); setSseConn(false) }
         }
       } catch {}
@@ -199,6 +210,7 @@ export default function OrderTrack() {
         const data = await res.json()
         if (data.success && data.order) {
           setOrder(prev => { if (prev?.status !== data.order.status) setLastUpdated(new Date()); return data.order })
+          if (data.order.status === 'expired') setExpired(true)
           if (DONE_STATUSES.includes(data.order.status)) clearInterval(pollRef.current)
         }
         if (data.expired) { setExpired(true); clearOrderSession(); clearInterval(pollRef.current) }
@@ -214,6 +226,7 @@ export default function OrderTrack() {
         const data = await res.json()
         if (data.success && data.order) {
           setOrder(prev => { if (prev?.status !== data.order.status) setLastUpdated(new Date()); return data.order })
+          if (data.order.status === 'expired') setExpired(true)
           if (DONE_STATUSES.includes(data.order.status)) clearInterval(pollRef.current)
         }
       } catch {}
@@ -317,7 +330,7 @@ export default function OrderTrack() {
       {expired && (
         <div className="ot-ani" style={{ textAlign:'center', padding:'40px 24px', background:'var(--card)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:20 }}>
           <div style={{ fontSize:52, marginBottom:12 }}>⏰</div>
-          <h3 style={{ fontFamily:"'Tajawal',sans-serif", color:'#f59e0b', margin:'0 0 10px' }}>{t('انتهت مدة الطلب','Session Expired')}</h3>
+          <h3 style={{ fontFamily:"'Tajawal',sans-serif", color:'#f59e0b', margin:'0 0 10px' }}>{t('انتهى الوقت المحدد، لا تقم بإرسال الأموال.', 'The time limit has expired. Do not send any funds.')}</h3>
           <p style={{ color:'var(--text-3)', fontFamily:"'Tajawal',sans-serif", fontSize:'0.88rem', marginBottom:22, maxWidth:360, margin:'0 auto 22px' }}>
             {t('مضت 30 دقيقة. يمكنك البحث برقم الطلب إذا كنت تعرفه.', 'The 30-minute window has passed. You can still search using your order number.')}
           </p>
@@ -329,7 +342,7 @@ export default function OrderTrack() {
       )}
 
       {/* ── Order result card ───────────────────────── */}
-      {order && cfg && (
+      {order && cfg && !expired && (
         <div className="ot-ani" style={{ background:'var(--card)', border:`1px solid ${cfg.color}40`, borderRadius:20, padding:'28px 24px' }}>
 
           {/* Top row: order number + status + live dot */}
@@ -349,7 +362,7 @@ export default function OrderTrack() {
           </div>
 
           {/* Countdown */}
-          {order.expiresAt && !DONE_STATUSES.includes(order.status) && (
+          {order.expiresAt && order.status === 'pending' && (
             <div style={{ marginBottom:16 }}>
               <div style={{ fontSize:'0.65rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", marginBottom:6, letterSpacing:1 }}>{t('الوقت المتبقي للطلب','TIME REMAINING')}</div>
               <Countdown expiresAt={order.expiresAt} isEn={isEn} onExpired={handleExpired} />
@@ -358,6 +371,22 @@ export default function OrderTrack() {
 
           {/* Progress */}
           <ProgressTracker steps={steps} isEn={isEn} />
+
+          {['pending', 'verifying'].includes(order.status) && order.payment?.destination && (
+            <div style={{ marginTop:20, padding:18, background:'rgba(0,210,255,0.04)', border:'1px solid rgba(0,210,255,0.25)', borderRadius:14 }}>
+              <div style={{ fontWeight:700, marginBottom:10 }}>{t('قم بتحويل المبلغ إلى العنوان التالي', 'Transfer the amount to the following destination')}</div>
+              {order.payment.destination.network && <div style={{ color:'var(--cyan)', marginBottom:8 }}>{t('الشبكة', 'Network')}: {order.payment.destination.network}</div>}
+              {order.payment.destination.address ? (
+                <div style={{ overflowWrap:'anywhere', color:'var(--text-1)' }}>
+                  {order.payment.destination.methodName}: <strong>{order.payment.destination.address}</strong>
+                  <button onClick={() => navigator.clipboard?.writeText(order.payment.destination.address)} style={{ marginInlineStart:10, padding:'5px 10px', borderRadius:8, border:'1px solid var(--border-1)', background:'transparent', color:'var(--cyan)', cursor:'pointer' }}>{t('نسخ', 'Copy')}</button>
+                </div>
+              ) : <div style={{ color:'var(--gold)' }}>{t('لم يتم تحديد بيانات التحويل. تواصل مع الدعم ولا ترسل الأموال حتى تتأكد من البيانات.', 'Transfer details are not configured. Contact support and do not send funds until confirmed.')}</div>}
+              <div style={{ marginTop:10, fontWeight:700 }}>{t('المبلغ المطلوب', 'Amount to send')}: {order.payment.amountSent} {order.payment.currencySent}</div>
+              {order.payment.destination.network && <div style={{ color:'var(--gold)', marginTop:10, fontSize:'0.8rem' }}>{t(`تأكد من الإرسال على شبكة ${order.payment.destination.network} فقط.`, `Only send on the ${order.payment.destination.network} network.`)}</div>}
+            </div>
+          )}
+          {sessionInfo?.orderNumber === order.orderNumber && <PaymentProof order={order} sessionToken={sessionInfo.sessionToken} isAr={!isEn} onSaved={() => loadBySession(sessionInfo.sessionToken)} />}
 
           {/* Details */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:10, marginTop:24 }}>
@@ -393,7 +422,7 @@ export default function OrderTrack() {
           {/* Status message */}
           <div style={{ marginTop:18, padding:'12px 16px', borderRadius:12, background:cfg.color+'10', border:`1px solid ${cfg.color}25`, display:'flex', alignItems:'center', gap:8 }}>
             <span style={{ color:cfg.color, flexShrink:0 }}>{cfg.icon}</span>
-            <span style={{ fontSize:'0.88rem', color:cfg.color, fontFamily:"'Tajawal',sans-serif" }}>{isEn ? cfg.descEn : cfg.descAr}</span>
+            <span style={{ fontSize:'0.88rem', color:cfg.color, fontFamily:"'Tajawal',sans-serif" }}>{order.status === 'cancelled' && order.cancelledBy === 'admin' ? t('تم إلغاء الطلب من جهة الإدارة.', 'The order was cancelled by the administration.') : order.status === 'cancelled' && order.cancelledBy === 'customer' ? t('تم إلغاء الطلب من جهتك.', 'You cancelled this order.') : isEn ? cfg.descEn : cfg.descAr}</span>
           </div>
 
           {/* Footer */}

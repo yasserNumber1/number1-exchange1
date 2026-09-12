@@ -217,6 +217,12 @@ router.put("/orders/:id/status", async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (!order)
       return res.status(404).json({ success: false, message: "Order not found." });
+    if (order.status === "expired" || (order.status === "pending" && order.expiresAt && new Date() > order.expiresAt)) {
+      return res.status(400).json({ success: false, message: "Order payment time has expired." });
+    }
+    if (["completed", "rejected", "cancelled"].includes(order.status)) {
+      return res.status(400).json({ success: false, message: "Order is already final." });
+    }
 
     if (
       order.orderType === "WALLET_TO_MONEYGO" &&
@@ -266,6 +272,7 @@ router.put("/orders/:id/status", async (req, res) => {
     // ── Non-completion status updates ─────────────
     const wasReserved = order.liquidityReserved
     order.status = status;
+    if (status === "cancelled") order.cancelledBy = "admin";
     if (note) order.adminNote = note;
     if (transferId) order.moneygo.transferId = transferId;
     if (status === "rejected" || status === "cancelled") {
@@ -358,6 +365,10 @@ router.post("/telegram-webhook-internal", async (req, res) => {
     const order = await Order.findById(orderId);
     if (!order) {
       await telegramService.answerCallbackQuery(callbackQueryId, "❌ الطلب غير موجود");
+      return res.json({ success: true });
+    }
+    if (order.status === 'pending' && order.expiresAt && new Date() > order.expiresAt) {
+      await telegramService.answerCallbackQuery(callbackQueryId, 'انتهى وقت الدفع — لا يمكن معالجة الطلب / Payment time expired');
       return res.json({ success: true });
     }
 

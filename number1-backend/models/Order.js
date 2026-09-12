@@ -98,6 +98,12 @@ const orderSchema = new mongoose.Schema(
         enum: ["USDT", "EGP", "MGO"],
         required: true,
       },
+      destination: {
+        methodName: { type: String, default: "" },
+        address: { type: String, default: "" },
+        network: { type: String, default: "" },
+        type: { type: String, default: "" },
+      },
     },
 
     moneygo: {
@@ -157,6 +163,7 @@ const orderSchema = new mongoose.Schema(
     ],
 
     adminNote: { type: String, default: null },
+    cancelledBy: { type: String, enum: ["customer", "admin", "system"], default: null },
     telegramMessageId: { type: Number, default: null },
     liquidityReserved: { type: Boolean, default: false },
     clientIp: { type: String, default: null },
@@ -178,9 +185,8 @@ const orderSchema = new mongoose.Schema(
 
 // ── رقم الطلب + Limit Validation ──
 orderSchema.pre("save", async function (next) {
-  // الطلبات النهائية: nullify expiresAt حتى لا يحذفها MongoDB TTL index
-  const FINAL_STATUSES = ['completed', 'rejected', 'cancelled', 'expired'];
-  if (FINAL_STATUSES.includes(this.status) && this.expiresAt !== null) {
+  // Only pending orders have a payment deadline. Verification and final states do not.
+  if (this.status !== 'pending' && this.expiresAt !== null) {
     this.expiresAt = null;
   }
 

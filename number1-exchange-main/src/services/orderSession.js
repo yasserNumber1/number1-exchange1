@@ -30,11 +30,10 @@ export function readOrderSession() {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      // التحقق من الصلاحية
-      if (parsed.expiresAt && new Date(parsed.expiresAt) > new Date()) {
+      // Payment deadline is not the order-session lifetime: verification can continue afterward.
+      if (parsed.sessionToken && parsed.orderNumber) {
         return parsed
       }
-      // انتهت الصلاحية — حذف
       clearOrderSession()
       return null
     }
@@ -48,7 +47,7 @@ export function readOrderSession() {
     if (match) {
       const raw = decodeURIComponent(match.split('=').slice(1).join('='))
       const parsed = JSON.parse(raw)
-      if (parsed.expiresAt && new Date(parsed.expiresAt) > new Date()) {
+      if (parsed.sessionToken && parsed.orderNumber) {
         // حفظ في localStorage للمرة القادمة
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)) } catch (_) {}
         return parsed

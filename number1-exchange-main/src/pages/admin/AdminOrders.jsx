@@ -47,8 +47,8 @@ export default function AdminOrders() {
   const [selected,      setSelected]      = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true)
+  const fetchOrders = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true)
     try {
       const { data } = await adminAPI.getOrders({
         page,
@@ -57,15 +57,20 @@ export default function AdminOrders() {
         ...(search    && { search }),
       })
       setOrders(data.orders || [])
+      setSelected(previous => previous ? (data.orders || []).find(order => order._id === previous._id) || previous : previous)
       setTotalPages(data.pagination?.pages || 1)
     } catch (err) {
       console.error(err)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [page, statusTab, search])
 
-  useEffect(() => { fetchOrders() }, [fetchOrders])
+  useEffect(() => {
+    fetchOrders()
+    const interval = setInterval(() => fetchOrders({ silent: true }), 15000)
+    return () => clearInterval(interval)
+  }, [fetchOrders])
 
   const updateStatus = async (orderId, newStatus) => {
     setActionLoading(true)
@@ -115,7 +120,7 @@ export default function AdminOrders() {
                 <td style={tdStyle}>{order.payment?.amountSent} {order.payment?.currencySent}</td>
                 <td style={tdStyle}>{order.moneygo?.amountUSD} USD</td>
                 <td style={tdStyle}>{order.payment?.method || '—'}</td>
-                <td style={tdStyle}><AdminStatusBadge status={order.status} /></td>
+                <td style={tdStyle}><AdminStatusBadge status={order.status} />{order.status === 'cancelled' && (order.cancelledBy === 'customer' || order.timeline?.some(item => item.status === 'cancelled' && item.by === 'customer')) && <div style={{ fontSize: 11, color: '#f59e0b' }}>ألغى العميل الطلب / Cancelled by customer</div>}</td>
                 <td style={tdStyle}>{new Date(order.createdAt).toLocaleDateString('ar-EG')}</td>
                 <td style={tdStyle}>
                   <button style={styles.viewBtn} onClick={() => setSelected(order)}>
@@ -155,6 +160,7 @@ function OrderDetailModal({ order, onClose, onUpdateStatus, loading }) {
     ['اسم المستلم',  order.moneygo?.recipientName  || '—'],
     ['هاتف المستلم', order.moneygo?.recipientPhone || '—'],
     ['الحالة',       <AdminStatusBadge key="s" status={order.status} />],
+    ...(order.status === 'cancelled' ? [['جهة الإلغاء / Cancelled by', order.cancelledBy === 'customer' || order.timeline?.some(item => item.status === 'cancelled' && item.by === 'customer') ? 'العميل / Customer' : order.cancelledBy === 'admin' || order.timeline?.some(item => item.status === 'cancelled' && item.by?.startsWith('admin:')) ? 'الإدارة / Administration' : 'غير محدد / Unknown']] : []),
     ['تاريخ الإنشاء', new Date(order.createdAt).toLocaleString('ar-EG')],
   ]
 
@@ -182,7 +188,7 @@ function OrderDetailModal({ order, onClose, onUpdateStatus, loading }) {
         </div>
       )}
 
-      {!['completed', 'rejected', 'cancelled'].includes(order.status) && (
+      {!['completed', 'rejected', 'cancelled', 'expired'].includes(order.status) && (
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           <button style={modal.approveBtn} disabled={loading} onClick={() => onUpdateStatus(order._id, 'completed')}>
             <CheckCircle size={16} />
@@ -193,6 +199,12 @@ function OrderDetailModal({ order, onClose, onUpdateStatus, loading }) {
             {loading ? '...' : 'رفض الطلب'}
           </button>
         </div>
+      )}
+
+      {!['completed', 'rejected', 'cancelled', 'expired'].includes(order.status) && (
+        <button style={{ ...modal.rejectBtn, marginTop: 10, width: '100%' }} disabled={loading} onClick={() => onUpdateStatus(order._id, 'cancelled')}>
+          <XCircle size={16} /> إلغاء الطلب من جهة الإدارة
+        </button>
       )}
 
       {order.status === 'pending' && (

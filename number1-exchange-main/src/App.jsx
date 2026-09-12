@@ -145,44 +145,53 @@ function ReturnToOrderBanner() {
   const [session, setSession] = useState(null)
   const [visible, setVisible] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
+  const [status, setStatus] = useState('pending')
   const { lang } = useLang()
 
  useEffect(() => {
   const sess = readOrderSession()
-  if (!sess || getTimeRemaining(sess.expiresAt) <= 0) return
+  if (!sess) return
 
-  // ✅ تحقق من حالة الطلب قبل إظهار البانر
-  fetch(`${API}/api/orders/track/${sess.orderNumber}`)
+  const refresh = () => fetch(`${API}/api/orders/track/${sess.orderNumber}`)
     .then(r => r.json())
     .then(data => {
       if (!data.success) return
-      const doneStatuses = ['completed', 'rejected', 'cancelled']
+      const doneStatuses = ['completed', 'rejected', 'cancelled', 'expired']
       if (doneStatuses.includes(data.order.status)) {
-        // الطلب منتهي — امسح الجلسة ولا تُظهر البانر
         clearOrderSession()
+        setVisible(false)
+        return
+      }
+      if (data.order.status === 'pending' && getTimeRemaining(data.order.expiresAt || sess.expiresAt) <= 0) {
+        setVisible(false)
         return
       }
       setSession(sess)
-      setTimeLeft(getTimeRemaining(sess.expiresAt))
+      setStatus(data.order.status)
+      setTimeLeft(data.order.status === 'pending' ? getTimeRemaining(data.order.expiresAt || sess.expiresAt) : 0)
       setVisible(true)
     })
     .catch(() => {
-      // في حالة فشل الاتصال، أظهر البانر بشكل احتياطي
-      setSession(sess)
-      setTimeLeft(getTimeRemaining(sess.expiresAt))
-      setVisible(true)
+      if (getTimeRemaining(sess.expiresAt) > 0) {
+        setSession(sess)
+        setTimeLeft(getTimeRemaining(sess.expiresAt))
+        setVisible(true)
+      }
     })
+  refresh()
+  const interval = setInterval(refresh, 15000)
+  return () => clearInterval(interval)
 }, [])
 
   useEffect(() => {
-    if (!session) return
+    if (!session || status !== 'pending') return
     const id = setInterval(() => {
       const rem = getTimeRemaining(session.expiresAt)
       setTimeLeft(rem)
       if (rem <= 0) { setVisible(false); clearInterval(id) }
     }, 1000)
     return () => clearInterval(id)
-  }, [session])
+  }, [session, status])
 
   if (!visible || !session) return null
 
@@ -213,7 +222,7 @@ function ReturnToOrderBanner() {
         <div style={{ fontSize:'0.68rem', color:'var(--text-3)', fontFamily:"'JetBrains Mono',monospace", letterSpacing:1 }}>{isAr ? 'طلب نشط' : 'ACTIVE ORDER'}</div>
         <div style={{ fontSize:'0.88rem', color:'var(--text-1)', fontFamily:"'Tajawal',sans-serif", fontWeight:600 }}>
           {isAr ? 'طلبك' : 'Your order'} <span style={{ color:'var(--cyan)', fontFamily:"'JetBrains Mono',monospace" }}>{session.orderNumber}</span>
-          &nbsp;— <span style={{ color: timeLeft < 120 ? '#f43f5e' : '#f59e0b', fontFamily:"'JetBrains Mono',monospace" }}>{fmt}</span>
+          &nbsp;— <span style={{ color: timeLeft < 120 && status === 'pending' ? '#f43f5e' : '#f59e0b', fontFamily:"'JetBrains Mono',monospace" }}>{status === 'pending' ? fmt : isAr ? 'جاري مراجعة الطلب' : 'Under review'}</span>
         </div>
       </div>
       <a href="/track" style={{

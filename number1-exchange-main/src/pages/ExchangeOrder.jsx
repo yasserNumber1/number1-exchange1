@@ -5,13 +5,14 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import FlowDots from '../components/shared/FlowDots'
 import { readOrderSession, clearOrderSession, getTimeRemaining } from '../services/orderSession'
 import { ReviewModal } from '../components/shared/ReviewPrompt'
+import PaymentProof from '../components/shared/PaymentProof'
 import useLang from '../context/useLang'
 import { displayMethodSymbol } from '../utils/currencyDisplay'
 
 const API            = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
 const ORDER_LIFETIME = 30 * 60
 
-const DONE_STATUSES     = ['completed', 'rejected', 'cancelled']
+const DONE_STATUSES     = ['completed', 'rejected', 'cancelled', 'expired']
 const APPROVED_STATUSES = ['verified', 'processing', 'completed']
 
 function getSessionExpiry(orderId) {
@@ -27,6 +28,7 @@ const STATUS_MAP = {
   completed:  { ar: 'مكتمل 🎉',          en: 'Completed 🎉',          color: '#00e5a0', bg: 'rgba(0,229,160,0.1)',   dot: '#00e5a0' },
   rejected:   { ar: 'مرفوض',             en: 'Rejected',             color: '#f87171', bg: 'rgba(239,68,68,0.1)',   dot: '#f87171' },
   cancelled:  { ar: 'ملغي',              en: 'Cancelled',            color: '#9ca3af', bg: 'rgba(156,163,175,0.1)', dot: '#9ca3af' },
+  expired:    { ar: 'منتهي',             en: 'Expired',              color: '#f87171', bg: 'rgba(239,68,68,0.1)', dot: '#f87171' },
 }
 
 function fmtTime(s) {
@@ -189,7 +191,7 @@ export default function ExchangeOrder() {
   const tr = (ar, en) => (isAr ? ar : en)
 
   const stateData = location.state || {}
-  const { sendMethod, recvMethod, sendAmount, receiveAmount, recipientId, adminItem, email } = stateData
+  const { sendMethod, recvMethod, sendAmount, receiveAmount, recipientId, email } = stateData
 
   const [order,       setOrder]       = useState(null)
   const [apiError,    setApiError]    = useState('')
@@ -208,13 +210,14 @@ export default function ExchangeOrder() {
   const pollRef = useRef(null)
 
   const currentStatus  = order?.status || 'pending'
-  const statusCfg      = STATUS_MAP[currentStatus] || STATUS_MAP.pending
   const isDone         = DONE_STATUSES.includes(currentStatus)
   const isCompleted    = currentStatus === 'completed'
   const isRejected     = currentStatus === 'rejected'
   const isCancelled    = currentStatus === 'cancelled'
+  const isExpired      = currentStatus === 'expired'
   const isApproved     = APPROVED_STATUSES.includes(currentStatus)
-  const canCancel      = ['pending', 'verifying'].includes(currentStatus)
+  const activeSession  = readOrderSession()
+  const canCancel      = ['pending', 'verifying'].includes(currentStatus) && activeSession?.orderNumber === orderId
   const wizardStep     = isCompleted ? 4 : 3
 
   // ── تقييم: اعرض modal بعد 2 ثانية من اكتمال الطلب ──────────
@@ -229,11 +232,16 @@ export default function ExchangeOrder() {
     if (!orderId) return
     setFetching(true)
     try {
-      const res  = await fetch(`${API}/api/orders/track/${orderId}`)
+      const session = readOrderSession()
+      const hasSession = session?.orderNumber === orderId
+      const res = await fetch(hasSession ? `${API}/api/orders/by-session/${session.sessionToken}` : `${API}/api/orders/track/${orderId}`)
       const data = await res.json()
       if (data.success) {
-        setOrder(data.order); setApiError('')
-        if (['completed', 'rejected', 'cancelled'].includes(data.order.status)) clearOrderSession()
+        setOrder(data.order); setExpiresAt(data.order.expiresAt || null); setApiError('')
+        if (DONE_STATUSES.includes(data.order.status)) clearOrderSession()
+      } else if (res.status === 410 || data.expired) {
+        setOrder(prev => prev ? { ...prev, status: 'expired', payment: { ...prev.payment, destination: null } } : { status: 'expired' })
+        setApiError(''); clearOrderSession()
       } else setApiError(data.message || tr('لم يُعثر على الطلب', 'Order not found'))
     } catch { setApiError(tr('خطأ في الاتصال', 'Connection error')) }
     finally  { setFetching(false); setLastRefresh(new Date()) }
@@ -249,9 +257,13 @@ export default function ExchangeOrder() {
       try {
         const msg = JSON.parse(e.data)
         if (msg.type === 'STATUS_UPDATE') {
-          setOrder(prev => prev ? { ...prev, status: msg.status, updatedAt: msg.updatedAt } : prev)
+          setOrder(prev => prev ? { ...prev, status: msg.status, cancelledBy: msg.cancelledBy || prev.cancelledBy, updatedAt: msg.updatedAt } : prev)
+          if (msg.status !== 'pending') setExpiresAt(null)
           setLastRefresh(new Date())
           if (DONE_STATUSES.includes(msg.status)) { es.close(); setSseConnected(false); clearOrderSession() }
+        } else if (msg.type === 'EXPIRED') {
+          setOrder(prev => prev ? { ...prev, status: 'expired', payment: { ...prev.payment, destination: null } } : prev)
+          es.close(); setSseConnected(false); clearOrderSession()
         }
       } catch {}
     }
@@ -273,33 +285,29 @@ export default function ExchangeOrder() {
   }, [orderId])
 
   useEffect(() => {
-    if (isDone || isApproved || sseConnected) return
+    if (isDone || sseConnected) return
     if (pollRef.current) clearInterval(pollRef.current)
     pollRef.current = setInterval(fetchOrder, 30000)
     return () => clearInterval(pollRef.current)
-  }, [fetchOrder, isDone, isApproved, sseConnected])
+  }, [fetchOrder, isDone, sseConnected])
 
   useEffect(() => {
     if (sseConnected && pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
   }, [sseConnected])
 
   useEffect(() => {
-    if (isDone || isApproved) return
-    if (!expiresAt) {
-      const fallbackId = setInterval(() => setSecondsLeft(s => Math.max(0, s - 1)), 1000)
-      return () => clearInterval(fallbackId)
-    }
+    if (currentStatus !== 'pending' || !expiresAt) return
     setSecondsLeft(getTimeRemaining(expiresAt))
     const id = setInterval(() => setSecondsLeft(getTimeRemaining(expiresAt)), 1000)
     return () => clearInterval(id)
-  }, [isDone, isApproved, expiresAt])
+  }, [currentStatus, expiresAt])
 
-  const expired = secondsLeft <= 0 && !isDone && !isApproved
+  const expired = isExpired || (currentStatus === 'pending' && !!expiresAt && secondsLeft <= 0)
 
   const displaySendAmt   = sendAmount    || order?.payment?.amountSent
   const displayRecvAmt   = receiveAmount || order?.moneygo?.amountUSD
   const displayRecipient = recipientId   || order?.moneygo?.recipientPhone
-  const isEgpSend        = sendMethod?.type === 'egp'
+  const sessionToken     = activeSession?.orderNumber === orderId ? activeSession.sessionToken : null
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg)', direction:isAr ? 'rtl' : 'ltr', fontFamily:"'Cairo','Tajawal',sans-serif" }}>
@@ -400,7 +408,7 @@ export default function ExchangeOrder() {
           )}
 
           {/* العداد التنازلي */}
-          {!isDone && !isApproved && (
+          {currentStatus === 'pending' && !!expiresAt && (
             <div className={`eo-timer ${expired ? 'eo-timer--expired' : secondsLeft < 300 ? 'eo-timer--warning' : ''}`}>
               {expired
                 ? <><span>⏰</span> {tr('انتهت مهلة الطلب', 'Order time has expired')}</>
@@ -411,9 +419,17 @@ export default function ExchangeOrder() {
           )}
 
           {/* حالة رفض / إلغاء */}
-          {(isRejected || isCancelled) && (
+          {(isRejected || isCancelled || expired) && (
             <div style={{ padding:'12px 16px', borderRadius:10, background:'rgba(239,68,68,0.07)', border:'1px solid rgba(239,68,68,0.2)', color:'#f87171', fontFamily:"'Tajawal',sans-serif", fontSize:'0.85rem' }}>
-              {isRejected ? tr('❌ تم رفض الطلب. للاستفسار تواصل مع الدعم.', '❌ Order was rejected. Contact support for details.') : tr('🚫 تم إلغاء الطلب.', '🚫 Order has been cancelled.')}
+              {expired
+                ? tr('انتهى الوقت المحدد، لا تقم بإرسال الأموال.', 'The time limit has expired. Do not send any funds.')
+                : isRejected
+                  ? tr('❌ تم رفض الطلب. للاستفسار تواصل مع الدعم.', '❌ Order was rejected. Contact support for details.')
+                  : order?.cancelledBy === 'admin'
+                    ? tr('تم إلغاء الطلب من جهة الإدارة.', 'The order was cancelled by the administration.')
+                    : order?.cancelledBy === 'customer'
+                      ? tr('تم إلغاء الطلب من جهتك.', 'You cancelled this order.')
+                      : tr('تم إلغاء الطلب.', 'The order was cancelled.')}
             </div>
           )}
 
@@ -471,25 +487,37 @@ export default function ExchangeOrder() {
           </div>
         )}
 
-        {/* تعليمات الدفع */}
-        {isEgpSend && adminItem && !isApproved && (
+        {/* Payment instructions are tied to the order session and its current status. */}
+        {order && ['pending', 'verifying'].includes(currentStatus) && !expired && order.payment?.destination && (
           <div className="eo-card eo-instr-card">
-            <div className="eo-section-label">📲 {tr('تعليمات التحويل', 'Transfer Instructions')}</div>
-            <p style={{ fontSize:'0.83rem', color:'var(--text-2)', margin:'0 0 14px', lineHeight:1.7 }}>{tr('يرجى تحويل المبلغ إلى الحساب التالي ثم الانتظار حتى يتم التحقق من الدفع:', 'Please transfer the amount to the account below and wait for payment verification:')}</p>
-            <div className="eo-instr-box">
-              <div className="eo-instr-row">
-                <span className="eo-instr-key">{adminItem.name || tr('الوسيلة', 'Method')}</span>
-                <div style={{ display:'flex', alignItems:'center', gap:6 }}><span className="eo-instr-val">{adminItem.number}</span><CopyBtn text={adminItem.number} /></div>
+            <div className="eo-section-label">{tr('قم بتحويل المبلغ إلى العنوان التالي', 'Transfer the amount to the following destination')}</div>
+            {order.payment.destination.network && (
+              <div className="eo-instr-row" style={{ marginBottom: 12 }}>
+                <span className="eo-instr-key">{tr('الشبكة', 'Network')}</span>
+                <strong className="eo-instr-val">{order.payment.destination.network}</strong>
               </div>
-              {displaySendAmt && <div className="eo-instr-row"><span className="eo-instr-key">{tr('المبلغ المطلوب', 'Required Amount')}</span><span className="eo-instr-val" style={{ color:'var(--gold)' }}>{displaySendAmt} {tr('جنيه', 'EGP')}</span></div>}
-            </div>
-            <div className="eo-warning">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink:0, marginTop:1 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <span>{tr('تأكد من إرسال المبلغ بالضبط. احتفظ بصورة الإيصال للرجوع إليها.', 'Make sure to send the exact amount. Keep a screenshot of the receipt for your records.')}</span>
-            </div>
+            )}
+            {order.payment.destination.address ? (
+              <div className="eo-instr-box">
+                <div className="eo-instr-row">
+                  <span className="eo-instr-key">{order.payment.destination.methodName || tr('بيانات التحويل', 'Transfer details')}</span>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, minWidth:0 }}>
+                    <span className="eo-instr-val" style={{ overflowWrap:'anywhere' }}>{order.payment.destination.address}</span>
+                    <CopyBtn text={order.payment.destination.address} />
+                  </div>
+                </div>
+                <div className="eo-instr-row">
+                  <span className="eo-instr-key">{tr('المبلغ المطلوب', 'Amount to send')}</span>
+                  <strong className="eo-instr-val">{order.payment.amountSent} {order.payment.currencySent}</strong>
+                </div>
+              </div>
+            ) : (
+              <div className="eo-warning">{tr('لم يتم تحديد بيانات التحويل لهذه الوسيلة. تواصل مع الدعم ولا ترسل الأموال حتى تتأكد من البيانات.', 'No transfer details are configured for this method. Contact support and do not send funds until they are confirmed.')}</div>
+            )}
+            {order.payment.destination.network && <div className="eo-warning" style={{ marginTop:10 }}>{tr(`تأكد من الإرسال على شبكة ${order.payment.destination.network} فقط. الإرسال على شبكة خاطئة قد يؤدي لفقدان الأموال.`, `Only send on the ${order.payment.destination.network} network. Using the wrong network may permanently lose funds.`)}</div>}
           </div>
         )}
-
+        {order && !expired && <PaymentProof order={order} sessionToken={sessionToken} isAr={isAr} onSaved={fetchOrder} />}
 
         {/* خطوات حالة الطلب */}
         <div className="eo-card">

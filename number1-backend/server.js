@@ -321,6 +321,13 @@ app.listen(PORT, async () => {
 
       for (const expOrder of expiredOrders) {
         try {
+          // Legacy internal-wallet orders are already funded; preserve them for review.
+          if (['WALLET_TO_USDT', 'WALLET_TO_MONEYGO'].includes(expOrder.orderType)) {
+            expOrder.status = 'verifying';
+            expOrder.addTimeline('verifying', 'Internal wallet funded; verification continues.', 'system');
+            await expOrder.save();
+            continue;
+          }
           // أعد السيولة المحجوزة إن وجدت
           if (expOrder.liquidityReserved) {
             await releaseLiquidity(expOrder);

@@ -13,8 +13,10 @@ const { upload } = require("../services/cloudinary");
 const telegramService = require("../services/telegram");
 const { logOrderEvent } = require("../services/auditService");
 const { getCurrencies } = require("../services/balanceEngine");
+const { paymentIsOpen, cancellationSource, createPaymentDestination } = require("../services/orderPayment");
 
 const ORDER_LIFETIME_MS = 30 * 60 * 1000; // 30 دقيقة
+
 
 // ══════════════════════════════════════════════
 // ⚠ Routes الثابتة لازم تكون قبل Routes الـ :id
@@ -35,8 +37,7 @@ router.get("/by-session/:token", async (req, res) => {
     }
 
     // التحقق من انتهاء الوقت — لا ننهي الطلبات المكتملة/المرفوضة/الملغاة
-    const FINAL_STATUSES = ['completed', 'rejected', 'cancelled', 'expired'];
-    if (!FINAL_STATUSES.includes(order.status) && order.expiresAt && new Date() > order.expiresAt) {
+    if (order.status === "pending" && order.expiresAt && new Date() > order.expiresAt) {
       return res
         .status(410)
         .json({
@@ -55,11 +56,15 @@ router.get("/by-session/:token", async (req, res) => {
       order: {
         orderNumber: order.orderNumber,
         status: order.status,
+        cancelledBy: cancellationSource(order),
         orderType: order.orderType,
         payment: {
           method: order.payment.method,
           amountSent: order.payment.amountSent,
           currencySent: order.payment.currencySent,
+          destination: paymentIsOpen(order) ? order.payment.destination : null,
+          txHash: order.payment.txHash || null,
+          receiptImageUrl: order.payment.receiptImageUrl || null,
         },
         moneygo: {
           recipientName: order.moneygo.recipientName,
@@ -97,7 +102,7 @@ router.get("/sse/:token", async (req, res) => {
     try {
       const order = await Order.findOne({
         sessionToken: req.params.token,
-      }).select("status orderNumber expiresAt updatedAt");
+      }).select("status orderNumber expiresAt updatedAt cancelledBy");
 
       if (!order) {
         res.write(`data: ${JSON.stringify({ type: "NOT_FOUND" })}\n\n`);
@@ -106,17 +111,16 @@ router.get("/sse/:token", async (req, res) => {
       }
 
       // لا نُرسل EXPIRED للطلبات المكتملة/المرفوضة/الملغاة حتى لو انتهى expiresAt
-      const FINAL_STATUSES_SSE = ['completed', 'rejected', 'cancelled', 'expired'];
-      if (!FINAL_STATUSES_SSE.includes(order.status) && order.expiresAt && new Date() > order.expiresAt) {
+      if (order.status === "pending" && order.expiresAt && new Date() > order.expiresAt) {
         res.write(`data: ${JSON.stringify({ type: "EXPIRED" })}\n\n`);
         clearInterval(interval);
         return res.end();
       }
 
-      const timeRemaining = Math.max(
+      const timeRemaining = order.expiresAt ? Math.max(
         0,
         Math.floor((order.expiresAt - new Date()) / 1000),
-      );
+      ) : null;
 
       // إرسال تحديث الحالة إذا تغيرت
       if (order.status !== lastStatus) {
@@ -125,6 +129,7 @@ router.get("/sse/:token", async (req, res) => {
           `data: ${JSON.stringify({
             type: "STATUS_UPDATE",
             status: order.status,
+            cancelledBy: order.cancelledBy,
             orderNumber: order.orderNumber,
             timeRemaining,
             updatedAt: order.updatedAt,
@@ -159,7 +164,7 @@ router.get("/sse/:token", async (req, res) => {
 router.post("/cleanup", async (req, res) => {
   try {
     const result = await Order.updateMany(
-      { expiresAt: { $lt: new Date() }, status: { $in: ["pending"] } },
+      { expiresAt: { $lt: new Date() }, status: { $in: ["pending"] }, orderType: { $nin: ["WALLET_TO_USDT", "WALLET_TO_MONEYGO"] } },
       {
         $set: { status: "expired" },
         $push: {
@@ -220,6 +225,7 @@ router.get("/track/:orderNumber", async (req, res) => {
       order: {
         orderNumber: order.orderNumber,
         status: order.status,
+        cancelledBy: cancellationSource(order),
         orderType: order.orderType,
         payment: {
           method: order.payment.method,
@@ -237,6 +243,7 @@ router.get("/track/:orderNumber", async (req, res) => {
         timeline: order.timeline,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
+        expiresAt: order.expiresAt,
       },
     });
   } catch (error) {
@@ -346,9 +353,14 @@ router.post("/", optionalProtect, async (req, res) => {
     // Step 2: validate — errors here are real business-rule violations
     {
       // ── Find the send and receive methods by paymentMethodKey or fallback ──
-      const sendMethodObj = emDoc.sendMethods.find(
-        (m) => m.paymentMethodKey === payment.method || m.id === payment.method,
+      const sendMethodObj = emDoc.sendMethods.find((m) =>
+        req.body.sendMethodId ? m.id === req.body.sendMethodId :
+          (m.paymentMethodKey === payment.method || m.id === payment.method),
       );
+      if (!sendMethodObj || (sendMethodObj.paymentMethodKey && sendMethodObj.paymentMethodKey !== payment.method)) {
+        return res.status(400).json({ success: false, message: "Invalid send method." });
+      }
+      payment.destination = createPaymentDestination(sendMethodObj, payment.method);
       // Determine receive method from orderType
       const recvMethodObj = emDoc.receiveMethods.find((m) => {
         if (orderType === "USDT_TO_WALLET" && m.type === "wallet") return true;
@@ -648,6 +660,13 @@ router.post("/", optionalProtect, async (req, res) => {
           });
         }
 
+        // Internal-wallet orders are already funded; no external payment deadline applies.
+        if (orderType === "WALLET_TO_USDT") {
+          order.status = "verifying";
+          order.expiresAt = null;
+          order.addTimeline("verifying", "Internal wallet debited; awaiting payment verification.", "system");
+        }
+
         // Internal USDT -> MoneyGo orders are funded immediately and therefore
         // do not wait for payment verification. They go straight to payout.
         if (orderType === "WALLET_TO_MONEYGO") {
@@ -703,14 +722,14 @@ router.post("/", optionalProtect, async (req, res) => {
     }
 
     // حفظ telegramMessageId و liquidityReserved دفعة واحدة
-    if (telegramMessageId || liquidityReserved || orderType === "WALLET_TO_MONEYGO") {
+    if (telegramMessageId || liquidityReserved || WALLET_OUTFLOW_TYPES.includes(orderType)) {
       if (telegramMessageId) order.telegramMessageId = telegramMessageId;
       if (liquidityReserved) order.liquidityReserved = true;
       try {
         await order.save();
       } catch (saveErr) {
         console.error("Order post-create save failed:", saveErr.message);
-        if (orderType === "WALLET_TO_MONEYGO") {
+        if (WALLET_OUTFLOW_TYPES.includes(orderType)) {
           const { releaseLiquidity, refundWallet } = require("../services/balanceEngine");
           if (liquidityReserved) await releaseLiquidity(order);
           const refundResult = await refundWallet(order);
@@ -825,6 +844,9 @@ router.post("/:id/verify-usdt", async (req, res) => {
         .status(404)
         .json({ success: false, message: "Order not found." });
     }
+    if (!["pending", "verifying"].includes(order.status) || (order.status === "pending" && order.expiresAt && new Date() > order.expiresAt)) {
+      return res.status(400).json({ success: false, message: "Order is not open for verification." });
+    }
     if (
       order.payment.method !== "USDT_TRC20" &&
       order.payment.method !== "USDT_BEP20"
@@ -876,6 +898,43 @@ router.post("/:id/verify-usdt", async (req, res) => {
   }
 });
 
+// ─── PATCH /api/orders/:orderNumber/payment-proof ────
+router.patch("/:orderNumber/payment-proof", async (req, res) => {
+  try {
+    const { sessionToken, txHash, receiptImageUrl } = req.body;
+    const order = await Order.findOne({ orderNumber: req.params.orderNumber.toUpperCase() });
+    if (!order) return res.status(404).json({ success: false, message: "Order not found." });
+    if (!sessionToken || sessionToken !== order.sessionToken) return res.status(403).json({ success: false, message: "Not authorized." });
+    if (!paymentIsOpen(order) || order.payment.method === "WALLET") return res.status(400).json({ success: false, message: "Payment proof is no longer accepted." });
+
+    const hash = typeof txHash === "string" ? txHash.trim() : "";
+    const receiptUrl = typeof receiptImageUrl === "string" ? receiptImageUrl.trim() : "";
+    if (!hash && !receiptUrl) return res.status(400).json({ success: false, message: "Provide a TXID or receipt." });
+    if (hash && (!/^USDT_/.test(order.payment.method) || !/^[A-Za-z0-9]{20,150}$/.test(hash))) {
+      return res.status(400).json({ success: false, message: "Invalid TXID." });
+    }
+    if (receiptUrl && !/^https:\/\/res\.cloudinary\.com\//i.test(receiptUrl)) {
+      return res.status(400).json({ success: false, message: "Invalid receipt URL." });
+    }
+    if (hash) {
+      const duplicate = await Order.findOne({ "payment.txHash": hash, _id: { $ne: order._id } });
+      if (duplicate) return res.status(400).json({ success: false, message: "TXID already used by another order." });
+      order.payment.txHash = hash;
+    }
+    if (receiptUrl) order.payment.receiptImageUrl = receiptUrl;
+    order.addTimeline(order.status, "Payment proof submitted by customer.", "customer");
+    await order.save();
+    try {
+      await telegramService.sendMessage(`تم إرسال إثبات الدفع / Payment proof submitted — ${order.orderNumber}${hash ? ` — TXID: ${hash}` : ""}`);
+      if (receiptUrl) await telegramService.sendReceiptPhoto(receiptUrl, `Receipt for order ${order.orderNumber}`);
+    } catch (notifyError) { console.error("Payment proof notification failed:", notifyError.message); }
+    res.json({ success: true, message: "Payment proof saved." });
+  } catch (error) {
+    console.error("Payment proof error:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
 // ─── POST /api/orders/:orderNumber/cancel ────
 // إلغاء الطلب من قبل العميل
 router.post("/:orderNumber/cancel", async (req, res) => {
@@ -891,7 +950,7 @@ router.post("/:orderNumber/cancel", async (req, res) => {
     }
 
     // التحقق من الـ session token (أمان)
-    if (sessionToken && order.sessionToken !== sessionToken) {
+    if (!sessionToken || order.sessionToken !== sessionToken) {
       return res.status(403).json({ success: false, message: "غير مصرح." });
     }
 
@@ -902,9 +961,13 @@ router.post("/:orderNumber/cancel", async (req, res) => {
         message: "لا يمكن إلغاء الطلب بعد بدء المعالجة.",
       });
     }
+    if (order.status === "pending" && order.expiresAt && new Date() > order.expiresAt) {
+      return res.status(400).json({ success: false, message: "Order payment time has expired." });
+    }
 
     const wasReserved = order.liquidityReserved;
     order.status = "cancelled";
+    order.cancelledBy = "customer";
     order.moneygo.transferStatus = "failed";
     order.liquidityReserved = false;
     order.addTimeline(
