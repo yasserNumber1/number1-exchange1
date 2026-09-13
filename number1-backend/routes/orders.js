@@ -15,6 +15,7 @@ const telegramService = require("../services/telegram");
 const { logOrderEvent } = require("../services/auditService");
 const { getCurrencies } = require("../services/balanceEngine");
 const { paymentIsOpen, cancellationSource, createPaymentDestination } = require("../services/orderPayment");
+const { isValidMoneyGoWalletId } = require("../services/moneygoWalletId");
 const { getOrderExpiresAt } = require("../services/orderExpiry");
 
 
@@ -546,6 +547,9 @@ router.post("/", optionalProtect, async (req, res) => {
     ];
 
     // ── التحقق من معرّف الاستلام ──
+    if (orderType.endsWith("_TO_MONEYGO") && !isValidMoneyGoWalletId(moneygo.recipientPhone)) {
+      return res.status(400).json({ success: false, message: "MoneyGo wallet ID must start with U- and contain an ID." });
+    }
     const requiresRecipient = !NO_RECIPIENT_TYPES.includes(orderType);
     if (
       requiresRecipient &&

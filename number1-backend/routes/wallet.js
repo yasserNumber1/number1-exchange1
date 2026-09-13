@@ -8,6 +8,7 @@ const Transaction = require('../models/Transaction')
 const Deposit     = require('../models/Deposit')
 const Setting     = require('../models/Setting')
 const { protect } = require('../middleware/auth')
+const { isValidMoneyGoWalletId } = require('../services/moneygoWalletId')
 
 // كل routes المحفظة تحتاج تسجيل دخول
 router.use(protect)
@@ -193,8 +194,8 @@ router.post('/transfer-to-moneygo', async (req, res) => {
     if (!amount || isNaN(amount) || Number(amount) <= 0) {
       return res.status(400).json({ success: false, message: 'المبلغ غير صحيح.' })
     }
-    if (!recipientId || recipientId.trim().length < 3) {
-      return res.status(400).json({ success: false, message: 'يرجى إدخال معرف MoneyGo.' })
+    if (!isValidMoneyGoWalletId(recipientId)) {
+      return res.status(400).json({ success: false, message: 'MoneyGo wallet ID must start with U- and contain an ID.' })
     }
 
     const wallet = await getOrCreateWallet(req.user._id)
