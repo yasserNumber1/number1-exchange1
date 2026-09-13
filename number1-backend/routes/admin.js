@@ -13,6 +13,7 @@ const SupportChat = require("../models/SupportChat");
 const mongoose = require("mongoose");
 const { completeOrder, processTransaction } = require("../services/balanceEngine");
 const { logOrderEvent } = require("../services/auditService");
+const { parseOrderExpiryMins } = require("../services/orderExpiry");
 
 const SECRET_MASK = "••••••••";
 
@@ -558,6 +559,7 @@ router.get("/settings", async (req, res) => {
   try {
     const settings = await Setting.getSingleton();
     const safe = settings.toObject();
+    safe.orderExpiryMinutes = safe.orderExpiryMins;
     if (safe.smtpPassword)     safe.smtpPassword     = SECRET_MASK;
     if (safe.telegramBotToken) safe.telegramBotToken = SECRET_MASK;
     if (safe.resendApiKey)     safe.resendApiKey     = SECRET_MASK;
@@ -577,7 +579,7 @@ router.put("/settings", async (req, res) => {
       "contactEmail","contactWebsite","telegramNotifications","emailNotifications",
       "telegramBotToken","telegramChatId","smtpHost","smtpPort","smtpEmail","smtpPassword",
       "resendApiKey","resendFromEmail",
-      "minOrderUsdt","maxOrderUsdt","orderExpiryMins","minOrderUsd","maxOrderUsd","orderExpiryMinutes",
+      "minOrderUsdt","maxOrderUsdt","minOrderUsd","maxOrderUsd",
       "usdtOrdersEnabled","walletOrdersEnabled","bankTransferEnabled","maxDailyOrdersUser",
       "moneygoApiKey","moneygoApiUrl","cryptoApiKey","webhookUrl","environment","jwtRefreshEnabled",
       "twoFactorAdmin","auditLogEnabled","sessionExpireHours","maxLoginAttempts","ipBanMinutes",
@@ -590,8 +592,20 @@ router.put("/settings", async (req, res) => {
         updates[key] = req.body[key];
       }
     });
+    // Accept the old API name, but store only the schema's canonical field.
+    const expiryInput = req.body.orderExpiryMinutes !== undefined
+      ? req.body.orderExpiryMinutes
+      : req.body.orderExpiryMins;
+    if (expiryInput !== undefined) {
+      const minutes = parseOrderExpiryMins(expiryInput);
+      if (minutes === null) {
+        return res.status(400).json({ success: false, message: "Order expiry must be a positive whole number of minutes." });
+      }
+      updates.orderExpiryMins = minutes;
+    }
     const settings = await Setting.findOneAndUpdate({}, { $set: updates }, { new: true, upsert: true });
     const safe = settings.toObject();
+    safe.orderExpiryMinutes = safe.orderExpiryMins;
     if (safe.smtpPassword)     safe.smtpPassword     = SECRET_MASK;
     if (safe.telegramBotToken) safe.telegramBotToken = SECRET_MASK;
     if (safe.resendApiKey)     safe.resendApiKey     = SECRET_MASK;

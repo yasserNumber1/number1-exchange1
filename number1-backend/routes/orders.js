@@ -8,14 +8,15 @@ const crypto = require("crypto");
 const Order = require("../models/Order");
 const ExchangeMethod = require("../models/ExchangeMethod");
 const Rate = require("../models/Rate");
+const Setting = require("../models/Setting");
 const { protect, optionalProtect } = require("../middleware/auth");
 const { upload } = require("../services/cloudinary");
 const telegramService = require("../services/telegram");
 const { logOrderEvent } = require("../services/auditService");
 const { getCurrencies } = require("../services/balanceEngine");
 const { paymentIsOpen, cancellationSource, createPaymentDestination } = require("../services/orderPayment");
+const { getOrderExpiresAt } = require("../services/orderExpiry");
 
-const ORDER_LIFETIME_MS = 30 * 60 * 1000; // 30 دقيقة
 
 
 // ══════════════════════════════════════════════
@@ -593,7 +594,8 @@ router.post("/", optionalProtect, async (req, res) => {
 
     // ── إنشاء الطلب ───────────────────────────
     const sessionToken = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + ORDER_LIFETIME_MS);
+    const settings = await Setting.getSingleton();
+    const expiresAt = getOrderExpiresAt(settings);
 
     console.log(
       "[Order] Creating order:",

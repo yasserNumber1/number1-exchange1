@@ -421,7 +421,7 @@ function App() {
           <Route path="*"             element={<NotFound />}   />
           <Route path="/my-orders"             element={<MyOrders />} />
           <Route path="/order-confirm"         element={<OrderConfirmPage />} />
-          <Route path="/exchange/form"         element={<ExchangeFormPage />} />
+          <Route path="/exchange/form"         element={<ExchangeFormPage key={location.search} />} />
           <Route path="/exchange/order/:orderId" element={<ExchangeOrder />} />
           <Route path="/convert-usdt-to-moneygo-fast-secure-reliable-exchange-service/" element={<MoneyGoExchange />} />
         </Routes>

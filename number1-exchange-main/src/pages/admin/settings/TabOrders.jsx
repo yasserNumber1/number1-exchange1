@@ -48,8 +48,8 @@ export default function TabOrders({ settings, set }) {
           />
           <NumberField
             label="مدة انتهاء الطلب (دقيقة)"
-            value={settings.orderExpiryMinutes}
-            onChange={v => set('orderExpiryMinutes', v)}
+            value={settings.orderExpiryMins}
+            onChange={v => set('orderExpiryMins', v)}
             min={1} placeholder="30"
           />
           <NumberField

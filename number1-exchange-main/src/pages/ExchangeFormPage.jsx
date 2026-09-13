@@ -150,7 +150,12 @@ export default function ExchangeFormPage({ onOpenAuth }) {
   }, [fetchRates])
 
   // ── خطوة النموذج: 1 = بيانات الطلب، 2 = إرسال المبلغ + تأكيد ──
+  const pairKey = JSON.stringify([fromId, toId])
+  const draftMatchesPair = (() => {
+    try { return sessionStorage.getItem('ef_pair') === pairKey } catch { return false }
+  })()
   const [formStep, setFormStep] = useState(() => {
+    if (!draftMatchesPair) return 1
     try { return parseInt(sessionStorage.getItem('ef_step') || '1', 10) || 1 } catch { return 1 }
   })
 
@@ -162,15 +167,15 @@ export default function ExchangeFormPage({ onOpenAuth }) {
   }
 
   // ── حالة المبالغ المتزامنة ──────────────────────────────
-  const [sendAmount,    setSendAmount]    = useState(() => ss.get('sendAmount'))
-  const [receiveAmount, setReceiveAmount] = useState(() => ss.get('receiveAmount'))
-  const [lastEdited,    setLastEdited]    = useState(() => ss.get('lastEdited') || 'send')
+  const [sendAmount,    setSendAmount]    = useState(() => draftMatchesPair ? ss.get('sendAmount', '0') : '0')
+  const [receiveAmount, setReceiveAmount] = useState(() => draftMatchesPair ? ss.get('receiveAmount', '0') : '0')
+  const [lastEdited,    setLastEdited]    = useState(() => draftMatchesPair ? ss.get('lastEdited') || 'send' : 'send')
 
   // ── باقي الحالة ─────────────────────────────────────────
-  const [recipientId, setRecipientId] = useState(() => ss.get('recipientId'))
-  const [usdtAddress, setUsdtAddress] = useState(() => ss.get('usdtAddress'))
-  const [email,       setEmail]       = useState(() => user?.email || ss.get('email'))
-  const [userPhone,   setUserPhone]   = useState(() => ss.get('userPhone'))
+  const [recipientId, setRecipientId] = useState(() => draftMatchesPair ? ss.get('recipientId') : '')
+  const [usdtAddress, setUsdtAddress] = useState(() => draftMatchesPair ? ss.get('usdtAddress') : '')
+  const [email,       setEmail]       = useState(() => user?.email || (draftMatchesPair ? ss.get('email') : ''))
+  const [userPhone,   setUserPhone]   = useState(() => draftMatchesPair ? ss.get('userPhone') : '')
   const [agreed,      setAgreed]      = useState(false)
   const [math,        setMath]        = useState(() => genMath())
   const [mathInput,   setMathInput]   = useState('')
@@ -189,6 +194,9 @@ export default function ExchangeFormPage({ onOpenAuth }) {
   useEffect(() => { ss.set('usdtAddress',   usdtAddress)   }, [usdtAddress])
   useEffect(() => { ss.set('email',         email)         }, [email])
   useEffect(() => { ss.set('userPhone',     userPhone)     }, [userPhone])
+  useEffect(() => {
+    try { sessionStorage.setItem('ef_pair', pairKey) } catch { /* Session storage may be unavailable. */ }
+  }, [pairKey])
 
   useEffect(() => { if (user?.email) setEmail(user.email) }, [user?.email])
 
@@ -422,7 +430,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
         if (data.order.sessionToken) {
           saveOrderSession({ sessionToken: data.order.sessionToken, orderNumber: data.order.orderNumber, expiresAt: data.order.expiresAt })
         }
-        ss.del('step', 'sendAmount', 'receiveAmount', 'lastEdited', 'recipientId', 'usdtAddress', 'email', 'userPhone')
+        ss.del('pair', 'step', 'sendAmount', 'receiveAmount', 'lastEdited', 'recipientId', 'usdtAddress', 'email', 'userPhone')
         navigate(`/exchange/order/${data.order.orderNumber}`, {
           state: { sendMethod, recvMethod, sendAmount, receiveAmount, recipientId: recipientPhone, usdtNetwork: recvNetwork, email }
         })

@@ -44,7 +44,7 @@ const DEFAULT = {
   bankTransferEnabled:  false,
   minOrderUsd:          10,
   maxOrderUsd:          10000,
-  orderExpiryMinutes:   30,
+  orderExpiryMins:   30,
   maxDailyOrdersUser:   5,
 
   // Notifications
@@ -89,7 +89,11 @@ export default function AdminSettings() {
     const fetch = async () => {
       try {
         const { data } = await adminAPI.getSettings()
-        if (data) setSettings(prev => ({ ...prev, ...data }))
+        if (data) {
+          const next = { ...data }
+          delete next.orderExpiryMinutes
+          setSettings(prev => ({ ...prev, ...next }))
+        }
       } catch { /* استخدم الـ defaults */ }
       finally { setLoading(false) }
     }
@@ -119,8 +123,8 @@ export default function AdminSettings() {
       const { data } = await adminAPI.saveSettings(settings)
       applyPublicSettings(data)
       showToast('success', '✓ تم حفظ الإعدادات بنجاح')
-    } catch {
-      showToast('error', '✗ فشل الحفظ — تحقق من الاتصال')
+    } catch (error) {
+      showToast('error', error?.response?.data?.message || '✗ فشل الحفظ — تحقق من الاتصال')
     } finally {
       setSaving(false)
     }
