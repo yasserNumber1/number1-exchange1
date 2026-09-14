@@ -195,7 +195,7 @@ router.post('/transfer-to-moneygo', async (req, res) => {
       return res.status(400).json({ success: false, message: 'المبلغ غير صحيح.' })
     }
     if (!isValidMoneyGoWalletId(recipientId)) {
-      return res.status(400).json({ success: false, message: 'MoneyGo wallet ID must start with U- and contain an ID.' })
+      return res.status(400).json({ success: false, message: 'MoneyGo wallet ID must start with U and contain an ID.' })
     }
 
     const wallet = await getOrCreateWallet(req.user._id)
