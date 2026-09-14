@@ -307,7 +307,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
     if (!email || !emailRx.test(email)) errs.email = tr('يرجى إدخال بريد إلكتروني صحيح', 'Please enter a valid email address')
     if (isEgpSend && userPhone && !/^\+?[0-9\s\-]{7,20}$/.test(userPhone.trim())) errs.phone = tr('رقم الهاتف غير صحيح', 'Invalid phone number')
     if (isEgpRecv && recipientId.trim().length < 5) errs.recipient = tr(`يرجى إدخال رقم ${recvMethod?.name || ''} للاستلام`, `Please enter your ${recvMethod?.name || ''} number to receive`)
-    if (isMoneyGoRecv && !isValidMoneyGoWalletId(recipientId)) errs.recipient = tr('يرجى إدخال معرّف محفظة MoneyGo صحيح (U-...)', 'MoneyGo wallet ID must start with U- and contain an ID')
+    if (isMoneyGoRecv && !isValidMoneyGoWalletId(recipientId)) errs.recipient = tr('يرجى إدخال معرّف محفظة MoneyGo صحيح (U...)', 'MoneyGo wallet ID must start with U- and contain an ID')
     if (isUsdtRecv) {
       const addr = usdtAddress.trim()
       if (!addr || addr.length < 10) {
@@ -352,7 +352,7 @@ export default function ExchangeFormPage({ onOpenAuth }) {
     if (!email || !emailRx.test(email)) errs.email = tr('يرجى إدخال بريد إلكتروني صحيح', 'Please enter a valid email address')
     if (isEgpSend && userPhone && !/^\+?[0-9\s\-]{7,20}$/.test(userPhone.trim())) errs.phone = tr('رقم الهاتف غير صحيح', 'Invalid phone number')
     if (isEgpRecv && recipientId.trim().length < 5) errs.recipient = tr(`يرجى إدخال رقم ${recvMethod?.name || ''} للاستلام`, `Please enter your ${recvMethod?.name || ''} number to receive`)
-    if (isMoneyGoRecv && !isValidMoneyGoWalletId(recipientId)) errs.recipient = tr('يرجى إدخال معرّف محفظة MoneyGo صحيح (U-...)', 'MoneyGo wallet ID must start with U- and contain an ID')
+    if (isMoneyGoRecv && !isValidMoneyGoWalletId(recipientId)) errs.recipient = tr('يرجى إدخال معرّف محفظة MoneyGo صحيح (U...)', 'MoneyGo wallet ID must start with U- and contain an ID')
     if (isUsdtRecv) {
       const addr = usdtAddress.trim()
       if (!addr || addr.length < 10) {
@@ -569,9 +569,9 @@ export default function ExchangeFormPage({ onOpenAuth }) {
             {isMoneyGoRecv && (
               <>
                 <label className="ef-label">{tr('معرّف محفظة MoneyGo', 'MoneyGo Wallet ID')} <span style={{ color: 'var(--red)' }}>*</span></label>
-                <input type="text" value={recipientId} onChange={e => { setRecipientId(e.target.value); clearErr('recipient') }} placeholder="U-XXXXXXXX" className={`ef-input ef-mono ${fieldErrors.recipient ? 'ef-input--error' : ''}`} style={{ direction: 'ltr' }} />
+                <input type="text" value={recipientId} onChange={e => { setRecipientId(e.target.value); clearErr('recipient') }} placeholder="UXXXXXXXX" className={`ef-input ef-mono ${fieldErrors.recipient ? 'ef-input--error' : ''}`} style={{ direction: 'ltr' }} />
                 <FieldError msg={fieldErrors.recipient} />
-                <p className="ef-hint">{tr('أدخل معرّف محفظة MoneyGo الذي ستستلم عليه المبلغ (U-...)', 'Enter your MoneyGo wallet ID starting with U- to receive the amount')}</p>
+                <p className="ef-hint">{tr('أدخل معرّف محفظة MoneyGo الذي ستستلم عليه المبلغ (U...)', 'Enter your MoneyGo wallet ID starting with U- to receive the amount')}</p>
               </>
             )}
             {isUsdtRecv && (
