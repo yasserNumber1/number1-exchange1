@@ -15,7 +15,7 @@ import {
 } from '../services/rateEngine'
 
 const API = import.meta.env.VITE_API_URL || 'https://www.yasser-number1.com'
-const isValidMoneyGoWalletId = (value) => /^U-\S+$/.test(value.trim())
+const isValidMoneyGoWalletId = (value) => /^U\S+$/.test(value.trim())
 
 function MethodIcon({ method, size = 32 }) {
   const [err, setErr] = useState(false)
